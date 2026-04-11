@@ -322,6 +322,86 @@ export function Header() {
   )
 }
 
+export function Footer() {
+  return (
+    <footer className="border-t border-black/5 bg-white py-16">
+      <div className="mx-auto max-w-[1440px] px-8 md:px-16">
+        <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
+          <div className="md:col-span-1">
+            <span
+              className="mb-4 block text-[20px] tracking-[0.08em] text-black"
+              style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
+            >
+              LIVAXIS
+            </span>
+            <p
+              className="max-w-[240px] text-[13px] leading-relaxed text-neutral-400"
+              style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+            >
+              Redefining luxury interiors with AI-powered visualization. See it before you buy it.
+            </p>
+          </div>
+
+          {[
+            {
+              title: 'Shop',
+              links: ['New Arrivals', 'Collections', 'Best Sellers', 'AI Room Planner'],
+            },
+            {
+              title: 'About',
+              links: ['Our Story', 'Sustainability', 'Craftsmanship', 'Press'],
+            },
+            {
+              title: 'Support',
+              links: ['Contact Us', 'Shipping', 'Returns', 'FAQ'],
+            },
+          ].map((col) => (
+            <div key={col.title}>
+              <h4
+                className="mb-5 text-[11px] uppercase tracking-[0.2em] text-black"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+              >
+                {col.title}
+              </h4>
+              <ul className="space-y-3">
+                {col.links.map((link) => (
+                  <li key={link}>
+                    <a
+                      href="#"
+                      className="text-[13px] text-neutral-400 transition-colors duration-300 hover:text-black"
+                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                    >
+                      {link}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 md:flex-row">
+          <span className="text-[12px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+            &copy; 2026 Livaxis. All rights reserved.
+          </span>
+          <div className="flex gap-6">
+            {['Privacy', 'Terms', 'Cookies'].map((item) => (
+              <a
+                key={item}
+                href="#"
+                className="text-[12px] text-neutral-300 transition-colors duration-300 hover:text-neutral-500"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+              >
+                {item}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
 function Hompage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf9_0%,#fbf7f1_52%,#f4efe6_100%)] text-[#141311]">
@@ -498,6 +578,8 @@ function Hompage() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </div>
   )
 }
