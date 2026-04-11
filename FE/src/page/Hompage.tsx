@@ -402,6 +402,90 @@ export function Footer() {
   )
 }
 
+function BeforeAfterShowcase() {
+  const [split, setSplit] = useState(50)
+  const [dragging, setDragging] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const updateSplit = (clientX: number) => {
+    if (!containerRef.current) {
+      return
+    }
+
+    const bounds = containerRef.current.getBoundingClientRect()
+    const rawSplit = ((clientX - bounds.left) / bounds.width) * 100
+    const limitedSplit = Math.min(90, Math.max(10, rawSplit))
+    setSplit(limitedSplit)
+  }
+
+  useEffect(() => {
+    if (!dragging) {
+      return
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      updateSplit(event.clientX)
+    }
+
+    const handlePointerUp = () => {
+      setDragging(false)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+  }, [dragging])
+
+  return (
+    <div
+      ref={containerRef}
+      onPointerDown={(event) => {
+        setDragging(true)
+        updateSplit(event.clientX)
+      }}
+      className="relative min-h-[360px] select-none overflow-hidden rounded-[28px] border border-black/5 bg-[#ebe3d7] p-4 shadow-[0_24px_80px_rgba(28,22,16,0.12)]"
+      style={{ touchAction: 'none' }}
+    >
+      <div className="relative h-full min-h-[320px] overflow-hidden rounded-[24px] bg-[linear-gradient(155deg,#efe3d2_0%,#cdb79a_100%)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(255,255,255,0.72),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.2),transparent_45%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-36 bg-[linear-gradient(180deg,transparent,rgba(67,50,35,0.28))]" />
+
+        <div className="absolute bottom-8 right-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
+          after
+        </div>
+
+        <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${split}%` }}>
+          <div className="relative h-full min-h-[320px] w-[1200px] max-w-none bg-[linear-gradient(155deg,#f7f0e4_0%,#d8c8b1_100%)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.75),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.25),transparent_45%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(61,44,28,0.18))]" />
+          </div>
+        </div>
+
+        <div className="absolute bottom-8 left-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
+          before
+        </div>
+
+        <div className="pointer-events-none absolute inset-y-0" style={{ left: `${split}%`, transform: 'translateX(-50%)' }}>
+          <div className="h-full w-px bg-white/70 shadow-[0_0_0_1px_rgba(0,0,0,0.03)]" />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Drag to compare before and after"
+          className="absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#8a7456] shadow-lg shadow-black/10"
+          style={{ left: `${split}%`, transform: 'translate(-50%, -50%)' }}
+        >
+          <ChevronRight size={18} className="-rotate-90" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Hompage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf9_0%,#fbf7f1_52%,#f4efe6_100%)] text-[#141311]">
@@ -443,57 +527,9 @@ function Hompage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.18 }}
-              className="mt-10 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]"
+              className="mx-auto mt-10 max-w-5xl"
             >
-              <div className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[#ebe3d7] p-4 shadow-[0_24px_80px_rgba(28,22,16,0.12)]">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="relative min-h-[320px] overflow-hidden rounded-[24px] bg-[linear-gradient(155deg,#f7f0e4_0%,#d8c8b1_100%)]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.75),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.25),transparent_45%)]" />
-                    <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(61,44,28,0.18))]" />
-                    <div className="absolute bottom-6 left-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
-                      before
-                    </div>
-                  </div>
-                  <div className="relative min-h-[320px] overflow-hidden rounded-[24px] bg-[linear-gradient(155deg,#efe3d2_0%,#cdb79a_100%)]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(255,255,255,0.72),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.2),transparent_45%)]" />
-                    <div className="absolute bottom-0 left-0 right-0 h-36 bg-[linear-gradient(180deg,transparent,rgba(67,50,35,0.28))]" />
-                    <div className="absolute bottom-8 left-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
-                      after
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pointer-events-none absolute inset-y-4 left-1/2 hidden -translate-x-1/2 items-center lg:flex">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#8a7456] shadow-lg shadow-black/10">
-                    <ChevronRight size={18} className="-rotate-90" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 rounded-[28px] border border-black/5 bg-white/65 p-4 shadow-[0_24px_80px_rgba(28,22,16,0.08)] backdrop-blur-sm sm:grid-cols-2 lg:grid-cols-1">
-                <div className="overflow-hidden rounded-[22px] border border-black/5 bg-[#f6efe6] p-5 text-left">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-[#a08c6a]">Style guide</p>
-                  <h2 className="mt-3 text-2xl leading-tight text-[#1d1814]" style={{ fontFamily: 'Playfair Display, serif' }}>
-                    Soft materials, warm wood, balanced contrast.
-                  </h2>
-                  <p className="mt-3 text-sm text-[#746b60]">
-                    Curate your room with pieces that feel intentional instead of generic.
-                  </p>
-                </div>
-                <div className="overflow-hidden rounded-[22px] border border-black/5 bg-[linear-gradient(145deg,#e6ddcf,#cdb596)] p-5 text-left text-[#2a231c]">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-[#6d583f]">Quick actions</p>
-                  <div className="mt-4 flex flex-col gap-3">
-                    <button className="flex items-center justify-between rounded-2xl bg-white/80 px-4 py-3 text-left text-sm transition-transform duration-200 hover:-translate-y-0.5">
-                      <span>Upload a room photo</span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button className="flex items-center justify-between rounded-2xl bg-white/80 px-4 py-3 text-left text-sm transition-transform duration-200 hover:-translate-y-0.5">
-                      <span>Explore curated pieces</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <BeforeAfterShowcase />
             </motion.div>
 
             <div className="mt-8 flex justify-center">
