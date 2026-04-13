@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
-const SignUpPage = lazy(() => import('./page/Signup'))
+const SignUpPage = lazy(() => import('./page/SignUp'))
 
 export default function App() {
   return (
