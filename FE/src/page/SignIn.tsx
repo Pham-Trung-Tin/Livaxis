@@ -2,6 +2,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { motion } from 'motion/react'
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import heroImage from '../assets/hero.png'
 
 function SignIn() {
   const navigate = useNavigate()
@@ -38,7 +39,7 @@ function SignIn() {
     <div className="flex min-h-screen bg-white">
       <div className="relative hidden overflow-hidden lg:block lg:w-[45%] xl:w-1/2">
         <img
-          src="https://images.unsplash.com/photo-1616594039964-3f5cb5f7d2db?auto=format&fit=crop&w=1800&q=80"
+          src={heroImage}
           alt="Minimalist living room with neutral tones"
           className="absolute inset-0 h-full w-full object-cover"
         />
