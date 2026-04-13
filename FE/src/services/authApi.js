@@ -13,7 +13,10 @@ const request = async (path, options = {}) => {
   const data = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    const errorMessage = data?.error?.message || 'Request failed'
+    const validationMessage = Array.isArray(data?.error?.details)
+      ? data.error.details?.[0]?.message
+      : undefined
+    const errorMessage = validationMessage || data?.error?.message || 'Request failed'
     throw new Error(errorMessage)
   }
 

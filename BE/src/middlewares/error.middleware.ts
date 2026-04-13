@@ -17,7 +17,10 @@ const mapError = (error: unknown): { statusCode: number; code: string; message: 
       statusCode: 400,
       code: 'VALIDATION_ERROR',
       message: 'Request validation failed',
-      details: error.flatten(),
+      details: error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      })),
     };
   }
 
