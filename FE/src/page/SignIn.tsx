@@ -48,7 +48,7 @@ function SignIn() {
     <div className="flex min-h-screen bg-white">
       <div className="relative hidden overflow-hidden lg:block lg:w-[45%] xl:w-1/2">
         <img
-          src={heroImage}
+          src="https://images.unsplash.com/photo-1771888703723-01d85da1dae1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920"
           alt="Minimalist living room with neutral tones"
           className="absolute inset-0 h-full w-full object-cover"
         />
