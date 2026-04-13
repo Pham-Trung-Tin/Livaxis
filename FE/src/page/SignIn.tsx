@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Sparkles } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -28,6 +28,16 @@ function SignIn() {
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1440px] flex-col justify-center px-5 py-10 sm:px-8 lg:px-16">
         <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[420px] w-[680px] -translate-x-1/2 bg-[radial-gradient(circle,rgba(200,184,152,0.22)_0%,rgba(200,184,152,0)_68%)]" />
 
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="absolute left-3 top-7 z-10 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] text-neutral-400 transition-colors duration-200 hover:text-[#8a7456] sm:left-4 sm:top-8 lg:left-6"
+          style={{ fontWeight: 500 }}
+        >
+          <ArrowLeft size={13} strokeWidth={1.8} />
+          Back to Home
+        </button>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -35,17 +45,8 @@ function SignIn() {
           className="mx-auto w-full max-w-[460px] overflow-hidden rounded-[28px] border border-black/5 bg-white/90 shadow-[0_24px_80px_rgba(28,22,16,0.10)] backdrop-blur-md"
         >
           <div className="border-b border-black/5 px-8 pb-7 pt-8">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="text-[11px] uppercase tracking-[0.2em] text-neutral-400 transition-colors duration-200 hover:text-[#8a7456]"
-              style={{ fontWeight: 500 }}
-            >
-              Back to Home
-            </button>
-
             <p
-              className="mt-5 text-[12px] uppercase tracking-[0.28em] text-[#a08c6a]"
+              className="text-[12px] uppercase tracking-[0.28em] text-[#a08c6a]"
               style={{ fontWeight: 500 }}
             >
               Welcome Back
