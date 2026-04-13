@@ -5,9 +5,14 @@ export type UserRole = 'user' | 'admin';
 export interface IUser extends Document {
   name: string;
   email: string;
-  password: string;
+  passwordHash: string;
   role: UserRole;
   isActive: boolean;
+  emailVerified: boolean;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  emailVerificationTokenHash?: string;
+  emailVerificationExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,10 +35,9 @@ const userSchema = new Schema<IUser>(
       index: true,
       match: [/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/, 'Please enter a valid email address'],
     },
-    password: {
+    passwordHash: {
       type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
+      required: [true, 'Password hash is required'],
       select: false,
     },
     role: {
@@ -45,14 +49,32 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: true,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    passwordResetTokenHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
     collection: 'users',
   },
 );
-
-userSchema.index({ email: 1 }, { unique: true });
 
 const User = model<IUser>('User', userSchema);
 

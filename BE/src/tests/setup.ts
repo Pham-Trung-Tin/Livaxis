@@ -1,0 +1,9 @@
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/livaxis-test';
+process.env.DB_NAME = process.env.DB_NAME || 'livaxis-test';
+process.env.ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'test-access-secret';
+process.env.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'test-refresh-secret';
+process.env.ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '15m';
+process.env.REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL || '7d';
+process.env.CORS_ORIGINS = process.env.CORS_ORIGINS || 'http://localhost:5173';
+process.env.COOKIE_SECURE = process.env.COOKIE_SECURE || 'false';

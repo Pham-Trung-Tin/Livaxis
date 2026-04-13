@@ -1,34 +1,26 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { env } from './env';
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const mongoURI = process.env.MONGODB_URI;
-    
-    if (!mongoURI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
-    }
-    
-    await mongoose.connect(mongoURI, {
-      dbName: process.env.DB_NAME || 'organic_produce',
+    await mongoose.connect(env.MONGODB_URI, {
+      dbName: env.DB_NAME,
     });
-    
+
     console.log('✅ MongoDB Atlas Connected Successfully');
-    console.log(`📦 Database: ${process.env.DB_NAME}`);
-    
+    console.log(`📦 Database: ${env.DB_NAME}`);
+
     mongoose.connection.on('error', (err) => {
       console.error('❌ MongoDB connection error:', err);
     });
-    
+
     mongoose.connection.on('disconnected', () => {
       console.log('⚠️  MongoDB disconnected');
     });
-    
+
   } catch (error) {
     console.error('❌ Error connecting to MongoDB:', error);
-    process.exit(1);
+    throw error;
   }
 };
 

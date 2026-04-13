@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { Eye, EyeOff, ArrowLeft, Sparkles, Check, ChevronRight } from 'lucide-react'
+import { signUp } from '../services/authApi'
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1758448511348-54b10c30239f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwbHV4dXJ5JTIwYmVkcm9vbSUyMHNvZnQlMjBuYXR1cmFsJTIwbGlnaHRpbmclMjBuZXV0cmFsJTIwdG9uZXN8ZW58MXx8fHwxNzcyOTc1NDY3fDA&ixlib=rb-4.1.0&q=80&w=1080'
@@ -232,6 +233,7 @@ function SignUpPage() {
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -243,15 +245,32 @@ function SignUpPage() {
     )
   }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+    setErrorMessage('')
+
+    if (selectedStyles.length === 0) {
+      setErrorMessage('Please select at least one style preference')
+      return
+    }
+
     setLoading(true)
 
-    window.setTimeout(() => {
+    try {
+      await signUp({
+        name,
+        email,
+        password,
+      })
+
       setLoading(false)
       setStep('success')
       window.setTimeout(() => navigate('/'), 2000)
-    }, 1600)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign up failed'
+      setErrorMessage(message)
+      setLoading(false)
+    }
   }
 
   return (
@@ -371,6 +390,9 @@ function SignUpPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-1">
+                  {errorMessage ? (
+                    <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-600">{errorMessage}</p>
+                  ) : null}
                   <div className="space-y-5">
                     <FloatingInput id="fullname" label="Full Name" value={name} onChange={setName} autoComplete="name" />
                     <FloatingInput

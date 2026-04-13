@@ -1,12 +1,13 @@
 import dotenv from 'dotenv';
 
 import { connectDB } from './config/database';
+import { env } from './config/env';
 import app from './app';
 import http from 'http';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT;
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
@@ -18,7 +19,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Connect to database
-connectDB();
+connectDB().catch((error) => {
+  console.error('Cannot start server because DB connection failed:', error);
+  process.exit(1);
+});
 // Wrap Express với http.Server để Socket.io có thể dùng chung cổng
 const server = http.createServer(app);
 

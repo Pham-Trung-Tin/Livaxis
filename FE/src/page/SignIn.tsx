@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import heroImage from '../assets/hero.png'
+import { signIn } from '../services/authApi'
 
 function SignIn() {
   const navigate = useNavigate()
@@ -12,19 +13,27 @@ function SignIn() {
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
+    setErrorMessage('')
+    setSuccessMessage('')
 
-    window.setTimeout(() => {
-      if (email === 'admin@gmail.com') {
+    try {
+      await signIn({ email, password })
+      setSuccessMessage('Sign in successful. Redirecting...')
+      window.setTimeout(() => {
         navigate('/')
-      } else {
-        navigate('/')
-      }
+      }, 600)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign in failed'
+      setErrorMessage(message)
+    } finally {
       setLoading(false)
-    }, 1200)
+    }
   }
 
   const handleSocialLogin = (provider: string) => {
@@ -159,6 +168,7 @@ function SignIn() {
               <div className="flex justify-end pt-1">
                 <button
                   type="button"
+                  onClick={() => navigate('/forgot-password')}
                   className="text-[12px] text-neutral-500 transition-colors duration-200 hover:text-black"
                   style={{ fontWeight: 400 }}
                 >
@@ -167,6 +177,12 @@ function SignIn() {
               </div>
 
               <div className="pt-2">
+                {errorMessage ? (
+                  <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-600">{errorMessage}</p>
+                ) : null}
+                {successMessage ? (
+                  <p className="mb-3 rounded-md bg-green-50 px-3 py-2 text-[12px] text-green-700">{successMessage}</p>
+                ) : null}
                 <button
                   type="submit"
                   disabled={loading}
