@@ -193,6 +193,7 @@ function SignIn() {
             <p className="text-[12px] text-neutral-400" style={{ fontWeight: 300 }}>
               Don&apos;t have an account?{' '}
               <button
+                onClick={() => navigate('/sign-up')}
                 className="text-black underline underline-offset-2 transition-colors duration-200 hover:text-[#a08c6a]"
                 style={{ fontWeight: 400 }}
               >
