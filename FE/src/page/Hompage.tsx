@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react'
 import {
+  ChevronDown,
   ChevronRight,
   Heart,
+  LogOut,
   Package,
   Search,
   Settings,
@@ -11,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/auth-context'
 
 const featuredPieces = [
   {
@@ -71,6 +74,7 @@ export function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const { user, loading: authLoading, logout } = useAuth()
 
   const navLinks = [
     { label: 'New Arrivals', href: '/new-arrivals' },
@@ -91,6 +95,21 @@ export function Header() {
 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [userMenuOpen])
+
+  const userInitials = user?.name
+    ? user.name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('')
+    : 'U'
+
+  const handleLogout = async () => {
+    await logout()
+    setUserMenuOpen(false)
+    navigate('/')
+  }
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-md">
@@ -150,10 +169,22 @@ export function Header() {
             <button
               onClick={() => setUserMenuOpen((value) => !value)}
               className={`transition-colors duration-300 ${userMenuOpen ? 'text-black' : 'text-neutral-500 hover:text-black'}`}
-              aria-label="Account menu"
+              aria-label={user ? `Account menu for ${user.name}` : 'Account menu'}
               aria-expanded={userMenuOpen}
             >
-              <User size={19} strokeWidth={1.5} />
+              {authLoading ? (
+                <span className="inline-flex h-[19px] w-[19px] animate-pulse rounded-full bg-neutral-200" />
+              ) : user ? (
+                <span className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#f3ede3] text-[11px] font-semibold text-[#6f5a41]">
+                    {userInitials}
+                  </span>
+                  <span className="hidden max-w-[130px] truncate text-[13px] text-black md:inline">{user.name}</span>
+                  <ChevronDown size={13} className="hidden text-neutral-400 md:inline" />
+                </span>
+              ) : (
+                <User size={19} strokeWidth={1.5} />
+              )}
             </button>
 
             <AnimatePresence>
@@ -169,136 +200,244 @@ export function Header() {
                       '0 8px 40px rgba(0,0,0,0.10), 0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)',
                   }}
                 >
-                  <div
-                    className="px-6 pb-5 pt-6"
-                    style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
-                  >
-                    <div
-                      className="mb-4 h-px w-8"
-                      style={{ background: 'linear-gradient(90deg, #c8b898, transparent)' }}
-                    />
-                    <p
-                      className="mb-1 text-[22px] leading-tight text-black"
-                      style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
-                    >
-                      Welcome
-                    </p>
-                    <p
-                      className="text-[12px] leading-snug text-neutral-400"
-                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-                    >
-                      Sign in for a personalised experience
-                    </p>
-                  </div>
-
-                  <div className="space-y-2.5 px-5 pb-3 pt-4">
-                    <button
-                      className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] py-3 text-white transition-all duration-300 hover:bg-black"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                      onClick={() => {
-                        setUserMenuOpen(false)
-                        navigate('/sign-in')
-                      }}
-                    >
-                      <span className="text-[11px] uppercase tracking-[0.22em]" style={{ fontWeight: 600 }}>
-                        Sign In
-                      </span>
-                      <ChevronRight
-                        size={13}
-                        className="opacity-50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100"
-                      />
-                    </button>
-
-                    <div className="flex items-center gap-3 py-0.5">
-                      <div className="h-px flex-1 bg-neutral-100" />
-                      <span
-                        className="text-[10px] uppercase tracking-[0.1em] text-neutral-300"
-                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                  {user ? (
+                    <>
+                      <div
+                        className="px-6 pb-5 pt-6"
+                        style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
                       >
-                        or
-                      </span>
-                      <div className="h-px flex-1 bg-neutral-100" />
-                    </div>
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white">
+                            {userInitials}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="mb-1 text-[22px] leading-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+                              {user.name}
+                            </p>
+                            <p className="truncate text-[12px] leading-snug text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                    <button
-                      className="group flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-150 py-2.5 transition-all duration-300 hover:border-[#c8b898]/40 hover:bg-[#f8f5f0]"
-                      style={{ fontFamily: 'Inter, sans-serif', borderColor: 'rgba(0,0,0,0.07)' }}
-                      onClick={() => {
-                        setUserMenuOpen(false)
-                        navigate('/sign-up')
-                      }}
-                    >
-                      <span
-                        className="text-[11px] uppercase tracking-[0.15em] text-neutral-600 transition-colors group-hover:text-neutral-800"
-                        style={{ fontWeight: 500 }}
+                      <div className="space-y-2 px-3 py-3">
+                        {[
+                          { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
+                          { icon: Package, label: 'Order History', sub: 'Track & manage' },
+                          { icon: Settings, label: 'Settings', sub: 'Account preferences' },
+                        ].map(({ icon: Icon, label, sub }) => (
+                          <button
+                            key={label}
+                            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-[#f8f5f0]"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 transition-all duration-200 group-hover:border-[#c8b898]/30 group-hover:bg-[#fdf9f5]">
+                              <Icon
+                                size={14}
+                                className="text-neutral-400 transition-colors duration-200 group-hover:text-[#a08c6a]"
+                                strokeWidth={1.5}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="truncate text-[12px] text-neutral-700 transition-colors group-hover:text-black"
+                                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                              >
+                                {label}
+                              </p>
+                              <p
+                                className="truncate text-[10px] text-neutral-400"
+                                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                              >
+                                {sub}
+                              </p>
+                            </div>
+                            <ChevronRight size={12} className="shrink-0 text-neutral-200 transition-colors group-hover:text-neutral-400" />
+                          </button>
+                        ))}
+
+                        <button
+                          className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-red-50"
+                          onClick={() => {
+                            void handleLogout()
+                          }}
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-100 bg-red-50 transition-all duration-200 group-hover:border-red-200 group-hover:bg-red-100/60">
+                            <LogOut
+                              size={14}
+                              className="text-red-400 transition-colors duration-200 group-hover:text-red-600"
+                              strokeWidth={1.5}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="truncate text-[12px] text-red-500 transition-colors group-hover:text-red-700"
+                              style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                            >
+                              Logout
+                            </p>
+                            <p
+                              className="truncate text-[10px] text-red-300"
+                              style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                            >
+                              End this session
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+
+                      <div className="mx-5 h-px bg-neutral-100" />
+
+                      <div
+                        className="mx-3 mb-3 flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(200,184,152,0.10) 0%, rgba(200,184,152,0.05) 100%)',
+                          border: '1px solid rgba(200,184,152,0.20)',
+                        }}
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          navigate('/ai-room-planner')
+                        }}
                       >
-                        Create Account
-                      </span>
-                    </button>
-                  </div>
-
-                  <div className="mx-5 h-px bg-neutral-100" />
-
-                  <div className="px-3 py-3">
-                    {[
-                      { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
-                      { icon: Package, label: 'Order History', sub: 'Track & manage' },
-                      { icon: Settings, label: 'Preferences', sub: 'Room style profile' },
-                    ].map(({ icon: Icon, label, sub }) => (
-                      <button
-                        key={label}
-                        className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-[#f8f5f0]"
-                        onClick={() => setUserMenuOpen(false)}
+                        <Sparkles size={14} className="shrink-0 text-[#a08c6a]" />
+                        <div>
+                          <p className="text-[11px] text-[#6b5d45]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                            Try AI Room Planner
+                          </p>
+                          <p className="text-[10px] text-[#a08c6a]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                            Visualise furniture in your space
+                          </p>
+                        </div>
+                        <ChevronRight size={11} className="ml-auto text-[#c8b898]/50 transition-colors group-hover:text-[#c8b898]" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="px-6 pb-5 pt-6"
+                        style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 transition-all duration-200 group-hover:border-[#c8b898]/30 group-hover:bg-[#fdf9f5]">
-                          <Icon
-                            size={14}
-                            className="text-neutral-400 transition-colors duration-200 group-hover:text-[#a08c6a]"
-                            strokeWidth={1.5}
+                        <div className="mb-4 h-px w-8" style={{ background: 'linear-gradient(90deg, #c8b898, transparent)' }} />
+                        <p className="mb-1 text-[22px] leading-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+                          Welcome
+                        </p>
+                        <p className="text-[12px] leading-snug text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                          Sign in for a personalised experience
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 px-5 pb-3 pt-4">
+                        <button
+                          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] py-3 text-white transition-all duration-300 hover:bg-black"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/sign-in')
+                          }}
+                        >
+                          <span className="text-[11px] uppercase tracking-[0.22em]" style={{ fontWeight: 600 }}>
+                            Sign In
+                          </span>
+                          <ChevronRight
+                            size={13}
+                            className="opacity-50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100"
                           />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="truncate text-[12px] text-neutral-700 transition-colors group-hover:text-black"
-                            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-                          >
-                            {label}
-                          </p>
-                          <p
-                            className="truncate text-[10px] text-neutral-400"
-                            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-                          >
-                            {sub}
-                          </p>
-                        </div>
-                        <ChevronRight size={12} className="shrink-0 text-neutral-200 transition-colors group-hover:text-neutral-400" />
-                      </button>
-                    ))}
-                  </div>
+                        </button>
 
-                  <div
-                    className="mx-3 mb-3 flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, rgba(200,184,152,0.10) 0%, rgba(200,184,152,0.05) 100%)',
-                      border: '1px solid rgba(200,184,152,0.20)',
-                    }}
-                    onClick={() => {
-                      setUserMenuOpen(false)
-                      navigate('/ai-room-planner')
-                    }}
-                  >
-                    <Sparkles size={14} className="shrink-0 text-[#a08c6a]" />
-                    <div>
-                      <p className="text-[11px] text-[#6b5d45]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                        Try AI Room Planner
-                      </p>
-                      <p className="text-[10px] text-[#a08c6a]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                        Visualise furniture in your space
-                      </p>
-                    </div>
-                    <ChevronRight size={11} className="ml-auto text-[#c8b898]/50 transition-colors group-hover:text-[#c8b898]" />
-                  </div>
+                        <div className="flex items-center gap-3 py-0.5">
+                          <div className="h-px flex-1 bg-neutral-100" />
+                          <span
+                            className="text-[10px] uppercase tracking-[0.1em] text-neutral-300"
+                            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                          >
+                            or
+                          </span>
+                          <div className="h-px flex-1 bg-neutral-100" />
+                        </div>
+
+                        <button
+                          className="group flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-150 py-2.5 transition-all duration-300 hover:border-[#c8b898]/40 hover:bg-[#f8f5f0]"
+                          style={{ fontFamily: 'Inter, sans-serif', borderColor: 'rgba(0,0,0,0.07)' }}
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/sign-up')
+                          }}
+                        >
+                          <span
+                            className="text-[11px] uppercase tracking-[0.15em] text-neutral-600 transition-colors group-hover:text-neutral-800"
+                            style={{ fontWeight: 500 }}
+                          >
+                            Create Account
+                          </span>
+                        </button>
+                      </div>
+
+                      <div className="mx-5 h-px bg-neutral-100" />
+
+                      <div className="px-3 py-3">
+                        {[
+                          { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
+                          { icon: Package, label: 'Order History', sub: 'Track & manage' },
+                          { icon: Settings, label: 'Preferences', sub: 'Room style profile' },
+                        ].map(({ icon: Icon, label, sub }) => (
+                          <button
+                            key={label}
+                            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-[#f8f5f0]"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 transition-all duration-200 group-hover:border-[#c8b898]/30 group-hover:bg-[#fdf9f5]">
+                              <Icon
+                                size={14}
+                                className="text-neutral-400 transition-colors duration-200 group-hover:text-[#a08c6a]"
+                                strokeWidth={1.5}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="truncate text-[12px] text-neutral-700 transition-colors group-hover:text-black"
+                                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                              >
+                                {label}
+                              </p>
+                              <p
+                                className="truncate text-[10px] text-neutral-400"
+                                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                              >
+                                {sub}
+                              </p>
+                            </div>
+                            <ChevronRight size={12} className="shrink-0 text-neutral-200 transition-colors group-hover:text-neutral-400" />
+                          </button>
+                        ))}
+                      </div>
+
+                      <div
+                        className="mx-3 mb-3 flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(200,184,152,0.10) 0%, rgba(200,184,152,0.05) 100%)',
+                          border: '1px solid rgba(200,184,152,0.20)',
+                        }}
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          navigate('/ai-room-planner')
+                        }}
+                      >
+                        <Sparkles size={14} className="shrink-0 text-[#a08c6a]" />
+                        <div>
+                          <p className="text-[11px] text-[#6b5d45]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                            Try AI Room Planner
+                          </p>
+                          <p className="text-[10px] text-[#a08c6a]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                            Visualise furniture in your space
+                          </p>
+                        </div>
+                        <ChevronRight size={11} className="ml-auto text-[#c8b898]/50 transition-colors group-hover:text-[#c8b898]" />
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               ) : null}
             </AnimatePresence>

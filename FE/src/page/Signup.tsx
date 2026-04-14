@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { Eye, EyeOff, ArrowLeft, Sparkles, Check, ChevronRight } from 'lucide-react'
+import { useAuth } from '../contexts/auth-context'
 import { signUp } from '../services/authApi'
 
 const HERO_IMAGE =
@@ -226,6 +227,7 @@ function StyleCard({
 
 function SignUpPage() {
   const navigate = useNavigate()
+  const { setUser } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -257,11 +259,13 @@ function SignUpPage() {
     setLoading(true)
 
     try {
-      await signUp({
+      const response = await signUp({
         name,
         email,
         password,
       })
+
+      setUser(response?.data?.user ?? null)
 
       setLoading(false)
       setStep('success')

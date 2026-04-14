@@ -2,11 +2,12 @@ import { Eye, EyeOff } from 'lucide-react'
 import { motion } from 'motion/react'
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import heroImage from '../assets/hero.png'
+import { useAuth } from '../contexts/auth-context'
 import { signIn } from '../services/authApi'
 
 function SignIn() {
   const navigate = useNavigate()
+  const { setUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailFocused, setEmailFocused] = useState(false)
@@ -23,7 +24,8 @@ function SignIn() {
     setSuccessMessage('')
 
     try {
-      await signIn({ email, password })
+      const response = await signIn({ email, password })
+      setUser(response?.data?.user ?? null)
       setSuccessMessage('Sign in successful. Redirecting...')
       window.setTimeout(() => {
         navigate('/')
