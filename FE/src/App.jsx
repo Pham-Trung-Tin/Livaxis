@@ -7,6 +7,7 @@ const SignInPage = lazy(() => import('./page/SignIn'))
 const SignUpPage = lazy(() => import('./page/Signup'))
 const ForgotPasswordPage = lazy(() => import('./page/ForgotPassword'))
 const ResetPasswordPage = lazy(() => import('./page/ResetPassword'))
+const UserProfilePage = lazy(() => import('./page/Profile'))
 
 export default function App() {
   return (
@@ -18,6 +19,8 @@ export default function App() {
           <Route path="/sign-up" element={<SignUpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/subscription" element={<UserProfilePage defaultTab="subscription" />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Suspense>

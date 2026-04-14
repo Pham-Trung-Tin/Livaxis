@@ -206,7 +206,14 @@ export function Header() {
                         className="px-6 pb-5 pt-6"
                         style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
                       >
-                        <div className="flex items-start gap-4">
+                        <button
+                          type="button"
+                          className="flex w-full items-start gap-4 text-left transition-opacity duration-200 hover:opacity-80"
+                          onClick={() => {
+                            setUserMenuOpen(false)
+                            navigate('/profile')
+                          }}
+                        >
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white">
                             {userInitials}
                           </div>
@@ -218,19 +225,25 @@ export function Header() {
                               {user.email}
                             </p>
                           </div>
-                        </div>
+                        </button>
                       </div>
 
                       <div className="space-y-2 px-3 py-3">
                         {[
+                          { icon: User, label: 'Profile', sub: 'Personal information', href: '/profile' },
                           { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
                           { icon: Package, label: 'Order History', sub: 'Track & manage' },
                           { icon: Settings, label: 'Settings', sub: 'Account preferences' },
-                        ].map(({ icon: Icon, label, sub }) => (
+                        ].map(({ icon: Icon, label, sub, href }) => (
                           <button
                             key={label}
                             className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-[#f8f5f0]"
-                            onClick={() => setUserMenuOpen(false)}
+                            onClick={() => {
+                              setUserMenuOpen(false)
+                              if (href) {
+                                navigate(href)
+                              }
+                            }}
                           >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 transition-all duration-200 group-hover:border-[#c8b898]/30 group-hover:bg-[#fdf9f5]">
                               <Icon
