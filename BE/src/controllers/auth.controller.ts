@@ -52,11 +52,13 @@ export const signOutController = asyncHandler(async (_req: Request, res: Respons
 });
 
 export const getMeController = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user?.id) {
+  const authUser = req.user as { id: string; role: 'user' | 'admin' } | undefined;
+
+  if (!authUser?.id) {
     throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');
   }
 
-  const user = await getCurrentUser(req.user.id);
+  const user = await getCurrentUser(authUser.id);
   res.status(200).json({
     success: true,
     data: {
