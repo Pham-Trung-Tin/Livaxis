@@ -28,6 +28,12 @@ Role baseline:
 3. Run dev server:
    - `npm run dev`
 
+Google OAuth (Passport) environment variables:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CALLBACK_URL` (example: `http://localhost:5000/api/auth/google/callback`)
+- `CLIENT_URL` (example: `http://localhost:5173`)
+
 ## API Endpoints
 
 Base URL: `http://localhost:5000/api`
@@ -40,6 +46,8 @@ Base URL: `http://localhost:5000/api`
 - `POST /auth/forgot-password`
 - `POST /auth/reset-password`
 - `GET /auth/verify-email?token=...`
+- `GET /auth/google`
+- `GET /auth/google/callback`
 
 Error format:
 

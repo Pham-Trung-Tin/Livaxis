@@ -108,6 +108,28 @@ export const login = async (input: SignInInput): Promise<{
   };
 };
 
+export const loginWithUserId = async (userId: string): Promise<{
+  user: UserPublic;
+  accessToken: string;
+  refreshToken: string;
+}> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(401, 'UNAUTHORIZED', 'User not found or unauthorized');
+  }
+
+  if (!user.isActive) {
+    throw new AppError(403, 'ACCOUNT_INACTIVE', 'Your account has been disabled');
+  }
+
+  const { accessToken, refreshToken } = buildTokens(user);
+  return {
+    user: toPublicUser(user),
+    accessToken,
+    refreshToken,
+  };
+};
+
 export const getCurrentUser = async (userId: string): Promise<UserPublic> => {
   const user = await User.findById(userId);
   if (!user) {

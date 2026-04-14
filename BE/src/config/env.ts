@@ -38,6 +38,9 @@ export const env = {
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
   CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5173',
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
 };
 
 export const isProduction = env.NODE_ENV === 'production';

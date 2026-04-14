@@ -1,11 +1,14 @@
 import type { Request, Response } from 'express';
 import { AppError } from '../utils/appError';
 import { asyncHandler } from '../utils/asyncHandler';
+import { env } from '../config/env';
 import { clearAuthCookies, setAuthCookies } from '../utils/cookie';
+import { googleOAuthEnabled, type GoogleAuthUser } from '../config/passport';
 import {
   forgotPassword,
   getCurrentUser,
   login,
+  loginWithUserId,
   refreshAuth,
   register,
   resetPassword,
@@ -108,14 +111,32 @@ export const verifyEmailController = asyncHandler(async (req: Request, res: Resp
   });
 });
 
-export const socialLoginPlaceholderController = asyncHandler(async (req: Request, res: Response) => {
-  const provider = req.params.provider;
+export const googleAuthCallbackController = asyncHandler(async (req: Request, res: Response) => {
+  if (!googleOAuthEnabled) {
+    throw new AppError(503, 'GOOGLE_AUTH_NOT_CONFIGURED', 'Google authentication is not configured');
+  }
 
-  res.status(501).json({
+  const googleUser = req.user as GoogleAuthUser | undefined;
+  if (!googleUser?.id) {
+    throw new AppError(401, 'UNAUTHORIZED', 'Google authentication failed');
+  }
+
+  const result = await loginWithUserId(googleUser.id);
+  setAuthCookies(res, result.accessToken, result.refreshToken);
+
+  const redirectUrl = new URL('/sign-in', env.CLIENT_URL);
+  redirectUrl.searchParams.set('social', 'google');
+  redirectUrl.searchParams.set('status', 'success');
+
+  res.redirect(redirectUrl.toString());
+});
+
+export const googleAuthNotConfiguredController = asyncHandler(async (_req: Request, res: Response) => {
+  res.status(503).json({
     success: false,
     error: {
-      code: 'NOT_IMPLEMENTED',
-      message: `Social login for ${provider} is not implemented yet`,
+      code: 'GOOGLE_AUTH_NOT_CONFIGURED',
+      message: 'Google authentication is not configured on the server',
     },
   });
 });

@@ -1,13 +1,13 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { motion } from 'motion/react'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { signIn } from '../services/authApi'
 
 function SignIn() {
   const navigate = useNavigate()
-  const { setUser } = useAuth()
+  const { setUser, refreshUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailFocused, setEmailFocused] = useState(false)
@@ -38,12 +38,34 @@ function SignIn() {
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    // Mock social login for UI flow preview.
-    console.log(`Login with ${provider}`)
-    window.setTimeout(() => {
-      navigate('/')
-    }, 800)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const social = params.get('social')
+    const status = params.get('status')
+
+    if (social !== 'google') {
+      return
+    }
+
+    if (status === 'success') {
+      setErrorMessage('')
+      setSuccessMessage('Google sign in successful. Redirecting...')
+      void refreshUser().then(() => {
+        window.setTimeout(() => {
+          navigate('/')
+        }, 500)
+      })
+      return
+    }
+
+    if (status === 'failed') {
+      setSuccessMessage('')
+      setErrorMessage('Google sign in failed. Please try again.')
+    }
+  }, [navigate, refreshUser])
+
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/auth/google'
   }
 
   return (
@@ -223,7 +245,7 @@ function SignIn() {
             <div className="mb-10 space-y-3">
               <button
                 type="button"
-                onClick={() => handleSocialLogin('Google')}
+                onClick={handleGoogleLogin}
                 className="flex w-full items-center justify-center gap-3 rounded-lg border border-neutral-300 py-3.5 transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -251,7 +273,7 @@ function SignIn() {
 
               <button
                 type="button"
-                onClick={() => handleSocialLogin('Apple')}
+                onClick={() => setErrorMessage('Apple login is not implemented yet.')}
                 className="flex w-full items-center justify-center gap-3 rounded-lg border border-neutral-300 py-3.5 transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
