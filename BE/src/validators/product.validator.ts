@@ -11,12 +11,16 @@ const categorySchema = z.enum([
   'Lighting',
   'Accent',
   'Storage',
+  'Sofas',
+  'Tables',
+  'Chairs',
 ]);
 
 const styleSchema = z.enum(['Minimalist', 'Modern Luxury', 'Industrial']);
 
 const baseProductBodySchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(120),
+  subtitle: z.string().trim().max(180).optional(),
   category: categorySchema,
   price: z.number().min(0, 'Price cannot be negative'),
   imageUrl: z.string().trim().url('Image URL is invalid'),
@@ -24,6 +28,9 @@ const baseProductBodySchema = z.object({
   style: styleSchema.optional(),
   dimensions: z.string().trim().max(120).optional(),
   material: z.string().trim().max(120).optional(),
+  color: z.string().trim().max(50).optional(),
+  colorHex: z.string().trim().regex(/^#([0-9a-fA-F]{6})$/, 'Invalid hex color').optional(),
+  isNew: z.boolean().optional(),
   stock: z.number().int('Stock must be an integer').min(0, 'Stock cannot be negative').optional(),
 });
 
