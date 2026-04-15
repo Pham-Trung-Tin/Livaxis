@@ -67,7 +67,7 @@ export const getNewArrivals = async (
   params: GetNewArrivalsParams = {},
 ): Promise<NewArrivalsResponse> => {
   const queryString = toQueryString(params)
-  const response = await fetch(`${API_BASE}/new-arrivals${queryString}`, {
+  const response = await fetch(`${API_BASE}${queryString}`, {
     credentials: 'include',
   })
 
@@ -91,4 +91,19 @@ export const getNewArrivals = async (
       colors: [],
     },
   }
+}
+
+export const getFeaturedProducts = async (limit: number = 6): Promise<NewArrivalProduct[]> => {
+  const response = await fetch(`${API_BASE}?limit=${limit}&isNewOnly=true&sortBy=featured`, {
+    credentials: 'include',
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    const errorMessage = data?.error?.message || 'Failed to load featured products'
+    throw new Error(errorMessage)
+  }
+
+  return data?.data?.items ?? []
 }
