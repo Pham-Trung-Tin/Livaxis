@@ -2,27 +2,16 @@ import { Types } from 'mongoose';
 import Product, { type IProduct } from '../models/product.model';
 import { AppError } from '../utils/appError';
 
-type ProductImageInput = {
-  url: string;
-  publicId?: string;
-  alt?: string;
-};
-
 type CreateProductInput = {
   name: string;
-  slug: string;
-  description: string;
-  shortDescription?: string;
-  sku: string;
+  category: 'Lounge Chair' | 'Seating' | 'Dining' | 'Lighting' | 'Accent' | 'Storage';
   price: number;
-  compareAtPrice?: number;
-  currency?: string;
-  stock: number;
-  category: string;
-  tags?: string[];
-  images?: ProductImageInput[];
-  isFeatured?: boolean;
-  isPublished?: boolean;
+  imageUrl: string;
+  description?: string;
+  style?: 'Minimalist' | 'Modern Luxury' | 'Industrial';
+  dimensions?: string;
+  material?: string;
+  stock?: number;
 };
 
 type UpdateProductInput = Partial<CreateProductInput>;
@@ -30,19 +19,14 @@ type UpdateProductInput = Partial<CreateProductInput>;
 export type ProductPublic = {
   id: string;
   name: string;
-  slug: string;
-  description: string;
-  shortDescription?: string;
-  sku: string;
+  category: 'Lounge Chair' | 'Seating' | 'Dining' | 'Lighting' | 'Accent' | 'Storage';
   price: number;
-  compareAtPrice?: number;
-  currency: string;
+  imageUrl: string;
+  description?: string;
+  style: 'Minimalist' | 'Modern Luxury' | 'Industrial';
+  dimensions?: string;
+  material?: string;
   stock: number;
-  category: string;
-  tags: string[];
-  images: ProductImageInput[];
-  isFeatured: boolean;
-  isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -51,29 +35,22 @@ export type ProductListQuery = {
   page: number;
   limit: number;
   search?: string;
-  category?: string;
-  tag?: string;
-  isFeatured?: boolean;
-  isPublished?: boolean;
+  category?: ProductPublic['category'];
+  style?: ProductPublic['style'];
   sortBy?: 'newest' | 'oldest' | 'priceAsc' | 'priceDesc' | 'nameAsc' | 'nameDesc';
 };
 
 const toPublicProduct = (product: IProduct): ProductPublic => ({
   id: product._id.toString(),
   name: product.name,
-  slug: product.slug,
-  description: product.description,
-  shortDescription: product.shortDescription,
-  sku: product.sku,
-  price: product.price,
-  compareAtPrice: product.compareAtPrice,
-  currency: product.currency,
-  stock: product.stock,
   category: product.category,
-  tags: product.tags,
-  images: product.images,
-  isFeatured: product.isFeatured,
-  isPublished: product.isPublished,
+  price: product.price,
+  imageUrl: product.imageUrl,
+  description: product.description,
+  style: product.style,
+  dimensions: product.dimensions,
+  material: product.material,
+  stock: product.stock,
   createdAt: product.createdAt,
   updatedAt: product.updatedAt,
 });
@@ -84,23 +61,7 @@ const ensureValidProductId = (id: string): void => {
   }
 };
 
-const ensureComparablePrice = (price: number | undefined, compareAtPrice: number | undefined): void => {
-  if (price === undefined || compareAtPrice === undefined) {
-    return;
-  }
-
-  if (compareAtPrice < price) {
-    throw new AppError(
-      400,
-      'INVALID_COMPARE_PRICE',
-      'Compare at price must be greater than or equal to price',
-    );
-  }
-};
-
 export const createProduct = async (input: CreateProductInput): Promise<ProductPublic> => {
-  ensureComparablePrice(input.price, input.compareAtPrice);
-
   const product = await Product.create(input);
   return toPublicProduct(product);
 };
@@ -112,12 +73,6 @@ export const updateProductById = async (id: string, input: UpdateProductInput): 
   if (!existing) {
     throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
   }
-
-  const nextPrice = input.price ?? existing.price;
-  const nextCompareAtPrice =
-    input.compareAtPrice !== undefined ? input.compareAtPrice : existing.compareAtPrice;
-
-  ensureComparablePrice(nextPrice, nextCompareAtPrice);
 
   Object.assign(existing, input);
   await existing.save();
@@ -181,25 +136,16 @@ export const listProducts = async (
     filters.$or = [
       { name: { $regex: keyword, $options: 'i' } },
       { description: { $regex: keyword, $options: 'i' } },
-      { shortDescription: { $regex: keyword, $options: 'i' } },
-      { sku: { $regex: keyword, $options: 'i' } },
+      { material: { $regex: keyword, $options: 'i' } },
     ];
   }
 
   if (query.category) {
-    filters.category = query.category.trim().toLowerCase();
+    filters.category = query.category;
   }
 
-  if (query.tag) {
-    filters.tags = query.tag.trim().toLowerCase();
-  }
-
-  if (query.isFeatured !== undefined) {
-    filters.isFeatured = query.isFeatured;
-  }
-
-  if (query.isPublished !== undefined) {
-    filters.isPublished = query.isPublished;
+  if (query.style) {
+    filters.style = query.style;
   }
 
   const page = Math.max(1, query.page);

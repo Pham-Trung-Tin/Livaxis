@@ -31,23 +31,6 @@ const parseNumberQuery = (value: unknown, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const parseBooleanQuery = (value: unknown): boolean | undefined => {
-  const raw = getQueryString(value)?.trim().toLowerCase();
-  if (!raw) {
-    return undefined;
-  }
-
-  if (raw === 'true') {
-    return true;
-  }
-
-  if (raw === 'false') {
-    return false;
-  }
-
-  return undefined;
-};
-
 const parseSortByQuery = (value: unknown): ProductListQuery['sortBy'] => {
   const raw = getQueryString(value);
   const allowed: ProductListQuery['sortBy'][] = [
@@ -64,6 +47,39 @@ const parseSortByQuery = (value: unknown): ProductListQuery['sortBy'] => {
   }
 
   return 'newest';
+};
+
+const parseCategoryQuery = (value: unknown): ProductListQuery['category'] | undefined => {
+  const raw = getQueryString(value);
+  const allowed: NonNullable<ProductListQuery['category']>[] = [
+    'Lounge Chair',
+    'Seating',
+    'Dining',
+    'Lighting',
+    'Accent',
+    'Storage',
+  ];
+
+  if (raw && allowed.includes(raw as NonNullable<ProductListQuery['category']>)) {
+    return raw as NonNullable<ProductListQuery['category']>;
+  }
+
+  return undefined;
+};
+
+const parseStyleQuery = (value: unknown): ProductListQuery['style'] | undefined => {
+  const raw = getQueryString(value);
+  const allowed: NonNullable<ProductListQuery['style']>[] = [
+    'Minimalist',
+    'Modern Luxury',
+    'Industrial',
+  ];
+
+  if (raw && allowed.includes(raw as NonNullable<ProductListQuery['style']>)) {
+    return raw as NonNullable<ProductListQuery['style']>;
+  }
+
+  return undefined;
 };
 
 const getPathParam = (value: string | string[] | undefined): string => {
@@ -123,10 +139,8 @@ export const listProductsController = asyncHandler(async (req: Request, res: Res
     page: parseNumberQuery(req.query.page, 1),
     limit: parseNumberQuery(req.query.limit, 12),
     search: getQueryString(req.query.search),
-    category: getQueryString(req.query.category),
-    tag: getQueryString(req.query.tag),
-    isFeatured: parseBooleanQuery(req.query.isFeatured),
-    isPublished: parseBooleanQuery(req.query.isPublished),
+    category: parseCategoryQuery(req.query.category),
+    style: parseStyleQuery(req.query.style),
     sortBy: parseSortByQuery(req.query.sortBy),
   };
 
