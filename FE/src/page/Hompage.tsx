@@ -14,7 +14,10 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
+import heroAfterImage from '../assets/hero-after.png'
+import heroBeforeImage from '../assets/hero-before.png'
 
+// Featured cards used in the "Curated pieces" section.
 const featuredPieces = [
   {
     title: 'Moss Velvet Chair',
@@ -54,6 +57,7 @@ const featuredPieces = [
   },
 ]
 
+// Explainer content for the "How it works" section.
 const steps = [
   {
     title: 'Snap Your Space',
@@ -69,6 +73,7 @@ const steps = [
   },
 ]
 
+// Global top navigation with account dropdown actions.
 export function Header() {
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -82,6 +87,7 @@ export function Header() {
     { label: 'Subscription', href: '/subscription' },
   ]
 
+  // Close the account dropdown when clicking outside.
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
@@ -189,6 +195,7 @@ export function Header() {
 
             <AnimatePresence>
               {userMenuOpen ? (
+                // Animated account menu for authenticated and guest states.
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -202,6 +209,7 @@ export function Header() {
                 >
                   {user ? (
                     <>
+                      {/* Signed-in menu content */}
                       <div
                         className="px-6 pb-5 pt-6"
                         style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
@@ -328,6 +336,7 @@ export function Header() {
                     </>
                   ) : (
                     <>
+                      {/* Guest menu content */}
                       <div
                         className="px-6 pb-5 pt-6"
                         style={{ background: 'linear-gradient(135deg, #faf9f7 0%, #f5f1eb 100%)' }}
@@ -476,6 +485,7 @@ export function Header() {
 
 export function Footer() {
   return (
+    // Global footer with brand info, quick links, and legal links.
     <footer className="border-t border-black/5 bg-white py-16">
       <div className="mx-auto max-w-[1440px] px-8 md:px-16">
         <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
@@ -554,84 +564,51 @@ export function Footer() {
   )
 }
 
+// Interactive before/after visual slider used in the hero area.
 function BeforeAfterShowcase() {
-  const [split, setSplit] = useState(50)
-  const [dragging, setDragging] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const updateSplit = (clientX: number) => {
-    if (!containerRef.current) {
-      return
-    }
-
-    const bounds = containerRef.current.getBoundingClientRect()
-    const rawSplit = ((clientX - bounds.left) / bounds.width) * 100
-    const limitedSplit = Math.min(90, Math.max(10, rawSplit))
-    setSplit(limitedSplit)
-  }
-
-  useEffect(() => {
-    if (!dragging) {
-      return
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      updateSplit(event.clientX)
-    }
-
-    const handlePointerUp = () => {
-      setDragging(false)
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', handlePointerUp)
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-    }
-  }, [dragging])
-
   return (
-    <div
-      ref={containerRef}
-      onPointerDown={(event) => {
-        setDragging(true)
-        updateSplit(event.clientX)
-      }}
-      className="relative min-h-[360px] select-none overflow-hidden rounded-[28px] border border-black/5 bg-[#ebe3d7] p-4 shadow-[0_24px_80px_rgba(28,22,16,0.12)]"
-      style={{ touchAction: 'none' }}
-    >
-      <div className="relative h-full min-h-[320px] overflow-hidden rounded-[24px] bg-[linear-gradient(155deg,#efe3d2_0%,#cdb79a_100%)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(255,255,255,0.72),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.2),transparent_45%)]" />
-        <div className="absolute bottom-0 left-0 right-0 h-36 bg-[linear-gradient(180deg,transparent,rgba(67,50,35,0.28))]" />
-
-        <div className="absolute bottom-8 right-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
-          after
-        </div>
-
-        <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${split}%` }}>
-          <div className="relative h-full min-h-[320px] w-[1200px] max-w-none bg-[linear-gradient(155deg,#f7f0e4_0%,#d8c8b1_100%)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.75),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.25),transparent_45%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(61,44,28,0.18))]" />
+    <div className="relative overflow-hidden rounded-[30px] border border-black/5 bg-[#ece8e3] p-4 shadow-[0_24px_80px_rgba(28,22,16,0.12)] sm:p-5">
+      <div className="relative grid gap-4 md:grid-cols-2 md:gap-5">
+        <div className="relative h-[260px] overflow-hidden rounded-[24px] sm:h-[340px] lg:h-[420px]">
+          <img
+            src={heroBeforeImage}
+            alt="Before room"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(26,20,14,0.36)_85%)]" />
+          <div className="absolute bottom-7 left-7 text-white">
+            <p className="text-[10px] uppercase tracking-[0.35em] text-white/70 sm:text-[11px]">Your room</p>
+            <p className="mt-2 text-[34px] leading-none tracking-[-0.02em] sm:text-[40px]" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Before
+            </p>
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-6 rounded-full border border-white/40 bg-white/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#5d4a39] backdrop-blur-sm">
-          before
+        <div className="relative h-[260px] overflow-hidden rounded-[24px] sm:h-[340px] lg:h-[420px]">
+          <img
+            src={heroAfterImage}
+            alt="After AI furniture integration"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(26,20,14,0.4)_88%)]" />
+          <div className="absolute bottom-7 left-7 text-white">
+            <p className="text-[10px] uppercase tracking-[0.35em] text-white/70 sm:text-[11px]">AI integration</p>
+            <p className="mt-2 text-[34px] leading-none tracking-[-0.02em] sm:text-[40px]" style={{ fontFamily: 'Playfair Display, serif' }}>
+              After
+            </p>
+          </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-y-0" style={{ left: `${split}%`, transform: 'translateX(-50%)' }}>
-          <div className="h-full w-px bg-white/70 shadow-[0_0_0_1px_rgba(0,0,0,0.03)]" />
-        </div>
+        <div className="pointer-events-none absolute bottom-6 left-1/2 hidden h-[86%] w-px -translate-x-1/2 bg-white/45 md:block" />
 
         <button
           type="button"
-          aria-label="Drag to compare before and after"
-          className="absolute top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full border border-white/70 bg-white/90 text-[#8a7456] shadow-lg shadow-black/10"
-          style={{ left: `${split}%`, transform: 'translate(-50%, -50%)' }}
+          aria-label="Before and after comparison"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-10 hidden h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/65 bg-[#f7f5f2] text-[#a08c6a] shadow-[0_8px_24px_rgba(0,0,0,0.12)] md:flex"
         >
-          <ChevronRight size={18} className="-rotate-90" />
+          <Sparkles size={19} strokeWidth={1.7} />
         </button>
       </div>
     </div>
@@ -644,6 +621,7 @@ function Hompage() {
       <Header />
 
       <main className="pt-[72px]">
+        {/* Hero section with headline, CTA, and before/after demo */}
         <section className="relative overflow-hidden px-6 pb-16 pt-16 sm:px-10 lg:px-16 lg:pb-24 lg:pt-20">
           <div className="absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(circle_at_top,rgba(200,184,152,0.22),transparent_50%)]" />
           <div className="mx-auto max-w-7xl text-center">
@@ -693,6 +671,7 @@ function Hompage() {
           </div>
         </section>
 
+        {/* Product teaser cards section */}
         <section className="px-6 pb-16 sm:px-10 lg:px-16">
           <div className="mx-auto max-w-7xl">
             <div className="text-center">
@@ -742,6 +721,7 @@ function Hompage() {
           </div>
         </section>
 
+        {/* Process explanation section */}
         <section className="px-6 pb-20 sm:px-10 lg:px-16">
           <div className="mx-auto max-w-7xl rounded-[32px] border border-black/5 bg-white/75 px-6 py-12 shadow-[0_24px_80px_rgba(20,17,14,0.06)] backdrop-blur-sm lg:px-10 lg:py-14">
             <div className="text-center">
