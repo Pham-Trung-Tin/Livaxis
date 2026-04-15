@@ -4,7 +4,8 @@ import cors from 'cors';
 import passport from 'passport';
 import { env } from './config/env';
 import { configurePassport } from './config/passport';
-import { apiRouter } from './routes';
+import { authRouter } from './routes/auth.routes';
+import { productRouter } from './routes/product.routes';
 import { notFoundHandler } from './middlewares/notFound.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 
@@ -25,7 +26,8 @@ app.get('/health', (_req: Request, res: Response) => {
 	res.status(200).json({ success: true, message: 'Backend is healthy' });
 });
 
-app.use('/api', apiRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/products', productRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

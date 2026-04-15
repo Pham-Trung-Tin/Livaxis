@@ -1,6 +1,6 @@
 import { Schema, model, type Document } from 'mongoose';
+import { ROLES, type UserRole } from '../constants/roles';
 
-export type UserRole = 'user' | 'admin';
 export type AuthProvider = 'local' | 'google';
 
 export interface IUser extends Document {
@@ -67,8 +67,8 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: Object.values(ROLES),
+      default: ROLES.USER,
     },
     isActive: {
       type: Boolean,
