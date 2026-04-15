@@ -223,7 +223,7 @@ export const listProductsController = asyncHandler(async (req: Request, res: Res
   });
 });
 
-export const listNewArrivalsController = asyncHandler(async (req: Request, res: Response) => {
+export const listDiscoveryController = asyncHandler(async (req: Request, res: Response) => {
   const query = parseProductListQuery(req);
 
   const [result, availableFilters] = await Promise.all([

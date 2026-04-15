@@ -82,7 +82,7 @@ export function Header() {
   const { user, loading: authLoading, logout } = useAuth()
 
   const navLinks = [
-    { label: 'New Arrivals', href: '/new-arrivals' },
+    { label: 'Discovery', href: '/discovery' },
     { label: 'Collections', href: '/collections' },
     { label: 'Subscription', href: '/subscription' },
   ]
@@ -507,7 +507,7 @@ export function Footer() {
           {[
             {
               title: 'Shop',
-              links: ['New Arrivals', 'Collections', 'Best Sellers', 'AI Room Planner'],
+              links: ['Discovery', 'Collections', 'Best Sellers', 'AI Room Planner'],
             },
             {
               title: 'About',

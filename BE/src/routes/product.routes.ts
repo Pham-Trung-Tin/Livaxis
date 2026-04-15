@@ -3,7 +3,7 @@ import {
   createProductController,
   deleteProductController,
   getProductByIdController,
-  listNewArrivalsController,
+  listDiscoveryController,
   listProductsController,
   updateProductController,
 } from '../controllers/product.controller';
@@ -15,7 +15,7 @@ import { createProductSchema, productIdSchema, updateProductSchema } from '../va
 const productRouter = Router();
 
 productRouter.get('/', listProductsController);
-productRouter.get('/new-arrivals', listNewArrivalsController);
+productRouter.get('/discovery', listDiscoveryController);
 productRouter.get('/:id', validateRequest(productIdSchema), getProductByIdController);
 
 productRouter.post(
