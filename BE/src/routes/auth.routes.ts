@@ -10,12 +10,14 @@ import {
   signInController,
   signOutController,
   signUpController,
+  uploadAvatarController,
   verifyEmailController,
 } from '../controllers/auth.controller';
 import { env } from '../config/env';
 import { googleOAuthEnabled } from '../config/passport';
 import { authenticate } from '../middlewares/auth.middleware';
 import { loginLimiter } from '../middlewares/rateLimit.middleware';
+import { avatarUpload } from '../middlewares/upload.middleware';
 import { validateRequest } from '../middlewares/validate.middleware';
 import {
   forgotPasswordSchema,
@@ -31,6 +33,7 @@ authRouter.post('/signup', validateRequest(signUpSchema), signUpController);
 authRouter.post('/signin', loginLimiter, validateRequest(signInSchema), signInController);
 authRouter.post('/signout', signOutController);
 authRouter.get('/me', authenticate, getMeController);
+authRouter.patch('/avatar', authenticate, avatarUpload.single('avatar'), uploadAvatarController);
 authRouter.post('/refresh', refreshController);
 authRouter.post('/forgot-password', validateRequest(forgotPasswordSchema), forgotPasswordController);
 authRouter.post('/reset-password', validateRequest(resetPasswordSchema), resetPasswordController);

@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { MulterError } from 'multer';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/appError';
 
@@ -21,6 +22,22 @@ const mapError = (error: unknown): { statusCode: number; code: string; message: 
         path: issue.path.join('.'),
         message: issue.message,
       })),
+    };
+  }
+
+  if (error instanceof MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return {
+        statusCode: 413,
+        code: 'FILE_TOO_LARGE',
+        message: 'File size exceeds the allowed limit',
+      };
+    }
+
+    return {
+      statusCode: 400,
+      code: 'UPLOAD_ERROR',
+      message: error.message,
     };
   }
 

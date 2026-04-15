@@ -7,6 +7,8 @@ export interface IUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
+  avatarUrl?: string;
+  avatarPublicId?: string;
   authProvider: AuthProvider;
   googleId?: string;
   role: UserRole;
@@ -41,6 +43,15 @@ const userSchema = new Schema<IUser>(
     passwordHash: {
       type: String,
       required: [true, 'Password hash is required'],
+      select: false,
+    },
+    avatarUrl: {
+      type: String,
+      trim: true,
+    },
+    avatarPublicId: {
+      type: String,
+      trim: true,
       select: false,
     },
     authProvider: {

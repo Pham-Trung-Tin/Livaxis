@@ -1,4 +1,6 @@
 import bcrypt from 'bcrypt';
+import type { UploadApiErrorResponse } from 'cloudinary';
+import { deleteImageByPublicId, isCloudinaryConfigured, uploadImageBuffer } from '../config/cloudinary';
 import User, { type IUser } from '../models/user.model';
 import { AppError } from '../utils/appError';
 import { createRandomToken, hashToken } from '../utils/crypto';
@@ -19,6 +21,7 @@ export type UserPublic = {
   id: string;
   name: string;
   email: string;
+  avatarUrl?: string;
   role: 'user' | 'admin';
   isActive: boolean;
   emailVerified: boolean;
@@ -30,6 +33,7 @@ const toPublicUser = (user: IUser): UserPublic => ({
   id: user._id.toString(),
   name: user.name,
   email: user.email,
+  avatarUrl: user.avatarUrl,
   role: user.role,
   isActive: user.isActive,
   emailVerified: user.emailVerified,
@@ -212,4 +216,47 @@ export const verifyEmail = async (token: string): Promise<void> => {
   user.emailVerificationTokenHash = undefined;
   user.emailVerificationExpiresAt = undefined;
   await user.save();
+};
+
+export const updateUserAvatar = async (userId: string, file: Express.Multer.File): Promise<UserPublic> => {
+  if (!isCloudinaryConfigured) {
+    throw new AppError(503, 'CLOUDINARY_NOT_CONFIGURED', 'Cloudinary is not configured on the server');
+  }
+
+  const user = await User.findById(userId).select('+avatarPublicId');
+  if (!user) {
+    throw new AppError(401, 'UNAUTHORIZED', 'User not found or unauthorized');
+  }
+
+  if (!user.isActive) {
+    throw new AppError(403, 'ACCOUNT_INACTIVE', 'Your account has been disabled');
+  }
+
+  let uploaded;
+  try {
+    uploaded = await uploadImageBuffer(file.buffer, {
+      folder: 'livaxis/avatars',
+      public_id: `user_${user._id}_${Date.now()}`,
+      overwrite: true,
+    });
+  } catch (error) {
+    const cloudinaryMessage = (error as UploadApiErrorResponse | undefined)?.message;
+    throw new AppError(502, 'CLOUDINARY_UPLOAD_FAILED', 'Unable to upload avatar image', cloudinaryMessage ?? error);
+  }
+
+  const oldPublicId = user.avatarPublicId;
+  user.avatarUrl = uploaded.secure_url;
+  user.avatarPublicId = uploaded.public_id;
+  await user.save();
+
+  // Old image cleanup should not block successful avatar update.
+  if (oldPublicId && oldPublicId !== uploaded.public_id) {
+    try {
+      await deleteImageByPublicId(oldPublicId);
+    } catch (error) {
+      console.warn('Failed to remove old avatar from Cloudinary:', error);
+    }
+  }
+
+  return toPublicUser(user);
 };

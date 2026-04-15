@@ -12,6 +12,7 @@ import {
   refreshAuth,
   register,
   resetPassword,
+  updateUserAvatar,
   verifyEmail,
 } from '../services/auth.service';
 
@@ -139,6 +140,28 @@ export const googleAuthNotConfiguredController = asyncHandler(async (_req: Reque
     error: {
       code: 'GOOGLE_AUTH_NOT_CONFIGURED',
       message: 'Google authentication is not configured on the server',
+    },
+  });
+});
+
+export const uploadAvatarController = asyncHandler(async (req: Request, res: Response) => {
+  const authUser = req.user as { id: string; role: 'user' | 'admin' } | undefined;
+
+  if (!authUser?.id) {
+    throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');
+  }
+
+  if (!req.file) {
+    throw new AppError(400, 'AVATAR_REQUIRED', 'Avatar image file is required');
+  }
+
+  const user = await updateUserAvatar(authUser.id, req.file);
+
+  res.status(200).json({
+    success: true,
+    message: 'Avatar updated successfully',
+    data: {
+      user,
     },
   });
 });
