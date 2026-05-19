@@ -84,7 +84,7 @@ export function Header() {
   const handleLogout = async () => {
     await logout()
     setUserMenuOpen(false)
-    navigate('/')
+    navigate('/sign-in')
   }
 
   return (
