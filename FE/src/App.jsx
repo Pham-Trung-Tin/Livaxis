@@ -8,9 +8,11 @@ const SignUpPage = lazy(() => import('./page/Signup'))
 const ForgotPasswordPage = lazy(() => import('./page/ForgotPassword'))
 const ResetPasswordPage = lazy(() => import('./page/ResetPassword'))
 const UserProfilePage = lazy(() => import('./page/Profile'))
+const SubscriptionPage = lazy(() => import('./page/Subscription.tsx'))
 const DiscoveryPage = lazy(() => import('./page/Discovery'))
 const CollectionsPage = lazy(() => import('./page/Collections'))
 const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
+const AIRoomPlannerPage = lazy(() => import('./page/AIRoomPlanner'))
 
 export default function App() {
   return (
@@ -23,11 +25,12 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/discovery" element={<DiscoveryPage />} />
           <Route path="/collections" element={<CollectionsPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/ai-room-planner" element={<AIRoomPlannerPage />} />
           <Route path="/new-arrivals" element={<Navigate to="/discovery" replace />} />
-          <Route path="/subscription" element={<UserProfilePage defaultTab="subscription" />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </Suspense>
