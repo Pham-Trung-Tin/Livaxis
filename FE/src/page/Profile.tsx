@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Crown, Menu, Package, Shield, ShoppingBag, User, X } from 'lucide-react'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, useRef, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
+import { uploadAvatar } from '../services/authApi'
 
 type TabType = 'personal' | 'designs' | 'orders' | 'subscription' | 'security'
 
@@ -20,7 +21,7 @@ const navItems = [
 
 export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePageProps) {
   const navigate = useNavigate()
-  const { user, loading } = useAuth()
+  const { user, loading, setUser } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -30,6 +31,10 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
   const [emailFocused, setEmailFocused] = useState(false)
   const [phoneFocused, setPhoneFocused] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setActiveTab(defaultTab)
@@ -67,6 +72,45 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
     }, 1200)
   }
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError('File is too large. Max 2MB allowed.')
+      setAvatarSuccess(null)
+      return
+    }
+
+    setAvatarUploading(true)
+    setAvatarError(null)
+    setAvatarSuccess(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await uploadAvatar(formData)
+      if (response?.data?.user) {
+        setUser(response.data.user)
+        setAvatarSuccess('Avatar updated successfully!')
+      } else {
+        throw new Error('Invalid response from server')
+      }
+    } catch (err: any) {
+      setAvatarError(err.message || 'Failed to upload avatar')
+    } finally {
+      setAvatarUploading(false)
+      if (event.target) {
+        event.target.value = ''
+      }
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleUpgrade = () => {
     navigate('/subscription')
   }
@@ -99,8 +143,12 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   {user.email}
                 </p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a1a1a]">
-                <span className="text-[12px] font-semibold text-white">{userInitials}</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1a1a1a] overflow-hidden">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-[12px] font-semibold text-white">{userInitials}</span>
+                )}
               </div>
             </div>
 
@@ -193,16 +241,44 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   </p>
 
                   <div className="mb-12 flex items-center gap-6 border-b border-neutral-200 pb-10">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#1a1a1a]">
-                      <span className="text-[28px] font-semibold text-white">{userInitials}</span>
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#1a1a1a] overflow-hidden">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-[28px] font-semibold text-white">{userInitials}</span>
+                      )}
                     </div>
                     <div>
-                      <button className="rounded-lg border border-neutral-300 px-5 py-2.5 text-[12px] transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50">
-                        <span style={{ fontWeight: 500 }}>Change Avatar</span>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleAvatarChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={triggerFileInput}
+                        disabled={avatarUploading}
+                        className="rounded-lg border border-neutral-300 px-5 py-2.5 text-[12px] transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50 disabled:opacity-50"
+                      >
+                        <span style={{ fontWeight: 500 }}>
+                          {avatarUploading ? 'Uploading...' : 'Change Avatar'}
+                        </span>
                       </button>
                       <p className="mt-2 text-[11px] text-neutral-400" style={{ fontWeight: 300 }}>
                         JPG, PNG or GIF. Max 2MB
                       </p>
+                      {avatarSuccess && (
+                        <p className="mt-2 text-[12px] text-emerald-600" style={{ fontWeight: 500 }}>
+                          {avatarSuccess}
+                        </p>
+                      )}
+                      {avatarError && (
+                        <p className="mt-2 text-[12px] text-red-600" style={{ fontWeight: 500 }}>
+                          {avatarError}
+                        </p>
+                      )}
                     </div>
                   </div>
 

@@ -152,8 +152,12 @@ export function Header() {
                 <span className="inline-flex h-[19px] w-[19px] animate-pulse rounded-full bg-neutral-200" />
               ) : user ? (
                 <span className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#f3ede3] text-[11px] font-semibold text-[#6f5a41]">
-                    {userInitials}
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#f3ede3] text-[11px] font-semibold text-[#6f5a41] overflow-hidden">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                    ) : (
+                      userInitials
+                    )}
                   </span>
                   <span className="hidden max-w-[130px] truncate text-[13px] text-black md:inline">{user.name}</span>
                   <ChevronDown size={13} className="hidden text-neutral-400 md:inline" />
@@ -192,8 +196,12 @@ export function Header() {
                             navigate('/profile')
                           }}
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white">
-                            {userInitials}
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white overflow-hidden">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                            ) : (
+                              userInitials
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="mb-1 text-[22px] leading-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>

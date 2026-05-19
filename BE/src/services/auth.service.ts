@@ -229,10 +229,6 @@ export const verifyEmail = async (token: string): Promise<void> => {
 };
 
 export const updateUserAvatar = async (userId: string, file: Express.Multer.File): Promise<UserPublic> => {
-  if (!isCloudinaryConfigured) {
-    throw new AppError(503, 'CLOUDINARY_NOT_CONFIGURED', 'Cloudinary is not configured on the server');
-  }
-
   const user = await User.findById(userId).select('+avatarPublicId');
   if (!user) {
     throw new AppError(401, 'UNAUTHORIZED', 'User not found or unauthorized');
@@ -240,6 +236,14 @@ export const updateUserAvatar = async (userId: string, file: Express.Multer.File
 
   if (!user.isActive) {
     throw new AppError(403, 'ACCOUNT_INACTIVE', 'Your account has been disabled');
+  }
+
+  if (!isCloudinaryConfigured) {
+    const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    user.avatarUrl = base64Data;
+    user.avatarPublicId = undefined;
+    await user.save();
+    return toPublicUser(user);
   }
 
   let uploaded;
