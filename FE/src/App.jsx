@@ -10,6 +10,7 @@ const ResetPasswordPage = lazy(() => import('./page/ResetPassword'))
 const UserProfilePage = lazy(() => import('./page/Profile'))
 const DiscoveryPage = lazy(() => import('./page/Discovery'))
 const CollectionsPage = lazy(() => import('./page/Collections'))
+const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/profile" element={<UserProfilePage />} />
           <Route path="/discovery" element={<DiscoveryPage />} />
           <Route path="/collections" element={<CollectionsPage />} />
+          <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/new-arrivals" element={<Navigate to="/discovery" replace />} />
           <Route path="/subscription" element={<UserProfilePage defaultTab="subscription" />} />
           <Route path="*" element={<HomePage />} />
