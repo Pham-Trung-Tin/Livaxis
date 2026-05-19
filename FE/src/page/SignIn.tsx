@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Check } from 'lucide-react'
+import { Eye, EyeOff, Check, User, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -123,7 +123,7 @@ function SignIn() {
                   className="mb-3 text-[32px] text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
-                  Welcome Back to Livaxis
+                  Welcome to Livaxis
                 </h2>
                 <p className="text-[13px] text-neutral-400" style={{ fontWeight: 300 }}>
                   Signed in successfully. Redirecting you home...
@@ -160,71 +160,97 @@ function SignIn() {
                   transition={{ duration: 0.6, delay: 0.1 }}
                 >
                   <form onSubmit={handleSubmit} className="mb-8 space-y-6">
-                    <div className="relative">
-                      <label
-                        htmlFor="username"
-                        className={`pointer-events-none absolute left-0 transition-all duration-200 ${
-                          usernameFocused || username
-                            ? 'top-0 text-[10px] uppercase tracking-[0.08em] text-neutral-500'
-                            : 'top-4 text-[14px] text-neutral-400'
+                    <div
+                      className="relative flex items-center gap-3 pb-2 pt-6 transition-all duration-200"
+                      style={{
+                        borderBottom: `1px solid ${usernameFocused ? '#1a1a1a' : '#e5e5e5'}`,
+                      }}
+                    >
+                      <User
+                        size={18}
+                        className={`transition-colors duration-200 ${
+                          usernameFocused ? 'text-black' : 'text-neutral-400'
                         }`}
-                        style={{ fontWeight: usernameFocused || username ? 500 : 300 }}
-                      >
-                        Username
-                      </label>
-                      <input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        onFocus={() => setUsernameFocused(true)}
-                        onBlur={() => setUsernameFocused(false)}
-                        required
-                        className="w-full bg-transparent pb-3 pt-8 text-[15px] text-black outline-none transition-all duration-200"
-                        style={{
-                          borderBottom: `1px solid ${usernameFocused ? '#1a1a1a' : '#e5e5e5'}`,
-                          fontWeight: 300,
-                        }}
-                        autoComplete="username"
+                        strokeWidth={1.5}
                       />
+                      <div className="relative flex-1">
+                        <label
+                          htmlFor="username"
+                          className={`pointer-events-none absolute left-0 transition-all duration-200 ${
+                            usernameFocused || username
+                              ? '-top-4 text-[10px] uppercase tracking-[0.08em] text-neutral-500'
+                              : 'top-0 text-[14px] text-neutral-400'
+                          }`}
+                          style={{ fontWeight: usernameFocused || username ? 500 : 300 }}
+                        >
+                          Username
+                        </label>
+                        <input
+                          id="username"
+                          type="text"
+                          value={username}
+                          onChange={(event) => setUsername(event.target.value)}
+                          onFocus={() => setUsernameFocused(true)}
+                          onBlur={() => setUsernameFocused(false)}
+                          required
+                          className="w-full bg-transparent text-[15px] text-black outline-none"
+                          style={{
+                            fontWeight: 300,
+                          }}
+                          autoComplete="username"
+                        />
+                      </div>
                     </div>
 
-                    <div className="relative">
-                      <label
-                        htmlFor="password"
-                        className={`pointer-events-none absolute left-0 transition-all duration-200 ${
-                          passwordFocused || password
-                            ? 'top-0 text-[10px] uppercase tracking-[0.08em] text-neutral-500'
-                            : 'top-4 text-[14px] text-neutral-400'
+                    <div
+                      className="relative flex items-center gap-3 pb-2 pt-6 transition-all duration-200"
+                      style={{
+                        borderBottom: `1px solid ${passwordFocused ? '#1a1a1a' : '#e5e5e5'}`,
+                      }}
+                    >
+                      <Lock
+                        size={18}
+                        className={`transition-colors duration-200 ${
+                          passwordFocused ? 'text-black' : 'text-neutral-400'
                         }`}
-                        style={{ fontWeight: passwordFocused || password ? 500 : 300 }}
-                      >
-                        Password
-                      </label>
-                      <input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        onFocus={() => setPasswordFocused(true)}
-                        onBlur={() => setPasswordFocused(false)}
-                        required
-                        className="w-full bg-transparent pb-3 pt-8 pr-10 text-[15px] text-black outline-none transition-all duration-200"
-                        style={{
-                          borderBottom: `1px solid ${passwordFocused ? '#1a1a1a' : '#e5e5e5'}`,
-                          fontWeight: 300,
-                        }}
-                        autoComplete="current-password"
+                        strokeWidth={1.5}
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((value) => !value)}
-                        className="absolute bottom-3 right-0 text-neutral-400 transition-colors duration-200 hover:text-neutral-700"
-                        tabIndex={-1}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
-                      </button>
+                      <div className="relative flex-1">
+                        <label
+                          htmlFor="password"
+                          className={`pointer-events-none absolute left-0 transition-all duration-200 ${
+                            passwordFocused || password
+                              ? '-top-4 text-[10px] uppercase tracking-[0.08em] text-neutral-500'
+                              : 'top-0 text-[14px] text-neutral-400'
+                          }`}
+                          style={{ fontWeight: passwordFocused || password ? 500 : 300 }}
+                        >
+                          Password
+                        </label>
+                        <input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          onFocus={() => setPasswordFocused(true)}
+                          onBlur={() => setPasswordFocused(false)}
+                          required
+                          className="w-full bg-transparent pr-8 text-[15px] text-black outline-none"
+                          style={{
+                            fontWeight: 300,
+                          }}
+                          autoComplete="current-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((value) => !value)}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 text-neutral-400 transition-colors duration-200 hover:text-neutral-700"
+                          tabIndex={-1}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex justify-end pt-1">
@@ -306,20 +332,6 @@ function SignIn() {
                       </svg>
                       <span className="text-[13px] text-neutral-700" style={{ fontWeight: 400 }}>
                         Continue with Google
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setErrorMessage('Apple login is not implemented yet.')}
-                      className="flex w-full items-center justify-center gap-3 rounded-lg border border-neutral-300 py-3.5 transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                        <path d="M14.945 9.652c-.027-2.88 2.35-4.267 2.457-4.337-1.338-1.955-3.421-2.224-4.162-2.253-1.773-.18-3.458 1.043-4.357 1.043-.898 0-2.288-1.017-3.763-.99-1.937.028-3.722 1.127-4.719 2.863-2.01 3.492-.514 8.663 1.445 11.494.958 1.386 2.1 2.943 3.601 2.889 1.448-.057 1.994-.937 3.742-.937 1.748 0 2.239.937 3.763.908 1.552-.027 2.563-1.406 3.52-2.793 1.108-1.604 1.565-3.157 1.591-3.238-.035-.015-3.05-1.17-3.077-4.643l-.041-.006z" />
-                        <path d="M12.19 2.325C12.96 1.396 13.48.103 13.325.001c-1.145.047-2.532.762-3.353 1.72-.736.852-1.38 2.212-1.208 3.517 1.278.099 2.582-.649 3.426-1.913z" />
-                      </svg>
-                      <span className="text-[13px] text-neutral-700" style={{ fontWeight: 400 }}>
-                        Continue with Apple
                       </span>
                     </button>
                   </div>

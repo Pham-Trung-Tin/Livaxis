@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Eye, EyeOff, ArrowLeft, Sparkles, Check, ChevronRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, Sparkles, Check, ChevronRight, User, Mail, Phone, Lock } from 'lucide-react'
 import { useAuth } from '../contexts/auth-context'
 import { signUp } from '../services/authApi'
 import { Formik } from 'formik'
@@ -53,6 +53,7 @@ function FloatingInput({
   onChange,
   autoComplete,
   rightSlot,
+  icon,
 }: {
   id: string
   label: string
@@ -61,16 +62,27 @@ function FloatingInput({
   onChange: (v: string) => void
   autoComplete?: string
   rightSlot?: ReactNode
+  icon?: ReactNode
 }) {
   const [focused, setFocused] = useState(false)
   const floated = focused || value.length > 0
 
   return (
     <div className="relative pt-1">
+      {icon ? (
+        <div
+          className={`absolute left-0 bottom-2.5 transition-colors duration-200 ${
+            focused ? 'text-black' : 'text-neutral-400'
+          }`}
+        >
+          {icon}
+        </div>
+      ) : null}
       <label
         htmlFor={id}
-        className="pointer-events-none absolute left-0 transition-all duration-200"
+        className="pointer-events-none absolute transition-all duration-200"
         style={{
+          left: icon ? '26px' : '0px',
           top: floated ? '0px' : '18px',
           fontSize: floated ? '10px' : '13px',
           color: floated ? (focused ? '#1a1a1a' : '#9ca3af') : '#9ca3af',
@@ -93,6 +105,7 @@ function FloatingInput({
         required
         className="w-full border-b bg-transparent pb-2.5 pt-6 pr-10 text-[14px] text-black outline-none transition-all duration-200"
         style={{
+          paddingLeft: icon ? '26px' : '0px',
           borderColor: focused ? '#1a1a1a' : 'rgba(0,0,0,0.12)',
           fontWeight: 300,
           fontFamily: 'Inter, sans-serif',
@@ -402,24 +415,24 @@ function SignUpPage() {
                       ) : null}
                       <div className="space-y-5">
                         <div>
-                          <FloatingInput id="username" label="Username" value={values.username} onChange={(v) => setFieldValue('username', v)} autoComplete="username" />
+                          <FloatingInput id="username" label="Username" value={values.username} onChange={(v) => setFieldValue('username', v)} autoComplete="username" icon={<User size={16} strokeWidth={1.5} />} />
                           {touched.username && errors.username ? (
                             <p className="mt-1 text-[12px] text-red-600">{(errors.username as string) || ''}</p>
                           ) : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="fullname" label="Full Name" value={values.name} onChange={(v) => setFieldValue('name', v)} autoComplete="name" />
+                          <FloatingInput id="fullname" label="Full Name" value={values.name} onChange={(v) => setFieldValue('name', v)} autoComplete="name" icon={<User size={16} strokeWidth={1.5} />} />
                           {touched.name && errors.name ? <p className="mt-1 text-[12px] text-red-600">{(errors.name as string) || ''}</p> : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="email" label="Email Address" type="email" value={values.email} onChange={(v) => setFieldValue('email', v)} autoComplete="email" />
+                          <FloatingInput id="email" label="Email Address" type="email" value={values.email} onChange={(v) => setFieldValue('email', v)} autoComplete="email" icon={<Mail size={16} strokeWidth={1.5} />} />
                           {touched.email && errors.email ? <p className="mt-1 text-[12px] text-red-600">{(errors.email as string) || ''}</p> : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="phone" label="Phone (optional)" value={values.phone} onChange={(v) => setFieldValue('phone', v)} autoComplete="tel" />
+                          <FloatingInput id="phone" label="Phone (optional)" value={values.phone} onChange={(v) => setFieldValue('phone', v)} autoComplete="tel" icon={<Phone size={16} strokeWidth={1.5} />} />
                           {touched.phone && errors.phone ? <p className="mt-1 text-[12px] text-red-600">{(errors.phone as string) || ''}</p> : null}
                         </div>
 
@@ -431,6 +444,7 @@ function SignUpPage() {
                             value={values.password}
                             onChange={(v) => setFieldValue('password', v)}
                             autoComplete="new-password"
+                            icon={<Lock size={16} strokeWidth={1.5} />}
                             rightSlot={
                               <button
                                 type="button"
@@ -448,7 +462,7 @@ function SignUpPage() {
                         </div>
 
                         <div>
-                          <FloatingInput id="confirmPassword" label="Confirm Password" type={showPassword ? 'text' : 'password'} value={values.confirmPassword} onChange={(v) => setFieldValue('confirmPassword', v)} autoComplete="new-password" />
+                          <FloatingInput id="confirmPassword" label="Confirm Password" type={showPassword ? 'text' : 'password'} value={values.confirmPassword} onChange={(v) => setFieldValue('confirmPassword', v)} autoComplete="new-password" icon={<Lock size={16} strokeWidth={1.5} />} />
                           {touched.confirmPassword && errors.confirmPassword ? <p className="mt-1 text-[12px] text-red-600">{(errors.confirmPassword as string) || ''}</p> : null}
                         </div>
                       </div>
