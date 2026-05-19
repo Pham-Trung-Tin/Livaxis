@@ -291,25 +291,13 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                           </p>
                         </div>
 
-                        {isEditing && (
-                          <div className="sm:self-center">
-                            <input
-                              type="file"
-                              ref={fileInputRef}
-                              onChange={handleAvatarChange}
-                              accept="image/*"
-                              className="hidden"
-                            />
-                            <button
-                              type="button"
-                              onClick={triggerFileInput}
-                              disabled={avatarUploading}
-                              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-[11px] font-medium text-neutral-700 shadow-sm transition-all duration-200 hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-50"
-                            >
-                              {avatarUploading ? 'Uploading...' : 'Upload New'}
-                            </button>
-                          </div>
-                        )}
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleAvatarChange}
+                          accept="image/*"
+                          className="hidden"
+                        />
                       </div>
 
                       {/* Status alerts */}
