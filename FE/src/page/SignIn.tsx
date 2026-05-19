@@ -8,9 +8,9 @@ import { signIn } from '../services/authApi'
 function SignIn() {
   const navigate = useNavigate()
   const { setUser, refreshUser } = useAuth()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [emailFocused, setEmailFocused] = useState(false)
+  const [usernameFocused, setUsernameFocused] = useState(false)
   const [passwordFocused, setPasswordFocused] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -24,7 +24,7 @@ function SignIn() {
     setSuccessMessage('')
 
     try {
-      const response = await signIn({ email, password })
+      const response = await signIn({ username, password })
       setUser(response?.data?.user ?? null)
       setSuccessMessage('Sign in successful. Redirecting...')
       window.setTimeout(() => {
@@ -124,30 +124,30 @@ function SignIn() {
             <form onSubmit={handleSubmit} className="mb-8 space-y-6">
               <div className="relative">
                 <label
-                  htmlFor="email"
+                  htmlFor="username"
                   className={`pointer-events-none absolute left-0 transition-all duration-200 ${
-                    emailFocused || email
+                    usernameFocused || username
                       ? 'top-0 text-[10px] uppercase tracking-[0.08em] text-neutral-500'
                       : 'top-4 text-[14px] text-neutral-400'
                   }`}
-                  style={{ fontWeight: emailFocused || email ? 500 : 300 }}
+                  style={{ fontWeight: usernameFocused || username ? 500 : 300 }}
                 >
-                  Email Address
+                  Username
                 </label>
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  onFocus={() => setUsernameFocused(true)}
+                  onBlur={() => setUsernameFocused(false)}
                   required
                   className="w-full bg-transparent pb-3 pt-8 text-[15px] text-black outline-none transition-all duration-200"
                   style={{
-                    borderBottom: `1px solid ${emailFocused ? '#1a1a1a' : '#e5e5e5'}`,
+                    borderBottom: `1px solid ${usernameFocused ? '#1a1a1a' : '#e5e5e5'}`,
                     fontWeight: 300,
                   }}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
 

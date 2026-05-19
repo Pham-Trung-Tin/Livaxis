@@ -9,9 +9,11 @@ import { connectDB, disconnectDB } from '../config/database';
 let mongoServer: MongoMemoryServer;
 
 const createUserPayload = {
+  username: 'testuser',
   name: 'Test User',
   email: 'test@example.com',
   password: 'Password123!',
+  confirmPassword: 'Password123!',
 };
 
 describe('Auth API', () => {
@@ -44,7 +46,7 @@ describe('Auth API', () => {
     await request(app).post('/api/auth/signup').send(createUserPayload);
 
     const response = await request(app).post('/api/auth/signin').send({
-      email: createUserPayload.email,
+      username: createUserPayload.username,
       password: createUserPayload.password,
     });
 
@@ -64,7 +66,7 @@ describe('Auth API', () => {
   it('should return /me profile when authenticated', async () => {
     await request(app).post('/api/auth/signup').send(createUserPayload);
     const signin = await request(app).post('/api/auth/signin').send({
-      email: createUserPayload.email,
+      username: createUserPayload.username,
       password: createUserPayload.password,
     });
 

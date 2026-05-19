@@ -14,8 +14,9 @@ export const validateRequest = (schema: ZodSchema) => {
       return;
     }
 
-    if (result.data.body) {
-      req.body = result.data.body;
+    const data = result.data as any;
+    if (data && data.body) {
+      req.body = data.body;
     }
 
     next();
