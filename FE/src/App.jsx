@@ -11,6 +11,7 @@ const UserProfilePage = lazy(() => import('./page/Profile'))
 const SubscriptionPage = lazy(() => import('./page/Subscription.tsx'))
 const DiscoveryPage = lazy(() => import('./page/Discovery'))
 const CollectionsPage = lazy(() => import('./page/Collections'))
+const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
 const AIRoomPlannerPage = lazy(() => import('./page/AIRoomPlanner'))
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/discovery" element={<DiscoveryPage />} />
           <Route path="/collections" element={<CollectionsPage />} />
+          <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/ai-room-planner" element={<AIRoomPlannerPage />} />
           <Route path="/new-arrivals" element={<Navigate to="/discovery" replace />} />
           <Route path="*" element={<HomePage />} />
