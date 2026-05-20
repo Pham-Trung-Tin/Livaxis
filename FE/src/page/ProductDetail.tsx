@@ -21,6 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Header } from './Hompage'
 import { Footer } from './Hompage'
 import { getProductById, type ProductDetail as ProductDetailType } from '../services/productApi'
+import { useCart } from '../contexts/cart-context'
 
 function ImageWithFallback({ src, alt, className }: { src: string; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
@@ -65,6 +66,7 @@ function AITryOnOverlay({ isOpen, onClose, productName }: { isOpen: boolean; onC
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { addToCart } = useCart()
   const [product, setProduct] = useState<ProductDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -223,7 +225,16 @@ export default function ProductDetailPage() {
 
             <div className="space-y-3 mb-8">
               <div className="flex gap-3">
-                <button className="flex-1 flex items-center justify-center gap-3 py-4 bg-black text-white rounded-xl"> <ShoppingBag size={17} /> <span className="text-[13px] uppercase">Add to Cart</span></button>
+                <button
+                  onClick={() => {
+                    addToCart(product.id, quantity)
+                    navigate('/cart')
+                  }}
+                  className="flex flex-1 items-center justify-center gap-3 rounded-xl bg-black py-4 text-white"
+                >
+                  <ShoppingBag size={17} />
+                  <span className="text-[13px] uppercase">Add to Cart</span>
+                </button>
                 <button onClick={() => setIsWishlisted(!isWishlisted)} className={`w-[52px] flex items-center justify-center rounded-xl border ${isWishlisted? 'bg-red-50 border-red-200 text-red-500':'border-neutral-200 text-neutral-400'}`}><Heart size={18} /></button>
                 <button className="w-[52px] flex items-center justify-center rounded-xl border border-neutral-200 text-neutral-400"><Share2 size={17} /></button>
               </div>

@@ -5,6 +5,7 @@ import {
   deleteProductById,
   getNewArrivalsFacets,
   getProductById,
+  getProductsByIds,
   listProducts,
   type NewArrivalsPriceRange,
   type ProductListQuery,
@@ -119,6 +120,10 @@ const parseStringArrayQuery = (value: unknown): string[] | undefined => {
   return undefined;
 };
 
+const parseRequiredStringArrayQuery = (value: unknown): string[] => {
+  return parseStringArrayQuery(value) ?? [];
+};
+
 const parseBooleanQuery = (value: unknown, fallback = false): boolean => {
   const raw = getQueryString(value);
 
@@ -205,6 +210,19 @@ export const getProductByIdController = asyncHandler(async (req: Request, res: R
     success: true,
     data: {
       product,
+    },
+  });
+});
+
+export const getProductsByIdsController = asyncHandler(async (req: Request, res: Response) => {
+  const ids = parseRequiredStringArrayQuery(req.query.ids);
+  const result = await getProductsByIds(ids);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      items: result.items,
+      missingIds: result.missingIds,
     },
   });
 });

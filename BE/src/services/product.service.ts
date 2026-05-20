@@ -148,6 +148,25 @@ export const getProductById = async (id: string): Promise<ProductPublic> => {
   return toPublicProduct(product);
 };
 
+export const getProductsByIds = async (
+  ids: string[],
+): Promise<{
+  items: ProductPublic[];
+  missingIds: string[];
+}> => {
+  const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
+
+  uniqueIds.forEach((id) => ensureValidProductId(id));
+
+  const products = await Product.find({ _id: { $in: uniqueIds } });
+  const foundIds = new Set(products.map((product) => product._id.toString()));
+
+  return {
+    items: products.map(toPublicProduct),
+    missingIds: uniqueIds.filter((id) => !foundIds.has(id)),
+  };
+};
+
 const getSort = (sortBy: ProductListQuery['sortBy']): Record<string, 1 | -1> => {
   switch (sortBy) {
     case 'oldest':
