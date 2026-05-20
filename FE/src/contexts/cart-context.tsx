@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useAuth } from './auth-context'
 
 const CART_STORAGE_KEY = 'livaxis-cart-items'
 
@@ -47,6 +48,17 @@ const readInitialItems = (): CartStoredItem[] => {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartStoredItem[]>(readInitialItems)
+  const { user } = useAuth()
+  const [hadUser, setHadUser] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setHadUser(true)
+    } else if (hadUser && !user) {
+      setItems([])
+      setHadUser(false)
+    }
+  }, [user, hadUser])
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
