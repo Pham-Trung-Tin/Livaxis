@@ -107,3 +107,32 @@ export const getFeaturedProducts = async (limit: number = 6): Promise<NewArrival
 
   return data?.data?.items ?? []
 }
+
+export type ProductDetail = {
+  id: string
+  name: string
+  subtitle?: string
+  category: string
+  price: number
+  imageUrl: string
+  description?: string
+  style?: string
+  dimensions?: string
+  material?: string
+  color?: string
+  colorHex?: string
+  isNew?: boolean
+  stock?: number
+}
+
+export const getProductById = async (id: string): Promise<ProductDetail> => {
+  const response = await fetch(`${API_BASE}/${id}`, { credentials: 'include' })
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    const errorMessage = data?.error?.message || 'Failed to load product'
+    throw new Error(errorMessage)
+  }
+
+  return data?.data?.product ?? null
+}
