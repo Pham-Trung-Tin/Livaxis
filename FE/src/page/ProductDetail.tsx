@@ -22,6 +22,7 @@ import { Header } from './Hompage'
 import { Footer } from './Hompage'
 import { getProductById, type ProductDetail as ProductDetailType } from '../services/productApi'
 import { useCart } from '../contexts/cart-context'
+import { useToast } from '../contexts/toast-context'
 
 function ImageWithFallback({ src, alt, className }: { src: string; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
@@ -67,6 +68,7 @@ export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart } = useCart()
+  const { showToast } = useToast()
   const [product, setProduct] = useState<ProductDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -228,7 +230,16 @@ export default function ProductDetailPage() {
                 <button
                   onClick={() => {
                     addToCart(product.id, quantity)
-                    navigate('/cart')
+                    showToast({
+                      title: 'Added to Cart',
+                      description: 'Product has been successfully added to your cart.',
+                      product: {
+                        name: product.name,
+                        imageUrl: product.imageUrl,
+                        price: product.price,
+                        quantity: quantity,
+                      },
+                    })
                   }}
                   className="flex flex-1 items-center justify-center gap-3 rounded-xl bg-black py-4 text-white"
                 >
