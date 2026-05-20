@@ -6,11 +6,6 @@ import { Footer, Header } from './Hompage'
 import { getProductsByIds, type ProductDetail } from '../services/productApi'
 import { useCart } from '../contexts/cart-context'
 
-type CartResolvedItem = {
-  product: ProductDetail | null
-  quantity: number
-}
-
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -94,56 +89,65 @@ function CartLineItem({
 export default function CartPage() {
   const navigate = useNavigate()
   const { items, itemCount, updateQuantity, removeFromCart, clearCart } = useCart()
-  const [resolvedItems, setResolvedItems] = useState<CartResolvedItem[]>([])
+  const [resolvedProducts, setResolvedProducts] = useState<Record<string, ProductDetail>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [promoCode, setPromoCode] = useState('')
   const [promoApplied, setPromoApplied] = useState(false)
 
+  const cartIdsKey = items.map((item) => item.productId).join('|')
+
   useEffect(() => {
     const loadCart = async () => {
       if (items.length === 0) {
-        setResolvedItems([])
+        setResolvedProducts({})
         setLoading(false)
         setError(null)
         return
       }
 
       try {
-        setLoading(true)
         setError(null)
         const response = await getProductsByIds(items.map((item) => item.productId))
-        const productsById = new Map(response.items.map((product) => [product.id, product]))
+        const shouldShowLoading = Object.keys(resolvedProducts).length === 0
 
-        setResolvedItems(
-          items.map((item) => ({
-            quantity: item.quantity,
-            product: productsById.get(item.productId) ?? null,
-          })),
+        setResolvedProducts(
+          response.items.reduce<Record<string, ProductDetail>>((acc, product) => {
+            acc[product.id] = product
+            return acc
+          }, {}),
         )
 
         if (response.missingIds.length > 0) {
           setError('One or more products were removed from the catalog.')
         }
+
+        if (shouldShowLoading) {
+          setLoading(false)
+        }
       } catch (fetchError) {
-        setResolvedItems([])
+        if (Object.keys(resolvedProducts).length === 0) {
+          setLoading(false)
+        }
         setError(fetchError instanceof Error ? fetchError.message : 'Failed to load cart items')
-      } finally {
-        setLoading(false)
       }
     }
 
     void loadCart()
-  }, [items])
+  }, [cartIdsKey])
 
   const subtotal = useMemo(
-    () => resolvedItems.reduce((sum, item) => sum + (item.product?.price ?? 0) * item.quantity, 0),
-    [resolvedItems],
+    () =>
+      items.reduce(
+        (sum, item) => sum + (resolvedProducts[item.productId]?.price ?? 0) * item.quantity,
+        0,
+      ),
+    [items, resolvedProducts],
   )
   const discount = promoApplied ? Math.round(subtotal * 0.1) : 0
   const shipping = subtotal > 0 ? 0 : 0
   const total = Math.max(0, subtotal - discount + shipping)
-  const hasItems = resolvedItems.length > 0
+  const hasItems = items.length > 0
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf9_0%,#fbf7f1_52%,#f4efe6_100%)] text-[#141311]" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -208,22 +212,19 @@ export default function CartPage() {
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
               <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
-                  {resolvedItems.map((item, index) => (
+                  {items.map((item) => (
                     <CartLineItem
-                      key={item.product?.id ?? `${items[index]?.productId}-${index}`}
-                      product={item.product}
+                      key={item.productId}
+                      product={resolvedProducts[item.productId] ?? null}
                       quantity={item.quantity}
                       onIncrease={() => {
-                        if (!item.product) return
-                        updateQuantity(item.product.id, item.quantity + 1)
+                        updateQuantity(item.productId, item.quantity + 1)
                       }}
                       onDecrease={() => {
-                        if (!item.product) return
-                        updateQuantity(item.product.id, Math.max(1, item.quantity - 1))
+                        updateQuantity(item.productId, Math.max(1, item.quantity - 1))
                       }}
                       onRemove={() => {
-                        if (!item.product) return
-                        removeFromCart(item.product.id)
+                        removeFromCart(item.productId)
                       }}
                     />
                   ))}
