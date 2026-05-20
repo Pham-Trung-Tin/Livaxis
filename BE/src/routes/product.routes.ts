@@ -3,6 +3,7 @@ import {
   createProductController,
   deleteProductController,
   getProductByIdController,
+  getProductsByIdsController,
   listDiscoveryController,
   listProductsController,
   updateProductController,
@@ -16,6 +17,7 @@ const productRouter = Router();
 
 productRouter.get('/', listProductsController);
 productRouter.get('/discovery', listDiscoveryController);
+productRouter.get('/batch', getProductsByIdsController);
 productRouter.get('/:id', validateRequest(productIdSchema), getProductByIdController);
 
 productRouter.post(
