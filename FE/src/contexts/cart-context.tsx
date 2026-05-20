@@ -1,7 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAuth } from './auth-context'
 
-const CART_STORAGE_KEY = 'livaxis-cart-items'
+const CART_STORAGE_KEY_PREFIX = 'livaxis-cart-items'
+
+const getCartStorageKey = (userId: string | undefined) => {
+  if (!userId) {
+    return `${CART_STORAGE_KEY_PREFIX}-guest`
+  }
+  return `${CART_STORAGE_KEY_PREFIX}-user-${userId}`
+}
 
 type CartStoredItem = {
   productId: string
@@ -19,50 +26,53 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
-const readInitialItems = (): CartStoredItem[] => {
-  if (typeof window === 'undefined') {
-    return []
-  }
-
-  try {
-    const raw = window.localStorage.getItem(CART_STORAGE_KEY)
-    if (!raw) {
-      return []
-    }
-
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-
-    return parsed
-      .map((entry) => ({
-        productId: typeof entry?.productId === 'string' ? entry.productId : '',
-        quantity: Number(entry?.quantity) > 0 ? Number(entry.quantity) : 1,
-      }))
-      .filter((entry) => entry.productId)
-  } catch {
-    return []
-  }
-}
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartStoredItem[]>(readInitialItems)
-  const { user } = useAuth()
-  const [hadUser, setHadUser] = useState(false)
+  const { user, loading: authLoading } = useAuth()
+  const [items, setItems] = useState<CartStoredItem[]>([])
+  
+  // The active storage key is based on the current user ID
+  const storageKey = useMemo(() => getCartStorageKey(user?.id), [user?.id])
+  const [loadedKey, setLoadedKey] = useState<string>('')
 
+  // Load items from local storage whenever the storageKey changes
   useEffect(() => {
-    if (user) {
-      setHadUser(true)
-    } else if (hadUser && !user) {
+    if (authLoading) return // Wait until auth state is determined
+    
+    try {
+      const raw = window.localStorage.getItem(storageKey)
+      if (!raw) {
+        setItems([])
+        setLoadedKey(storageKey)
+        return
+      }
+
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) {
+        setItems([])
+        setLoadedKey(storageKey)
+        return
+      }
+
+      const validated = parsed
+        .map((entry) => ({
+          productId: typeof entry?.productId === 'string' ? entry.productId : '',
+          quantity: Number(entry?.quantity) > 0 ? Number(entry.quantity) : 1,
+        }))
+        .filter((entry) => entry.productId)
+      
+      setItems(validated)
+      setLoadedKey(storageKey)
+    } catch {
       setItems([])
-      setHadUser(false)
+      setLoadedKey(storageKey)
     }
-  }, [user, hadUser])
+  }, [storageKey, authLoading])
 
+  // Save items to local storage whenever items change
   useEffect(() => {
-    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
-  }, [items])
+    if (authLoading || !loadedKey || loadedKey !== storageKey) return
+    window.localStorage.setItem(storageKey, JSON.stringify(items))
+  }, [items, storageKey, loadedKey, authLoading])
 
   const addToCart = (productId: string, quantity = 1) => {
     if (!productId || quantity <= 0) {
