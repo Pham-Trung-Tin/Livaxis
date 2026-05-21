@@ -3,7 +3,9 @@ import { env } from '../config/env';
 
 // ---------------------------------------------------------------------------
 // In-memory payment status store.
-// Key: orderId (e.g. "LVX1716201600123")
+// Key: orderId — prefixed by type:
+//   PRD<timestamp>  → product purchase (Checkout)
+//   SUB<timestamp>  → subscription purchase (Subscription page)
 // Value: { status: 'pending' | 'paid', amount: number, paidAt?: string }
 // ---------------------------------------------------------------------------
 interface PaymentRecord {
@@ -53,9 +55,10 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
   }
 
   // 4. Extract orderId from transfer content.
-  //    Our orders use the prefix "LVX" so we match e.g. "LVX1716201600123"
+  //    PRD<timestamp> → product order   (e.g. PRD1716201600123)
+  //    SUB<timestamp> → subscription    (e.g. SUB1716201600123)
   const content = payload.content ?? '';
-  const orderIdMatch = content.match(/LVX\d+/i);
+  const orderIdMatch = content.match(/(PRD|SUB)\d+/i);
   const orderId = orderIdMatch ? orderIdMatch[0].toUpperCase() : null;
 
   if (!orderId) {

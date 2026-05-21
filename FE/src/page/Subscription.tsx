@@ -4,17 +4,21 @@ import {
   Camera,
   Check,
   ChevronRight,
+  Copy,
   Cpu,
   Download,
   Infinity,
+  RefreshCw,
   Shield,
   Sparkles,
   Star,
+  X,
   Zap,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Footer, Header } from './Hompage'
+import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, type BankInfo } from '../services/paymentApi'
 
 type BillingCycle = 'monthly' | 'yearly'
 
@@ -188,6 +192,11 @@ function ComparisonCell({ value }: { value: boolean | string }) {
   )
 }
 
+/** Tạo order ID cho subscription với prefix SUB */
+function generateSubOrderId(): string {
+  return 'SUB' + Date.now()
+}
+
 export default function SubscriptionPage() {
   const navigate = useNavigate()
   const [billing, setBilling] = useState<BillingCycle>('monthly')
@@ -197,8 +206,68 @@ export default function SubscriptionPage() {
   const tableRef = useRef<HTMLDivElement | null>(null)
   const tableInView = useInView(tableRef, { once: true, margin: '-80px' })
 
-  const handlePrimaryAction = () => {
-    navigate('/sign-up')
+  // ── Payment modal state ──
+  const [paymentPlan, setPaymentPlan] = useState<Plan | null>(null)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [subOrderId] = useState<string>(() => generateSubOrderId())
+  const [bankInfo, setBankInfo] = useState<BankInfo | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid'>('pending')
+  const [polling, setPolling] = useState(false)
+  const [qrLoaded, setQrLoaded] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    fetchBankInfo()
+      .then(setBankInfo)
+      .catch(() => console.warn('[SePay] Could not load bank info'))
+  }, [])
+
+  // Start/stop polling when modal opens/closes
+  useEffect(() => {
+    if (paymentOpen && paymentStatus === 'pending') {
+      setPolling(true)
+      pollingRef.current = setInterval(async () => {
+        try {
+          const result = await checkPaymentStatus(subOrderId)
+          if (result.status === 'paid') {
+            setPaymentStatus('paid')
+            setPolling(false)
+            if (pollingRef.current) clearInterval(pollingRef.current)
+          }
+        } catch {
+          // ignore polling errors
+        }
+      }, 3000)
+    } else {
+      setPolling(false)
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentOpen, paymentStatus])
+
+  const copyToClipboard = (text: string, key: string) => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+
+  const handlePlanPurchase = (plan: Plan) => {
+    if (plan.ctaStyle === 'ghost') return // free plan — no payment
+    setPaymentPlan(plan)
+    setPaymentOpen(true)
+  }
+
+  const closePay = () => {
+    setPaymentOpen(false)
+    if (paymentStatus === 'paid') {
+      // reload page so user gets fresh order ID if they want to buy again
+      navigate(0)
+    }
   }
 
   return (
@@ -308,7 +377,7 @@ export default function SubscriptionPage() {
                 index={index}
                 selected={selectedPlan === plan.id}
                 onSelect={() => setSelectedPlan(plan.id)}
-                onNavigate={handlePrimaryAction}
+                onNavigate={() => handlePlanPurchase(plan)}
               />
             ))}
           </div>
@@ -532,7 +601,7 @@ export default function SubscriptionPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
-                  onClick={handlePrimaryAction}
+                  onClick={() => navigate('/sign-up')}
                   className="group flex items-center gap-2.5 rounded-xl bg-white px-8 py-3.5 text-black transition-all duration-300 hover:bg-white/90"
                 >
                   <Sparkles size={14} strokeWidth={1.5} className="text-[#a08c6a]" />
@@ -557,6 +626,166 @@ export default function SubscriptionPage() {
       </main>
 
       <Footer />
+
+      {/* ── Subscription Payment Modal ── */}
+      <AnimatePresence>
+        {paymentOpen && paymentPlan ? (
+          <motion.div
+            className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closePay} />
+            <motion.div
+              className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-white/10 bg-white shadow-[0_30px_80px_rgba(0,0,0,0.28)]"
+              initial={{ scale: 0.94, y: 24, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.94, y: 12, opacity: 0 }}
+              transition={{ duration: 0.28 }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-neutral-100 px-7 py-5">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#a08c6a]">Subscription</p>
+                  <h3 className="mt-0.5 text-[20px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
+                    {paymentPlan.name}
+                  </h3>
+                  <p className="text-[12px] text-neutral-400">
+                    {billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly}
+                    {paymentPlan.priceNote ? ` · ${billing === 'yearly' && paymentPlan.id !== 'starter' ? paymentPlan.priceNote.replace('per month', 'per year') : paymentPlan.priceNote}` : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={closePay}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-neutral-400 transition-colors hover:text-black"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="px-7 py-6">
+                <AnimatePresence mode="wait">
+                  {paymentStatus === 'paid' ? (
+                    <motion.div
+                      key="paid"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center gap-4 py-10 text-center"
+                    >
+                      <motion.div
+                        className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                      >
+                        <Check size={32} className="text-emerald-500" strokeWidth={2.5} />
+                      </motion.div>
+                      <p className="text-[20px] text-black" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Thanh toán thành công!
+                      </p>
+                      <p className="text-[13px] text-neutral-400">Gói <span className="font-medium text-black">{paymentPlan.name}</span> đã được kích hoạt.</p>
+                      <button
+                        onClick={closePay}
+                        className="mt-2 rounded-xl bg-[#1a1a1a] px-8 py-3 text-[11px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-black"
+                      >
+                        Đóng
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div key="qr" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                      <p className="text-[13px] text-neutral-500">Quét mã QR hoặc chuyển khoản theo thông tin bên dưới — hệ thống sẽ tự xác nhận.</p>
+
+                      {/* QR + bank info side-by-side */}
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                        {/* QR Code */}
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner">
+                            {bankInfo ? (
+                              <img
+                                src={buildVietQrUrl(bankInfo, 0, subOrderId)}
+                                alt="VietQR Payment"
+                                className={`h-[160px] w-[160px] object-contain transition-opacity duration-500 ${qrLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                onLoad={() => setQrLoaded(true)}
+                              />
+                            ) : null}
+                            {(!bankInfo || !qrLoaded) ? (
+                              <div className="flex h-[160px] w-[160px] items-center justify-center">
+                                <RefreshCw size={22} className="animate-spin text-neutral-300" />
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center gap-1.5 rounded-full bg-[#003087]/5 px-3 py-1">
+                            <div className="h-2 w-2 rounded-full bg-[#003087]" />
+                            <span className="text-[10px] font-medium uppercase tracking-widest text-[#003087]">VietQR</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+                            {polling ? (
+                              <>
+                                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                                Đang chờ xác nhận...
+                              </>
+                            ) : (
+                              <span>Hệ thống xác nhận tự động</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bank details */}
+                        <div className="flex-1 space-y-2.5">
+                          {[
+                            { label: 'Ngân hàng', value: bankInfo?.bankShortName ?? '—', copyable: false },
+                            { label: 'Số tài khoản', value: bankInfo?.accountNumber ?? '—', copyable: true, copyKey: 'account' },
+                            { label: 'Chủ tài khoản', value: bankInfo?.accountName ?? '—', copyable: false },
+                            {
+                              label: 'Nội dung CK',
+                              value: subOrderId,
+                              copyable: true,
+                              copyKey: 'content',
+                              important: true,
+                            },
+                          ].map((row) => (
+                            <div
+                              key={row.label}
+                              className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2.5 ${
+                                row.important ? 'border border-amber-200/80 bg-amber-50' : 'border border-neutral-100 bg-neutral-50'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className="mb-0.5 text-[10px] uppercase tracking-[0.12em] text-neutral-400">{row.label}</p>
+                                <p className={`truncate text-[13px] ${ row.important ? 'font-medium text-amber-700' : 'text-black' }`}>
+                                  {row.value}
+                                </p>
+                              </div>
+                              {row.copyable && row.copyKey ? (
+                                <button
+                                  onClick={() => copyToClipboard(row.value, row.copyKey!)}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition-all hover:border-neutral-300 hover:text-black"
+                                >
+                                  {copied === row.copyKey ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+
+                          <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 px-4 py-2.5">
+                            <p className="text-[11px] leading-relaxed text-amber-700">
+                              ⚠️ Vui lòng giữ đúng nội dung chuyển khoản{' '}
+                              <span className="font-semibold">{subOrderId}</span>{' '}
+                              để hệ thống tự động kích hoạt gói.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }
