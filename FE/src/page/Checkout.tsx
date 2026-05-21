@@ -23,9 +23,9 @@ import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, type BankInfo } from
 type Step = 'shipping' | 'payment' | 'review'
 type DeliveryMethod = 'standard' | 'express'
 
-/** Generate a unique order ID for SePay transfer content */
+/** Generate a unique order ID for SePay transfer content (product purchase = PRD prefix) */
 function generateOrderId(): string {
-  return 'LVX' + Date.now()
+  return 'PRD' + Date.now()
 }
 
 type FieldProps = {
