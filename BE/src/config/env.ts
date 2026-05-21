@@ -46,6 +46,12 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  // SePay
+  SEPAY_WEBHOOK_API_KEY: process.env.SEPAY_WEBHOOK_API_KEY ?? '',
+  BANK_ID: process.env.BANK_ID ?? '970423',
+  BANK_ACCOUNT_NUMBER: process.env.BANK_ACCOUNT_NUMBER ?? '',
+  BANK_ACCOUNT_NAME: process.env.BANK_ACCOUNT_NAME ?? '',
+  BANK_SHORT_NAME: process.env.BANK_SHORT_NAME ?? 'TPBank',
 };
 
 export const isProduction = env.NODE_ENV === 'production';

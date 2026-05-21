@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check,
   ChevronLeft,
-  CreditCard,
+  Copy,
   Eye,
   Lock,
   Package,
+  RefreshCw,
   Shield,
-  Smartphone,
   Sparkles,
   Truck,
-  Wallet,
   X,
   Zap,
 } from 'lucide-react'
@@ -19,10 +18,15 @@ import { useNavigate } from 'react-router-dom'
 import { Footer, Header } from './Hompage'
 import { useCart } from '../contexts/cart-context'
 import { getProductsByIds, type ProductDetail } from '../services/productApi'
+import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, type BankInfo } from '../services/paymentApi'
 
 type Step = 'shipping' | 'payment' | 'review'
 type DeliveryMethod = 'standard' | 'express'
-type PaymentMethod = 'card' | 'apple' | 'wallet'
+
+/** Generate a unique order ID for SePay transfer content */
+function generateOrderId(): string {
+  return 'LVX' + Date.now()
+}
 
 type FieldProps = {
   label: string
@@ -84,13 +88,20 @@ export default function CheckoutPage() {
   const { items } = useCart()
   const [currentStep, setCurrentStep] = useState<Step>('shipping')
   const [delivery, setDelivery] = useState<DeliveryMethod>('standard')
-  const [payment, setPayment] = useState<PaymentMethod>('card')
   const [previewOpen, setPreviewOpen] = useState(false)
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [resolvedProducts, setResolvedProducts] = useState<Record<string, ProductDetail>>({})
 
+  // SePay payment state
+  const [orderId] = useState<string>(() => generateOrderId())
+  const [bankInfo, setBankInfo] = useState<BankInfo | null>(null)
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid'>('pending')
+  const [polling, setPolling] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const [qrLoaded, setQrLoaded] = useState(false)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -99,14 +110,45 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zip, setZip] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [cvc, setCvc] = useState('')
-  const [cardName, setCardName] = useState('')
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
   }, [])
+
+  // Fetch bank info on mount
+  useEffect(() => {
+    fetchBankInfo()
+      .then(setBankInfo)
+      .catch(() => console.warn('[SePay] Could not load bank info – using fallback'))
+  }, [])
+
+  // Start/stop polling when entering/leaving payment step
+  useEffect(() => {
+    if (currentStep === 'payment' && paymentStatus === 'pending') {
+      setPolling(true)
+      pollingRef.current = setInterval(async () => {
+        try {
+          const result = await checkPaymentStatus(orderId)
+          if (result.status === 'paid') {
+            setPaymentStatus('paid')
+            setPolling(false)
+            if (pollingRef.current) clearInterval(pollingRef.current)
+            // Auto-advance to Review after brief celebration delay
+            setTimeout(() => goNext(), 1800)
+          }
+        } catch {
+          // silently ignore polling errors
+        }
+      }, 3000)
+    } else {
+      setPolling(false)
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, paymentStatus])
 
   useEffect(() => {
     const loadCheckoutProducts = async () => {
@@ -169,6 +211,13 @@ export default function CheckoutPage() {
     if (stepIndex > 0) {
       setCurrentStep(steps[stepIndex - 1].key)
     }
+  }
+
+  const copyToClipboard = (text: string, label: string) => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(label)
+      setTimeout(() => setCopied(null), 2000)
+    })
   }
 
   const simulationImage =
@@ -400,90 +449,163 @@ export default function CheckoutPage() {
                     >
                       <section className="mb-10 rounded-[28px] border border-black/5 bg-white p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)] sm:p-8">
                         <h2 className="text-[22px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
-                          Payment Method
+                          Thanh toán qua chuyển khoản
                         </h2>
-                        <p className="mb-7 mt-1 text-[13px] text-neutral-400">All transactions are encrypted and secure</p>
+                        <p className="mb-7 mt-1 text-[13px] text-neutral-400">
+                          Quét mã QR hoặc chuyển khoản theo thông tin bên dưới — hệ thống sẽ tự xác nhận
+                        </p>
 
-                        <div className="mb-8 flex gap-2 rounded-xl bg-neutral-100/60 p-1.5">
-                          {[
-                            { key: 'card' as PaymentMethod, icon: CreditCard, label: 'Credit Card' },
-                            { key: 'apple' as PaymentMethod, icon: Smartphone, label: 'Apple Pay' },
-                            { key: 'wallet' as PaymentMethod, icon: Wallet, label: 'Digital Wallet' },
-                          ].map((option) => {
-                            const active = payment === option.key
-
-                            return (
-                              <button
-                                key={option.key}
-                                onClick={() => setPayment(option.key)}
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-[12px] transition-all duration-300 ${
-                                  active ? 'bg-white text-black shadow-sm' : 'text-neutral-400 hover:text-neutral-600'
-                                }`}
-                                style={{ fontWeight: active ? 500 : 400 }}
-                              >
-                                <option.icon size={15} strokeWidth={1.5} />
-                                <span className="hidden sm:inline">{option.label}</span>
-                              </button>
-                            )
-                          })}
-                        </div>
-
+                        {/* SePay QR Payment UI */}
                         <AnimatePresence mode="wait">
-                          {payment === 'card' ? (
+                          {paymentStatus === 'paid' ? (
+                            /* ── Payment confirmed ── */
                             <motion.div
-                              key="card-form"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.25 }}
-                              className="space-y-5"
+                              key="paid"
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              className="flex flex-col items-center gap-4 py-12 text-center"
                             >
-                              <Field label="Cardholder Name" placeholder="Alexander Mitchell" value={cardName} onChange={setCardName} />
-                              <Field label="Card Number" placeholder="4242 4242 4242 4242" value={cardNumber} onChange={setCardNumber} />
-                              <div className="flex gap-4">
-                                <Field label="Expiry Date" placeholder="MM / YY" value={expiry} onChange={setExpiry} half />
-                                <Field label="CVC" placeholder="123" value={cvc} onChange={setCvc} half />
-                              </div>
-                            </motion.div>
-                          ) : null}
-
-                          {payment === 'apple' ? (
-                            <motion.div
-                              key="apple-form"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.25 }}
-                              className="py-12 text-center"
-                            >
-                              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-black">
-                                <Smartphone size={24} className="text-white" strokeWidth={1.2} />
-                              </div>
-                              <p className="mb-2 text-[14px] text-neutral-500">Apple Pay</p>
-                              <p className="mx-auto max-w-xs text-[12px] text-neutral-400">
-                                You&apos;ll be prompted to confirm with Apple Pay when you place your order.
+                              <motion.div
+                                className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                              >
+                                <Check size={32} className="text-emerald-500" strokeWidth={2.5} />
+                              </motion.div>
+                              <p className="text-[20px] text-black" style={{ fontFamily: 'Playfair Display, serif' }}>
+                                Thanh toán thành công!
                               </p>
+                              <p className="text-[13px] text-neutral-400">Đang chuyển sang bước xác nhận đơn hàng...</p>
                             </motion.div>
-                          ) : null}
-
-                          {payment === 'wallet' ? (
+                          ) : (
+                            /* ── QR + bank details ── */
                             <motion.div
-                              key="wallet-form"
-                              initial={{ opacity: 0, y: 10 }}
+                              key="qr"
+                              initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.25 }}
-                              className="py-12 text-center"
+                              className="flex flex-col gap-6 lg:flex-row lg:items-start"
                             >
-                              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#c8b898]/10">
-                                <Wallet size={24} className="text-[#a08c6a]" strokeWidth={1.2} />
+                              {/* QR Code */}
+                              <div className="flex flex-col items-center gap-3">
+                                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner">
+                                  {bankInfo ? (
+                                    <img
+                                      src={buildVietQrUrl(bankInfo, total, orderId)}
+                                      alt="VietQR Payment"
+                                      className={`h-[200px] w-[200px] object-contain transition-opacity duration-500 ${qrLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                      onLoad={() => setQrLoaded(true)}
+                                    />
+                                  ) : null}
+                                  {(!bankInfo || !qrLoaded) ? (
+                                    <div className="flex h-[200px] w-[200px] items-center justify-center">
+                                      <RefreshCw size={24} className="animate-spin text-neutral-300" />
+                                    </div>
+                                  ) : null}
+                                </div>
+                                {/* VietQR logo badge */}
+                                <div className="flex items-center gap-1.5 rounded-full bg-[#003087]/5 px-3 py-1">
+                                  <div className="h-2 w-2 rounded-full bg-[#003087]" />
+                                  <span className="text-[10px] font-medium uppercase tracking-widest text-[#003087]">VietQR</span>
+                                </div>
+                                {/* Polling indicator */}
+                                <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+                                  {polling ? (
+                                    <>
+                                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                                      Đang chờ xác nhận...
+                                    </>
+                                  ) : (
+                                    <span>Hệ thống xác nhận tự động</span>
+                                  )}
+                                </div>
                               </div>
-                              <p className="mb-2 text-[14px] text-neutral-500">Digital Wallet</p>
-                              <p className="mx-auto max-w-xs text-[12px] text-neutral-400">
-                                Connect your preferred digital wallet to complete the transaction securely.
-                              </p>
+
+                              {/* Bank details */}
+                              <div className="flex-1 space-y-3">
+                                {/* Row helper */}
+                                {[
+                                  {
+                                    label: 'Ngân hàng',
+                                    value: bankInfo?.bankShortName ?? '—',
+                                    copyable: false,
+                                  },
+                                  {
+                                    label: 'Số tài khoản',
+                                    value: bankInfo?.accountNumber ?? '—',
+                                    copyable: true,
+                                    copyKey: 'account',
+                                  },
+                                  {
+                                    label: 'Chủ tài khoản',
+                                    value: bankInfo?.accountName ?? '—',
+                                    copyable: false,
+                                  },
+                                  {
+                                    label: 'Số tiền',
+                                    value: formatCurrency(total),
+                                    copyable: true,
+                                    copyKey: 'amount',
+                                    rawValue: String(total),
+                                    highlight: true,
+                                  },
+                                  {
+                                    label: 'Nội dung CK',
+                                    value: orderId,
+                                    copyable: true,
+                                    copyKey: 'content',
+                                    important: true,
+                                  },
+                                ].map((row) => (
+                                  <div
+                                    key={row.label}
+                                    className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 ${
+                                      row.important
+                                        ? 'border border-amber-200/80 bg-amber-50'
+                                        : 'border border-neutral-100 bg-neutral-50'
+                                    }`}
+                                  >
+                                    <div className="min-w-0">
+                                      <p className="mb-0.5 text-[10px] uppercase tracking-[0.12em] text-neutral-400">{row.label}</p>
+                                      <p
+                                        className={`truncate text-[14px] ${
+                                          row.highlight
+                                            ? 'font-semibold text-black'
+                                            : row.important
+                                              ? 'font-medium text-amber-700'
+                                              : 'text-black'
+                                        }`}
+                                      >
+                                        {row.value}
+                                      </p>
+                                    </div>
+                                    {row.copyable && row.copyKey ? (
+                                      <button
+                                        onClick={() => copyToClipboard(row.rawValue ?? row.value, row.copyKey!)}
+                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 transition-all hover:border-neutral-300 hover:text-black"
+                                        title={`Sao chép ${row.label}`}
+                                      >
+                                        {copied === row.copyKey ? (
+                                          <Check size={13} className="text-emerald-500" />
+                                        ) : (
+                                          <Copy size={13} />
+                                        )}
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                ))}
+
+                                {/* Important notice */}
+                                <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 px-4 py-3">
+                                  <p className="text-[11px] leading-relaxed text-amber-700">
+                                    ⚠️ Vui lòng giữ đúng nội dung chuyển khoản{' '}
+                                    <span className="font-semibold">{orderId}</span>{' '}
+                                    để hệ thống tự động xác nhận đơn hàng.
+                                  </p>
+                                </div>
+                              </div>
                             </motion.div>
-                          ) : null}
+                          )}
                         </AnimatePresence>
                       </section>
 
@@ -497,7 +619,8 @@ export default function CheckoutPage() {
                         </button>
                         <button
                           onClick={goNext}
-                          className="flex flex-1 items-center justify-center gap-3 rounded-xl bg-[#2a2a2a] px-12 py-4 text-white transition-all duration-300 hover:bg-[#1a1a1a] sm:flex-none"
+                          disabled={paymentStatus !== 'paid'}
+                          className="flex flex-1 items-center justify-center gap-3 rounded-xl bg-[#2a2a2a] px-12 py-4 text-white transition-all duration-300 hover:bg-[#1a1a1a] disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
                         >
                           <span className="text-[13px] uppercase tracking-[0.1em]" style={{ fontWeight: 500 }}>
                             Review Order
@@ -544,16 +667,13 @@ export default function CheckoutPage() {
                           </button>
                         </div>
                         <div className="flex items-center gap-2.5">
-                          {payment === 'card' ? <CreditCard size={16} className="text-neutral-400" strokeWidth={1.5} /> : null}
-                          {payment === 'apple' ? <Smartphone size={16} className="text-neutral-400" strokeWidth={1.5} /> : null}
-                          {payment === 'wallet' ? <Wallet size={16} className="text-neutral-400" strokeWidth={1.5} /> : null}
-                          <span className="text-[13px] text-black">
-                            {payment === 'card'
-                              ? `Card ending in ${cardNumber.slice(-4) || '4242'}`
-                              : payment === 'apple'
-                                ? 'Apple Pay'
-                                : 'Digital Wallet'}
-                          </span>
+                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#003087]/10">
+                            <div className="h-2 w-2 rounded-full bg-[#003087]" />
+                          </div>
+                          <div>
+                            <span className="block text-[13px] text-black">Chuyển khoản ngân hàng</span>
+                            <span className="text-[11px] text-neutral-400">Mã đơn hàng: {orderId}</span>
+                          </div>
                         </div>
                       </div>
 
