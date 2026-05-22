@@ -14,7 +14,8 @@ export interface IProduct extends Document {
     | 'Tables'
     | 'Chairs';
   price: number;
-  imageUrl: string;
+  imageUrl: string;       // Ảnh chính (hiển thị ở trang Discovery)
+  images: string[];        // Mảng ảnh con (thumbnail gallery từ Cloudinary)
   description?: string;
   style: 'Minimalist' | 'Modern Luxury' | 'Industrial';
   dimensions?: string;
@@ -51,6 +52,10 @@ const ProductSchema: Schema = new Schema(
     imageUrl: {
       type: String,
       required: [true, 'Product image is required'],
+    },
+    images: {
+      type: [String],
+      default: [],
     },
     description: {
       type: String,
