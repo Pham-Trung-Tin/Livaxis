@@ -1,23 +1,32 @@
 import { Router } from 'express';
-import { sePayWebhook, getPaymentStatus, getBankInfo } from '../controllers/payment.controller';
+import { sePayWebhook, getPaymentStatus, getBankInfo, registerOrder } from '../controllers/payment.controller';
 
 export const paymentRouter = Router();
 
 /**
+ * POST /api/payment/register-order
+ * Called by the FE when a user opens the subscription payment modal.
+ * Associates the SUB order ID with the authenticated user so aiTurns
+ * can be credited after the SePay webhook confirms payment.
+ */
+paymentRouter.post('/register-order', registerOrder);
+
+/**
  * POST /api/payment/webhook
- * Endpoint nhận webhook từ SePay khi có biến động số dư.
- * Bảo mật bằng API Key (header: Authorization: Apikey <key>)
+ * Receives SePay webhook events (bank transfer notifications).
+ * Secured with API Key (header: Authorization: Apikey <key>).
+ * Only handles SUB subscription orders — credits aiTurns on payment.
  */
 paymentRouter.post('/webhook', sePayWebhook);
 
 /**
  * GET /api/payment/status/:orderId
- * Cho phép FE polling trạng thái thanh toán của một đơn hàng.
+ * Allows the FE to poll payment status for a given order.
  */
 paymentRouter.get('/status/:orderId', getPaymentStatus);
 
 /**
  * GET /api/payment/bank-info
- * Trả về thông tin tài khoản ngân hàng để FE tạo QR code.
+ * Returns bank account details for the frontend VietQR code builder.
  */
 paymentRouter.get('/bank-info', getBankInfo);

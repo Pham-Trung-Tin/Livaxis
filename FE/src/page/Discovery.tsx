@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   ArrowUpDown,
   ChevronDown,
-  Eye,
+  ShoppingBag,
   SlidersHorizontal,
   Sparkles,
   X,
@@ -157,7 +157,7 @@ function FilterSection({
 const ProductCard = forwardRef<HTMLElement, {
   product: NewArrivalProduct
   index: number
-  onTryOn: (name: string) => void
+  onTryOn: (product: NewArrivalProduct) => void
 }>(function ProductCard({ product, index, onTryOn }, ref) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
@@ -173,7 +173,13 @@ const ProductCard = forwardRef<HTMLElement, {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="relative mb-5 overflow-hidden rounded-2xl bg-[#f7f5f2]">
+      {/* Clickable image area → Product Detail */}
+      <div
+        className="relative mb-5 overflow-hidden rounded-2xl bg-[#f7f5f2] cursor-pointer"
+        onClick={() => navigate(`/product/${product.id}`)}
+        role="button"
+        aria-label={`View details for ${product.name}`}
+      >
         <div className="aspect-[4/5] overflow-hidden">
           <ImageWithFallback
             src={(product as any).imageUrl ?? (product as any).image}
@@ -187,6 +193,7 @@ const ProductCard = forwardRef<HTMLElement, {
           style={{ opacity: hovered ? 1 : 0 }}
         />
 
+        {/* Category badge */}
         <div className="absolute left-4 top-4">
           <span
             className="rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.18em]"
@@ -200,13 +207,27 @@ const ProductCard = forwardRef<HTMLElement, {
             {product.category}
           </span>
         </div>
+
+        {/* "View details" hint on hover */}
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 transition-all duration-300"
+          style={{ opacity: hovered ? 1 : 0, transform: `translateX(-50%) translateY(${hovered ? '0' : '6px'})` }}
+        >
+          <span
+            className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-black backdrop-blur-sm"
+            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+          >
+            View Details
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-3 px-1">
         <div>
           <h3
-            className="mb-1 text-[17px] leading-snug text-black"
+            className="mb-1 cursor-pointer text-[17px] leading-snug text-black transition-colors hover:text-[#a08c6a]"
             style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
+            onClick={() => navigate(`/product/${product.id}`)}
           >
             {product.name}
           </h3>
@@ -234,24 +255,29 @@ const ProductCard = forwardRef<HTMLElement, {
         </div>
 
         <div className="mt-1 flex gap-2.5">
-          <button
-            onClick={() => navigate(`/product/${product.id}`)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-black/12 py-2.5 transition-all duration-300 hover:border-black/30 hover:bg-black/[0.02]"
-            style={{ fontFamily: 'Inter, sans-serif' }}
+          {/* BUY ON SHOPEE — external affiliate link */}
+          <a
+            href={(product as any).affiliateUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => { if (!(product as any).affiliateUrl) e.preventDefault() }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#ee4d2d]/20 py-2.5 transition-all duration-300 hover:border-[#ee4d2d]/50 hover:bg-[#ee4d2d]/[0.03]"
+            style={{ fontFamily: 'Inter, sans-serif', textDecoration: 'none' }}
           >
-            <Eye size={13} className="text-neutral-500" strokeWidth={1.5} />
+            <ShoppingBag size={13} className="text-[#ee4d2d]/70" strokeWidth={1.5} />
             <span
-              className="text-[10px] uppercase tracking-[0.15em] text-neutral-600"
+              className="text-[10px] uppercase tracking-[0.15em] text-[#ee4d2d]/80"
               style={{ fontWeight: 500 }}
             >
-              View Details
+              Buy on Shopee
             </span>
-          </button>
+          </a>
 
+          {/* AI TRY-ON — opens the Gemini AI room planner wizard */}
           <button
             onClick={(event) => {
               event.stopPropagation()
-              onTryOn(product.name)
+              onTryOn(product)
             }}
             className="relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl py-2.5 transition-all duration-300"
             style={{
@@ -276,12 +302,12 @@ const ProductCard = forwardRef<HTMLElement, {
 ProductCard.displayName = 'ProductCard'
 
 export function DiscoveryPage() {
+  const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [priceRange, setPriceRange] = useState([0, 6000])
   const [sortBy, setSortBy] = useState('Featured')
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
-  const [tryOnProduct, setTryOnProduct] = useState<string | null>(null)
   const [products, setProducts] = useState<NewArrivalProduct[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
@@ -644,7 +670,7 @@ export function DiscoveryPage() {
                       key={product.id}
                       product={product}
                       index={index}
-                      onTryOn={(name) => setTryOnProduct(name)}
+                      onTryOn={(p) => navigate('/ai-room-planner')}
                     />
                   ))}
                 </AnimatePresence>
@@ -699,11 +725,6 @@ export function DiscoveryPage() {
         ) : null}
       </AnimatePresence>
 
-      <AITryOnOverlay
-        isOpen={tryOnProduct !== null}
-        onClose={() => setTryOnProduct(null)}
-        productName={tryOnProduct ?? undefined}
-      />
 
       <section className="border-t border-black/5 bg-[#f7f5f1] py-20">
         <div className="mx-auto max-w-[1440px] px-8 text-center md:px-16">

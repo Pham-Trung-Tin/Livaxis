@@ -22,7 +22,7 @@ export interface IProduct extends Document {
   color?: string;
   colorHex?: string;
   isNew: boolean;
-  stock: number;
+  affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,9 +82,10 @@ const ProductSchema: Schema = new Schema(
       default: false,
       index: true,
     },
-    stock: {
-      type: Number,
-      default: 10,
+    affiliateUrl: {
+      type: String,
+      required: [true, 'Affiliate URL is required'],
+      trim: true,
     },
   },
   {

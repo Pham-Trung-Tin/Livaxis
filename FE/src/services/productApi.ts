@@ -13,6 +13,7 @@ export type NewArrivalProduct = {
   color?: string
   colorHex?: string
   isNew: boolean
+  affiliateUrl?: string
 }
 
 export type NewArrivalsResponse = {
@@ -123,6 +124,7 @@ export type ProductDetail = {
   colorHex?: string
   isNew?: boolean
   stock?: number
+  affiliateUrl?: string
 }
 
 export type ProductsByIdsResponse = {

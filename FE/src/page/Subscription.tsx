@@ -18,7 +18,8 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Footer, Header } from './Hompage'
-import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, type BankInfo } from '../services/paymentApi'
+import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, registerSubscriptionOrder, type BankInfo } from '../services/paymentApi'
+import { useAuth } from '../contexts/auth-context'
 
 type BillingCycle = 'monthly' | 'yearly'
 
@@ -31,6 +32,7 @@ type Plan = {
   priceNote?: string
   turns: string
   turnsNote: string
+  turnsToAdd: number
   cta: string
   ctaStyle: 'ghost' | 'outline' | 'charcoal' | 'gold'
   highlight: boolean
@@ -46,6 +48,7 @@ const PLANS: Plan[] = [
     price: { monthly: '$0', yearly: '$0' },
     turns: '3 AI Try-On turns',
     turnsNote: 'per day · resets at midnight',
+    turnsToAdd: 0,
     cta: 'Current Plan',
     ctaStyle: 'ghost',
     highlight: false,
@@ -64,6 +67,7 @@ const PLANS: Plan[] = [
     priceNote: 'one-time · no subscription',
     turns: '10 AI Try-On turns',
     turnsNote: 'valid for 30 days',
+    turnsToAdd: 10,
     cta: 'Choose Starter',
     ctaStyle: 'outline',
     highlight: false,
@@ -84,6 +88,7 @@ const PLANS: Plan[] = [
     priceNote: 'per month',
     turns: '50 AI Try-On turns',
     turnsNote: 'per month · rolls over',
+    turnsToAdd: 50,
     cta: 'Choose Standard',
     ctaStyle: 'charcoal',
     highlight: true,
@@ -199,6 +204,7 @@ function generateSubOrderId(): string {
 
 export default function SubscriptionPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [billing, setBilling] = useState<BillingCycle>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const heroRef = useRef<HTMLDivElement | null>(null)
@@ -260,6 +266,14 @@ export default function SubscriptionPage() {
     if (plan.ctaStyle === 'ghost') return // free plan — no payment
     setPaymentPlan(plan)
     setPaymentOpen(true)
+    // Register the order with the backend so the webhook can credit aiTurns
+    if (user?.id) {
+      void registerSubscriptionOrder({
+        orderId: subOrderId,
+        userId: user.id,
+        turnsToAdd: plan.turnsToAdd,
+      }).catch((err) => console.warn('[Payment] Failed to register order:', err))
+    }
   }
 
   const closePay = () => {

@@ -24,7 +24,7 @@ type CreateProductInput = {
   color?: string;
   colorHex?: string;
   isNew?: boolean;
-  stock?: number;
+  affiliateUrl: string;
 };
 
 type UpdateProductInput = Partial<CreateProductInput>;
@@ -52,7 +52,7 @@ export type ProductPublic = {
   color?: string;
   colorHex?: string;
   isNew: boolean;
-  stock: number;
+  affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -98,7 +98,7 @@ const toPublicProduct = (product: IProduct): ProductPublic => ({
   color: product.color,
   colorHex: product.colorHex,
   isNew: product.isNew,
-  stock: product.stock,
+  affiliateUrl: product.affiliateUrl,
   createdAt: product.createdAt,
   updatedAt: product.updatedAt,
 });

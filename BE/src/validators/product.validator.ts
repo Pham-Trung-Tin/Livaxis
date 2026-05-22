@@ -31,7 +31,7 @@ const baseProductBodySchema = z.object({
   color: z.string().trim().max(50).optional(),
   colorHex: z.string().trim().regex(/^#([0-9a-fA-F]{6})$/, 'Invalid hex color').optional(),
   isNew: z.boolean().optional(),
-  stock: z.number().int('Stock must be an integer').min(0, 'Stock cannot be negative').optional(),
+  affiliateUrl: z.string().trim().url('Affiliate URL is invalid'),
 });
 
 export const createProductSchema = z.object({

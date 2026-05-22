@@ -20,6 +20,7 @@ export interface IUser extends Document {
   passwordResetExpiresAt?: Date;
   emailVerificationTokenHash?: string;
   emailVerificationExpiresAt?: Date;
+  aiTurns: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -108,6 +109,10 @@ const userSchema = new Schema<IUser>(
     emailVerificationExpiresAt: {
       type: Date,
       select: false,
+    },
+    aiTurns: {
+      type: Number,
+      default: 5,
     },
   },
   {

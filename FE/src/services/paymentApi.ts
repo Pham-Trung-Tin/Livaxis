@@ -1,5 +1,24 @@
 const API_BASE = 'http://localhost:5000/api/payment'
 
+/**
+ * Register a new subscription order with the backend.
+ * Must be called before showing the QR payment modal so the webhook
+ * can credit aiTurns to the correct user after payment.
+ */
+export async function registerSubscriptionOrder(params: {
+  orderId: string
+  userId: string
+  turnsToAdd: number
+}): Promise<void> {
+  const res = await fetch(`${API_BASE}/register-order`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) throw new Error('Failed to register subscription order')
+}
+
 export interface PaymentStatus {
   status: 'pending' | 'paid'
   orderId: string
