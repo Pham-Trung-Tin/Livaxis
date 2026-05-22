@@ -45,6 +45,7 @@ export type ProductPublic = {
     | 'Chairs';
   price: number;
   imageUrl: string;
+  images: string[];         // Mảng ảnh thumbnail từ Cloudinary
   description?: string;
   style: 'Minimalist' | 'Modern Luxury' | 'Industrial';
   dimensions?: string;
@@ -91,6 +92,7 @@ const toPublicProduct = (product: IProduct): ProductPublic => ({
   category: product.category,
   price: product.price,
   imageUrl: product.imageUrl,
+  images: Array.isArray(product.images) ? product.images : [],
   description: product.description,
   style: product.style,
   dimensions: product.dimensions,

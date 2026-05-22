@@ -116,6 +116,7 @@ export type ProductDetail = {
   category: string
   price: number
   imageUrl: string
+  images?: string[]       // Mảng ảnh thumbnail từ Cloudinary
   description?: string
   style?: string
   dimensions?: string

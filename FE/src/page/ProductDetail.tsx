@@ -107,8 +107,17 @@ export default function ProductDetailPage() {
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>
   if (!product) return <div className="p-8 text-center">Product not found</div>
 
-  const galleryImages = [product.imageUrl]
-  const galleryLabels = galleryImages.map((_, i) => `Image ${i + 1}`)
+  // Gộp ảnh chính + mảng thumbnail từ Cloudinary
+  const rawImages = Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : []
+  // Đặt imageUrl ở đầu (ảnh chính), sau đó là các thumbnail — loại bỏ trùng lặp
+  const galleryImages = [
+    product.imageUrl,
+    ...rawImages.filter((img) => img !== product.imageUrl),
+  ]
+  const galleryLabels = galleryImages.map((_, i) => i === 0 ? 'Main' : `View ${i}`)
+
 
   const colorOptions = product.color ? [{ name: product.color, hex: product.colorHex ?? '#C4A08A' }] : []
   const fabricOptions = product.material ? [product.material] : []
@@ -161,13 +170,31 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
-              {galleryImages.map((img, idx) => (
-                <button key={idx} onClick={() => setActiveImage(idx)} className={`relative overflow-hidden rounded-xl aspect-square transition-all duration-300 ${activeImage === idx ? 'ring-2 ring-[#a08c6a] ring-offset-2' : 'opacity-60 hover:opacity-100'}`}>
-                  <ImageWithFallback src={img} alt={galleryLabels[idx]} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+            {/* ── Thumbnail Strip ── */}
+            {galleryImages.length > 1 && (
+              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    title={galleryLabels[idx]}
+                    className={`relative flex-shrink-0 overflow-hidden rounded-xl transition-all duration-300 ${
+                      activeImage === idx
+                        ? 'ring-2 ring-[#a08c6a] ring-offset-2 opacity-100'
+                        : 'opacity-50 hover:opacity-80'
+                    }`}
+                    style={{ width: 76, height: 76 }}
+                  >
+                    <ImageWithFallback src={img} alt={galleryLabels[idx]} className="w-full h-full object-cover" />
+                    {/* Active dot indicator */}
+                    {activeImage === idx && (
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#a08c6a]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
           </div>
 
           <div className="lg:pt-4">
