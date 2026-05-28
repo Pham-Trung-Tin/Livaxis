@@ -23,7 +23,6 @@ type CreateProductInput = {
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew?: boolean;
   affiliateUrl: string;
 };
 
@@ -52,7 +51,6 @@ export type ProductPublic = {
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew: boolean;
   affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
@@ -73,7 +71,6 @@ export type ProductListQuery = {
   materials?: string[];
   colors?: string[];
   priceRanges?: NewArrivalsPriceRange[];
-  isNewOnly?: boolean;
   sortBy?:
     | 'newest'
     | 'oldest'
@@ -99,7 +96,6 @@ const toPublicProduct = (product: IProduct): ProductPublic => ({
   material: product.material,
   color: product.color,
   colorHex: product.colorHex,
-  isNew: product.isNew,
   affiliateUrl: product.affiliateUrl,
   createdAt: product.createdAt,
   updatedAt: product.updatedAt,
@@ -175,7 +171,7 @@ const getSort = (sortBy: ProductListQuery['sortBy']): Record<string, 1 | -1> => 
       return { createdAt: 1 };
     case 'featured':
     case 'newestFirst':
-      return { isNew: -1, createdAt: -1 };
+      return { createdAt: -1 };
     case 'priceAsc':
       return { price: 1 };
     case 'priceDesc':
@@ -239,10 +235,6 @@ export const listProducts = async (
     filters.push({ style: query.style });
   }
 
-  if (query.isNewOnly) {
-    filters.push({ isNew: true });
-  }
-
   if (query.materials && query.materials.length > 0) {
     filters.push({ material: { $in: query.materials } });
   }
@@ -282,9 +274,9 @@ export const getNewArrivalsFacets = async (): Promise<{
   colors: Array<{ name: string; hex: string }>;
 }> => {
   const [materials, colorRows] = await Promise.all([
-    Product.distinct('material', { isNew: true, material: { $exists: true, $ne: '' } }),
+    Product.distinct('material', { material: { $exists: true, $ne: '' } }),
     Product.aggregate<{ name: string; hex: string }>([
-      { $match: { isNew: true, color: { $exists: true, $ne: '' }, colorHex: { $exists: true, $ne: '' } } },
+      { $match: { color: { $exists: true, $ne: '' }, colorHex: { $exists: true, $ne: '' } } },
       {
         $group: {
           _id: '$color',

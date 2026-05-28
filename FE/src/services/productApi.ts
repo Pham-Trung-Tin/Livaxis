@@ -1,6 +1,4 @@
-type NewArrivalsSort = 'featured' | 'priceAsc' | 'priceDesc' | 'newestFirst'
-
-type NewArrivalsPriceRange = 'under_1500' | '1500_3000' | '3000_5000' | '5000_plus'
+type NewArrivalsSort = 'featured' | 'nameAsc' | 'nameDesc' | 'newestFirst'
 
 export type NewArrivalProduct = {
   id: string
@@ -12,7 +10,6 @@ export type NewArrivalProduct = {
   material?: string
   color?: string
   colorHex?: string
-  isNew: boolean
   affiliateUrl?: string
 }
 
@@ -35,7 +32,6 @@ export type GetNewArrivalsParams = {
   limit?: number
   materials?: string[]
   colors?: string[]
-  priceRanges?: NewArrivalsPriceRange[]
   sortBy?: NewArrivalsSort
 }
 
@@ -56,9 +52,6 @@ const toQueryString = (params: GetNewArrivalsParams): string => {
     query.set('colors', params.colors.join(','))
   }
 
-  if (params.priceRanges && params.priceRanges.length > 0) {
-    query.set('priceRanges', params.priceRanges.join(','))
-  }
 
   const output = query.toString()
   return output ? `?${output}` : ''
@@ -95,7 +88,7 @@ export const getNewArrivals = async (
 }
 
 export const getFeaturedProducts = async (limit: number = 6): Promise<NewArrivalProduct[]> => {
-  const response = await fetch(`${API_BASE}?limit=${limit}&isNewOnly=true&sortBy=featured`, {
+  const response = await fetch(`${API_BASE}?limit=${limit}&sortBy=featured`, {
     credentials: 'include',
   })
 
@@ -123,8 +116,6 @@ export type ProductDetail = {
   material?: string
   color?: string
   colorHex?: string
-  isNew?: boolean
-  stock?: number
   affiliateUrl?: string
 }
 

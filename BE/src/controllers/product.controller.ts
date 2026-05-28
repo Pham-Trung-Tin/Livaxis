@@ -39,8 +39,6 @@ const parseSortByQuery = (value: unknown): ProductListQuery['sortBy'] => {
   const allowed: ProductListQuery['sortBy'][] = [
     'newest',
     'oldest',
-    'priceAsc',
-    'priceDesc',
     'nameAsc',
     'nameDesc',
     'featured',
@@ -124,38 +122,6 @@ const parseRequiredStringArrayQuery = (value: unknown): string[] => {
   return parseStringArrayQuery(value) ?? [];
 };
 
-const parseBooleanQuery = (value: unknown, fallback = false): boolean => {
-  const raw = getQueryString(value);
-
-  if (!raw) {
-    return fallback;
-  }
-
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === 'true' || normalized === '1') {
-    return true;
-  }
-
-  if (normalized === 'false' || normalized === '0') {
-    return false;
-  }
-
-  return fallback;
-};
-
-const parsePriceRangesQuery = (value: unknown): NewArrivalsPriceRange[] | undefined => {
-  const rawItems = parseStringArrayQuery(value);
-  if (!rawItems) {
-    return undefined;
-  }
-
-  const allowed = new Set<NewArrivalsPriceRange>(['under_1500', '1500_3000', '3000_5000', '5000_plus']);
-  const valid = rawItems.filter((item): item is NewArrivalsPriceRange =>
-    allowed.has(item as NewArrivalsPriceRange),
-  );
-
-  return valid.length > 0 ? valid : undefined;
-};
 
 const parseProductListQuery = (req: Request): ProductListQuery => ({
   page: parseNumberQuery(req.query.page, 1),
@@ -165,8 +131,6 @@ const parseProductListQuery = (req: Request): ProductListQuery => ({
   style: parseStyleQuery(req.query.style),
   materials: parseStringArrayQuery(req.query.materials),
   colors: parseStringArrayQuery(req.query.colors),
-  priceRanges: parsePriceRangesQuery(req.query.priceRanges),
-  isNewOnly: parseBooleanQuery(req.query.isNewOnly, false),
   sortBy: parseSortByQuery(req.query.sortBy),
 });
 
@@ -247,7 +211,6 @@ export const listDiscoveryController = asyncHandler(async (req: Request, res: Re
   const [result, availableFilters] = await Promise.all([
     listProducts({
       ...query,
-      isNewOnly: true,
       sortBy: query.sortBy ?? 'featured',
     }),
     getNewArrivalsFacets(),
