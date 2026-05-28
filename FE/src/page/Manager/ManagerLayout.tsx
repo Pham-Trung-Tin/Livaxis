@@ -38,7 +38,7 @@ export default function ManagerLayout() {
         <div className="manager-sidebar-logo">
           <Link to="/manager" className="manager-logo-link">
             <span className="manager-logo-text">Livaxis</span>
-            <span className="manager-logo-badge">Admin</span>
+            <span className="manager-logo-badge">Manager</span>
           </Link>
         </div>
 
