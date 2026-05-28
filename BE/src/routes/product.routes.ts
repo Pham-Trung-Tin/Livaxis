@@ -23,7 +23,7 @@ productRouter.get('/:id', validateRequest(productIdSchema), getProductByIdContro
 productRouter.post(
   '/',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(createProductSchema),
   createProductController,
 );
@@ -31,7 +31,7 @@ productRouter.post(
 productRouter.patch(
   '/:id',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(updateProductSchema),
   updateProductController,
 );
@@ -39,7 +39,7 @@ productRouter.patch(
 productRouter.delete(
   '/:id',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(productIdSchema),
   deleteProductController,
 );

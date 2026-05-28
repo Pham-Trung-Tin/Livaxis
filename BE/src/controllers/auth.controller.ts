@@ -53,7 +53,7 @@ export const signOutController = asyncHandler(async (_req: Request, res: Respons
 });
 
 export const getMeController = asyncHandler(async (req: Request, res: Response) => {
-  const authUser = req.user as { id: string; role: 'user' | 'admin' } | undefined;
+  const authUser = req.user as { id: string; role: 'user' | 'manager' } | undefined;
 
   if (!authUser?.id) {
     throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');
@@ -145,7 +145,7 @@ export const googleAuthNotConfiguredController = asyncHandler(async (_req: Reque
 });
 
 export const uploadAvatarController = asyncHandler(async (req: Request, res: Response) => {
-  const authUser = req.user as { id: string; role: 'user' | 'admin' } | undefined;
+  const authUser = req.user as { id: string; role: 'user' | 'manager' } | undefined;
 
   if (!authUser?.id) {
     throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');

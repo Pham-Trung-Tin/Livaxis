@@ -7,7 +7,7 @@ import User from '../models/user.model';
 
 export type GoogleAuthUser = {
   id: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'manager';
 };
 
 export const googleOAuthEnabled = Boolean(

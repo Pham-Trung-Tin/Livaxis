@@ -26,11 +26,13 @@ function SignIn() {
 
     try {
       const response = await signIn({ username, password })
-      setUser(response?.data?.user ?? null)
+      const userData = response?.data?.user ?? null
+      setUser(userData)
       setSuccessMessage('Sign in successful. Redirecting...')
       setStep('success')
+      const destination = userData?.role === 'manager' ? '/manager' : '/'
       window.setTimeout(() => {
-        navigate('/')
+        navigate(destination)
       }, 2000)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign in failed'
@@ -53,7 +55,8 @@ function SignIn() {
       setErrorMessage('')
       setSuccessMessage('Google sign in successful. Redirecting...')
       setStep('success')
-      void refreshUser().then(() => {
+      void refreshUser().then((freshUser) => {
+        // refreshUser updates context; read from context via the auth hook after refresh
         window.setTimeout(() => {
           navigate('/')
         }, 2000)

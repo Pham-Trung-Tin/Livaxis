@@ -1,5 +1,5 @@
 export const ROLES = {
-  ADMIN: 'admin',
+  MANAGER: 'manager',
   USER: 'user',
 } as const;
 
@@ -16,7 +16,7 @@ export enum Permission {
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  [ROLES.ADMIN]: [
+  [ROLES.MANAGER]: [
     Permission.USER_READ,
     Permission.USER_UPDATE,
     Permission.PRODUCT_READ,
@@ -32,7 +32,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 };
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [ROLES.ADMIN]: 100,
+  [ROLES.MANAGER]: 100,
   [ROLES.USER]: 10,
 };
 
