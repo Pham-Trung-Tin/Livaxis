@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Sparkles,
-  Check,
   ChevronLeft,
   ChevronRight,
   Shield,
@@ -403,35 +402,32 @@ export default function ProductDetailPage() {
 
             <div className="h-px bg-neutral-100 mb-8" />
 
-            {/* Color (info only) */}
+            {/* Color — info only */}
             {colorOptions.length > 0 && (
-              <div className="mb-7">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] uppercase text-neutral-800">Color</span>
-                  <span className="text-[12px] text-neutral-400">{colorOptions[0].name}</span>
-                </div>
-                <div className="flex gap-3">
-                  {colorOptions.map((color) => (
-                    <div
-                      key={color.name}
-                      className="relative w-10 h-10 rounded-full ring-2 ring-offset-3 ring-[#a08c6a]"
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    >
-                      <Check size={14} className="absolute inset-0 m-auto text-white" />
-                    </div>
-                  ))}
+              <div className="mb-6">
+                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">Color</span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-block w-4 h-4 rounded-full border border-black/10 flex-shrink-0"
+                    style={{ backgroundColor: colorOptions[0].hex }}
+                  />
+                  <span className="text-[13px] text-neutral-600">{colorOptions[0].name}</span>
                 </div>
               </div>
             )}
 
-            {/* Material (info only) */}
+            {/* Material — info only */}
             {fabricOptions.length > 0 && (
               <div className="mb-8">
-                <span className="text-[11px] uppercase text-neutral-800 block mb-3">Material</span>
-                <div className="flex gap-3">
+                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">Material</span>
+                <div className="flex flex-wrap gap-2">
                   {fabricOptions.map((fabric) => (
-                    <span key={fabric} className="px-5 py-2.5 rounded-lg text-[12px] bg-black text-white">{fabric}</span>
+                    <span
+                      key={fabric}
+                      className="px-3 py-1 rounded-full text-[12px] text-neutral-500 bg-neutral-100 border border-neutral-200"
+                    >
+                      {fabric}
+                    </span>
                   ))}
                 </div>
               </div>

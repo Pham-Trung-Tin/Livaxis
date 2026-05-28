@@ -351,7 +351,7 @@ export function DiscoveryPage() {
     }
 
     return result
-  }, [priceRange, selectedCategory, sortBy, products])
+  }, [selectedCategory, sortBy, products])
 
   const SidebarContent = () => (
     <div className="py-2">
