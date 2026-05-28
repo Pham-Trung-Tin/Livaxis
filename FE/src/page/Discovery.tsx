@@ -29,7 +29,7 @@ function categoryToColor(cat: string) {
 // Products are fetched from the backend. See `getFeaturedProducts` below.
 
 const CATEGORIES = ['All', 'Sofas', 'Tables', 'Chairs', 'Beds', 'Lighting', 'Storage', 'Decor']
-const SORT_OPTIONS = ['Featured', 'Price: Low to High', 'Price: High to Low', 'Newest First']
+const SORT_OPTIONS = ['Featured', 'A – Z', 'Z – A', 'Newest First']
 
 function ImageWithFallback({
   src,
@@ -250,7 +250,7 @@ const ProductCard = forwardRef<HTMLElement, {
             className="text-[10px] uppercase tracking-[0.12em] text-neutral-300"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
           >
-            Free delivery
+            Shop on Shopee
           </span>
         </div>
 
@@ -304,7 +304,6 @@ ProductCard.displayName = 'ProductCard'
 export function DiscoveryPage() {
   const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [priceRange, setPriceRange] = useState([0, 6000])
   const [sortBy, setSortBy] = useState('Featured')
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
@@ -334,9 +333,7 @@ export function DiscoveryPage() {
     }
   }, [])
 
-  const activeFiltersCount =
-    (selectedCategory !== 'All' ? 1 : 0) +
-    (priceRange[0] !== 0 || priceRange[1] !== 6000 ? 1 : 0)
+  const activeFiltersCount = selectedCategory !== 'All' ? 1 : 0
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -345,14 +342,12 @@ export function DiscoveryPage() {
       result = result.filter((product) => product.category === selectedCategory)
     }
 
-    result = result.filter((product) => product.price >= priceRange[0] && product.price <= priceRange[1])
-
-    if (sortBy === 'Price: Low to High') {
-      result.sort((a, b) => a.price - b.price)
-    } else if (sortBy === 'Price: High to Low') {
-      result.sort((a, b) => b.price - a.price)
+    if (sortBy === 'A – Z') {
+      result.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sortBy === 'Z – A') {
+      result.sort((a, b) => b.name.localeCompare(a.name))
     } else if (sortBy === 'Newest First') {
-      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0))
+      // newest = already sorted by createdAt desc from API, keep order
     }
 
     return result
@@ -364,7 +359,6 @@ export function DiscoveryPage() {
         <button
           onClick={() => {
             setSelectedCategory('All')
-            setPriceRange([0, 6000])
           }}
           className="mb-6 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.1em] text-[#a08c6a] transition-colors hover:text-[#7a6644]"
           style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
@@ -393,40 +387,6 @@ export function DiscoveryPage() {
               <span className="text-[13px]">{category}</span>
             </button>
           ))}
-        </div>
-      </FilterSection>
-
-      <FilterSection title="Price Range">
-        <div className="px-2">
-          <Slider.Root
-            className="relative flex h-5 w-full select-none items-center touch-none"
-            value={priceRange}
-            onValueChange={setPriceRange}
-            max={6000}
-            step={100}
-            minStepsBetweenThumbs={1}
-          >
-            <Slider.Track className="relative h-[2px] grow rounded-full bg-neutral-200">
-              <Slider.Range className="absolute h-full rounded-full bg-black" />
-            </Slider.Track>
-            <Slider.Thumb
-              className="block h-4 w-4 rounded-full bg-black shadow-md focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-              style={{ cursor: 'grab' }}
-              aria-label="Minimum price"
-            />
-            <Slider.Thumb
-              className="block h-4 w-4 rounded-full bg-black shadow-md focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-              style={{ cursor: 'grab' }}
-              aria-label="Maximum price"
-            />
-          </Slider.Root>
-          <div
-            className="mt-3 flex justify-between text-[12px] text-[#717182]"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            <span>${priceRange[0].toLocaleString()}</span>
-            <span>${priceRange[1].toLocaleString()}</span>
-          </div>
         </div>
       </FilterSection>
     </div>
@@ -618,20 +578,6 @@ export function DiscoveryPage() {
                       </button>
                     </span>
                   ) : null}
-                  {priceRange[0] !== 0 || priceRange[1] !== 6000 ? (
-                    <span
-                      className="flex items-center gap-2 rounded-full bg-[#f7f5f1] px-3 py-1.5 text-[11px] text-neutral-600"
-                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
-                    >
-                      ${priceRange[0]} - ${priceRange[1]}
-                      <button
-                        onClick={() => setPriceRange([0, 6000])}
-                        className="text-neutral-400 transition-colors hover:text-black"
-                      >
-                        <X size={10} />
-                      </button>
-                    </span>
-                  ) : null}
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -654,7 +600,6 @@ export function DiscoveryPage() {
                 <button
                   onClick={() => {
                     setSelectedCategory('All')
-                    setPriceRange([0, 6000])
                   }}
                   className="rounded-full border border-black/12 px-6 py-2.5 text-[11px] uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-black/30"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}

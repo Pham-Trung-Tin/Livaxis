@@ -370,11 +370,6 @@ export default function ProductDetailPage() {
           <div className="lg:pt-4">
             {/* Badge */}
             <div className="flex items-center gap-3 mb-5">
-              {product.isNew && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border bg-[#c8b898]/5 text-[10px] text-[#8a7456]">
-                  <Sparkles size={11} /> New Arrival
-                </span>
-              )}
             </div>
 
             {/* Name */}
@@ -393,13 +388,16 @@ export default function ProductDetailPage() {
               <span className="text-[12px] text-neutral-400">4.8 (127 reviews)</span>
             </div>
 
-            {/* Price */}
-            <div className="flex items-baseline gap-3 mb-8">
-              <span className="text-[28px] text-black" style={{ fontFamily: "'Playfair Display', serif" }}>
-                ${product.price.toLocaleString()}
-              </span>
-              <span className="text-[12px] text-neutral-400">Reference price</span>
-            </div>
+            {/* Reference price — affiliate style */}
+            {product.price && (
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-[13px] text-neutral-400">Khoảng</span>
+                <span className="text-[15px] font-medium text-neutral-600" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {product.price.toLocaleString('vi-VN')}₫
+                </span>
+                <span className="text-[11px] text-neutral-300">· giá tham khảo trên Shopee</span>
+              </div>
+            )}
 
             <p className="text-neutral-500 text-[14px] leading-[1.8] mb-8 max-w-lg">{product.description}</p>
 

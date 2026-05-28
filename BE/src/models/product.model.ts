@@ -22,7 +22,6 @@ export interface IProduct extends Document {
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew: boolean;
   affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
@@ -81,11 +80,6 @@ const ProductSchema: Schema = new Schema(
       type: String,
       trim: true,
       match: [/^#([0-9a-fA-F]{6})$/, 'Invalid hex color'],
-    },
-    isNew: {
-      type: Boolean,
-      default: false,
-      index: true,
     },
     affiliateUrl: {
       type: String,
