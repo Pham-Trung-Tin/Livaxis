@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/auth-context'
 import { CartProvider } from './contexts/cart-context'
 import { ToastProvider } from './contexts/toast-context'
+import { ManagerGuard } from './components/guards/ManagerGuard'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
@@ -17,6 +18,12 @@ const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
 const AIRoomPlannerPage = lazy(() => import('./page/AIRoomPlanner'))
 const CartPage = lazy(() => import('./page/Cart'))
 const CheckoutPage = lazy(() => import('./page/Checkout'))
+
+// Manager pages
+const ManagerLayout = lazy(() => import('./page/Manager/ManagerLayout'))
+const ManagerDashboard = lazy(() => import('./page/Manager/ManagerDashboard'))
+const ProductListPage = lazy(() => import('./page/Manager/products/ProductListPage'))
+const ProductFormPage = lazy(() => import('./page/Manager/products/ProductFormPage'))
 
 export default function App() {
   return (
@@ -39,6 +46,22 @@ export default function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/new-arrivals" element={<Navigate to="/discovery" replace />} />
+
+              {/* Manager routes — admin only */}
+              <Route
+                path="/manager"
+                element={
+                  <ManagerGuard>
+                    <ManagerLayout />
+                  </ManagerGuard>
+                }
+              >
+                <Route index element={<ManagerDashboard />} />
+                <Route path="products" element={<ProductListPage />} />
+                <Route path="products/new" element={<ProductFormPage mode="create" />} />
+                <Route path="products/:id" element={<ProductFormPage mode="edit" />} />
+              </Route>
+
               <Route path="*" element={<HomePage />} />
             </Routes>
           </Suspense>

@@ -3,7 +3,7 @@ import { env } from '../config/env';
 
 export type TokenPayload = {
   sub: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'manager';
 };
 
 export const signAccessToken = (payload: TokenPayload): string => {
