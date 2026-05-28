@@ -635,10 +635,9 @@ function Hompage() {
   const [error, setError] = useState<string | null>(null)
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-US', {
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
+      currency: 'VND',
     }).format(price)
 
   useEffect(() => {

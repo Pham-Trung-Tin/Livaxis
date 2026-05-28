@@ -244,7 +244,7 @@ const ProductCard = forwardRef<HTMLElement, {
             className="text-[15px] text-[#5a4a38]"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
           >
-            {product.price ? `$${product.price.toLocaleString()}` : ''}
+            {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : ''}
           </span>
           <span
             className="text-[10px] uppercase tracking-[0.12em] text-neutral-300"
