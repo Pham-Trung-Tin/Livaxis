@@ -14,7 +14,7 @@ export default function ManagerDashboard() {
           <h1 className="mgr-dash-title">{user?.name ?? 'Admin'}</h1>
         </div>
         <div className="mgr-dash-badge">
-          <span>Admin Panel</span>
+          <span>Manager Panel</span>
         </div>
       </div>
 
