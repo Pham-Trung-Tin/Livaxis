@@ -25,7 +25,7 @@ export type UserPublic = {
   name: string;
   email: string;
   avatarUrl?: string;
-  role: 'user' | 'manager';
+  role: 'user' | 'manager' | 'admin';
   isActive: boolean;
   emailVerified: boolean;
   createdAt: Date;
@@ -100,7 +100,10 @@ export const login = async (input: SignInInput): Promise<{
   accessToken: string;
   refreshToken: string;
 }> => {
-  const user = await User.findOne({ username: input.username }).select('+passwordHash');
+  const identifier = input.username.toLowerCase();
+  const user = await User.findOne({
+    $or: [{ username: input.username }, { email: identifier }],
+  }).select('+passwordHash');
   if (!user) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Username or password is incorrect');
   }

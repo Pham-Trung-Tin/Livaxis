@@ -30,7 +30,7 @@ function SignIn() {
       setUser(userData)
       setSuccessMessage('Sign in successful. Redirecting...')
       setStep('success')
-      const destination = userData?.role === 'manager' ? '/manager' : '/'
+      const destination = userData?.role === 'admin' ? '/admin' : userData?.role === 'manager' ? '/manager' : '/'
       window.setTimeout(() => {
         navigate(destination)
       }, 2000)
@@ -186,7 +186,7 @@ function SignIn() {
                           }`}
                           style={{ fontWeight: usernameFocused || username ? 500 : 300 }}
                         >
-                          Username
+                          Username or Email
                         </label>
                         <input
                           id="username"

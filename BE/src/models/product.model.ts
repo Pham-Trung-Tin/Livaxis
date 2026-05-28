@@ -3,6 +3,8 @@ import mongoose, { Schema, type Document } from 'mongoose';
 export interface IProduct extends Document {
   name: string;
   subtitle?: string;
+  sku?: string;
+  stock: number;
   category:
     | 'Lounge Chair'
     | 'Seating'
@@ -38,6 +40,17 @@ const ProductSchema: Schema = new Schema(
       type: String,
       trim: true,
       maxlength: 180,
+    },
+    sku: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     category: {
       type: String,
