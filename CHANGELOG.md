@@ -13,6 +13,7 @@
    - [Frontend — API Types](#14-frontend--api-types)
    - [Frontend — ProductDetail UI](#15-frontend--productdetail-ui)
    - [Frontend — Discovery Page](#16-frontend--discovery-page)
+   - [Frontend — Homepage UI](#17-frontend--homepage-ui)
 2. [Manager Panel (Admin UI)](#2-manager-panel-admin-ui)
    - [Auth Context](#21-auth-context)
    - [Manager Layout](#22-manager-layout)
@@ -166,10 +167,37 @@
 | ✅ Thêm sort `A – Z` / `Z – A` | Sort theo tên |
 | 🔧 "Free delivery" → "Shop on Shopee" | Label trên card product |
 | 🔧 Xóa `priceRange` khỏi `useMemo` deps | Fix `ReferenceError` |
+| 🔧 Đổi hiển thị giá từ USD ($) sang VND (₫) | Đồng bộ định dạng tiền tệ với các trang khác |
 
 ```diff
 - const SORT_OPTIONS = ['Featured', 'Price: Low to High', 'Price: High to Low', 'Newest First']
 + const SORT_OPTIONS = ['Featured', 'A – Z', 'Z – A', 'Newest First']
+```
+
+```diff
+-            {product.price ? `$${product.price.toLocaleString()}` : ''}
++            {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : ''}
+```
+
+---
+
+### 1.7 Frontend — Homepage UI
+
+**File:** `FE/src/page/Hompage.tsx`
+
+| Thay đổi | Chi tiết |
+|---|---|
+| 🔧 Đổi định dạng giá từ USD sang VND | Sử dụng locale `vi-VN` và currency `VND` trong hàm `formatPrice` |
+
+```diff
+  const formatPrice = (price: number) =>
+-    new Intl.NumberFormat('en-US', {
++    new Intl.NumberFormat('vi-VN', {
+       style: 'currency',
+-      currency: 'USD',
+-      maximumFractionDigits: 0,
++      currency: 'VND',
+     }).format(price)
 ```
 
 ---
