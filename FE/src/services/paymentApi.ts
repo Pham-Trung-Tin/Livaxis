@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api/payment'
+const API_BASE = '/api/payment'
 
 /**
  * Register a new subscription order with the backend.
