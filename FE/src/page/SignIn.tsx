@@ -30,7 +30,7 @@ function SignIn() {
       setUser(userData)
       setSuccessMessage('Sign in successful. Redirecting...')
       setStep('success')
-      const destination = userData?.role === 'admin' ? '/admin' : userData?.role === 'manager' ? '/manager' : '/'
+      const destination = userData?.role === 'admin' ? '/admin' : '/'
       window.setTimeout(() => {
         navigate(destination)
       }, 2000)
