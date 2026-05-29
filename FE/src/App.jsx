@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/auth-context'
 import { CartProvider } from './contexts/cart-context'
 import { ToastProvider } from './contexts/toast-context'
 import { ManagerGuard } from './components/guards/ManagerGuard'
+import { AdminGuard } from './components/guards/AdminGuard'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
@@ -24,6 +25,13 @@ const ManagerLayout = lazy(() => import('./page/Manager/ManagerLayout'))
 const ManagerDashboard = lazy(() => import('./page/Manager/ManagerDashboard'))
 const ProductListPage = lazy(() => import('./page/Manager/products/ProductListPage'))
 const ProductFormPage = lazy(() => import('./page/Manager/products/ProductFormPage'))
+
+// Admin pages
+const AdminLayout = lazy(() => import('./page/Admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./page/Admin/AdminDashboard'))
+const AdminUserManagement = lazy(() => import('./page/Admin/UserManagement'))
+const AdminSubscriptionPlans = lazy(() => import('./page/Admin/SubscriptionPlans'))
+const AdminProductInventory = lazy(() => import('./page/Admin/ProductInventory'))
 
 export default function App() {
   return (
@@ -60,6 +68,21 @@ export default function App() {
                 <Route path="products" element={<ProductListPage />} />
                 <Route path="products/new" element={<ProductFormPage mode="create" />} />
                 <Route path="products/:id" element={<ProductFormPage mode="edit" />} />
+              </Route>
+
+              {/* Admin routes — super admin only */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminGuard>
+                    <AdminLayout />
+                  </AdminGuard>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUserManagement />} />
+                <Route path="subscriptions" element={<AdminSubscriptionPlans />} />
+                <Route path="products" element={<AdminProductInventory />} />
               </Route>
 
               <Route path="*" element={<HomePage />} />

@@ -1,4 +1,5 @@
 export const ROLES = {
+  ADMIN: 'admin',
   MANAGER: 'manager',
   USER: 'user',
 } as const;
@@ -8,14 +9,20 @@ export type UserRole = (typeof ROLES)[keyof typeof ROLES];
 export enum Permission {
   USER_READ = 'user:read',
   USER_UPDATE = 'user:update',
+  USER_SUSPEND = 'user:suspend',
+  USER_MANAGE_ALL = 'user:manage_all',
   PRODUCT_READ = 'product:read',
   PRODUCT_CREATE = 'product:create',
   PRODUCT_UPDATE = 'product:update',
   PRODUCT_DELETE = 'product:delete',
   PRODUCT_MANAGE_ALL = 'product:manage_all',
+  SUBSCRIPTION_READ = 'subscription:read',
+  SUBSCRIPTION_MANAGE = 'subscription:manage',
+  DASHBOARD_READ = 'dashboard:read',
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [ROLES.ADMIN]: Object.values(Permission),
   [ROLES.MANAGER]: [
     Permission.USER_READ,
     Permission.USER_UPDATE,
@@ -32,6 +39,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 };
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [ROLES.ADMIN]: 200,
   [ROLES.MANAGER]: 100,
   [ROLES.USER]: 10,
 };

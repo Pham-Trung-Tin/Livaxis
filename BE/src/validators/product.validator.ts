@@ -21,6 +21,8 @@ const styleSchema = z.enum(['Minimalist', 'Modern Luxury', 'Industrial']);
 const baseProductBodySchema = z.object({
   name: z.string().trim().min(1, 'Product name is required').max(120),
   subtitle: z.string().trim().max(180).optional(),
+  sku: z.string().trim().max(50).optional(),
+  stock: z.number().int().min(0).optional(),
   category: categorySchema,
   price: z.number().min(0, 'Price cannot be negative'),
   imageUrl: z.string().trim().url('Image URL is invalid'),

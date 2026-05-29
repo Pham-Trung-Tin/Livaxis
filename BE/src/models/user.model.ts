@@ -21,6 +21,8 @@ export interface IUser extends Document {
   emailVerificationTokenHash?: string;
   emailVerificationExpiresAt?: Date;
   aiTurns: number;
+  aiTurnsUsed: number;
+  subscriptionPlan: 'starter' | 'standard' | 'premium' | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +87,15 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(ROLES),
       default: ROLES.USER,
+    },
+    subscriptionPlan: {
+      type: String,
+      enum: ['starter', 'standard', 'premium', null],
+      default: null,
+    },
+    aiTurnsUsed: {
+      type: Number,
+      default: 0,
     },
     isActive: {
       type: Boolean,

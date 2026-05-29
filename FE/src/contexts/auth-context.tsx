@@ -6,7 +6,9 @@ export type AuthUser = {
   name: string
   email: string
   avatarUrl?: string
-  role: 'user' | 'manager'
+  role: 'user' | 'manager' | 'admin'
+  subscriptionPlan?: 'starter' | 'standard' | 'premium' | null
+  aiTurnsUsed?: number
   isActive: boolean
   emailVerified: boolean
   createdAt: string
