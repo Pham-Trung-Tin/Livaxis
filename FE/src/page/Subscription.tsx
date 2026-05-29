@@ -29,14 +29,14 @@ type Plan = {
   name: string
   tagline: string
   price: { monthly: string; yearly: string }
-  priceNote?: string
-  turns: string
-  turnsNote: string
-  turnsToAdd: number
+  priceNote?: { monthly: string; yearly: string }
+  turns: { monthly: string; yearly: string }
+  turnsNote: { monthly: string; yearly: string }
+  turnsToAdd: { monthly: number; yearly: number }
   cta: string
   ctaStyle: 'ghost' | 'outline' | 'charcoal' | 'gold'
   highlight: boolean
-  features: string[]
+  features: { monthly: string[]; yearly: string[] }
   extras?: string[]
 }
 
@@ -46,38 +46,55 @@ const PLANS: Plan[] = [
     name: 'Daily Inspiration',
     tagline: 'Begin your design journey',
     price: { monthly: '$0', yearly: '$0' },
-    turns: '3 AI Try-On turns',
-    turnsNote: 'per day · resets at midnight',
-    turnsToAdd: 0,
+    turns: { monthly: '3 AI Try-On turns', yearly: '3 AI Try-On turns' },
+    turnsNote: { monthly: 'per day · resets at midnight', yearly: 'per day · resets at midnight' },
+    turnsToAdd: { monthly: 0, yearly: 0 },
     cta: 'Current Plan',
     ctaStyle: 'ghost',
     highlight: false,
-    features: [
-      '3 AI Try-On turns / day',
-      'Standard resolution exports',
-      'Basic room analysis',
-      'Community gallery access',
-    ],
+    features: {
+      monthly: [
+        '3 AI Try-On turns / day',
+        'Standard resolution exports',
+        'Basic room analysis',
+        'Community gallery access',
+      ],
+      yearly: [
+        '3 AI Try-On turns / day',
+        'Standard resolution exports',
+        'Basic room analysis',
+        'Community gallery access',
+      ],
+    },
   },
   {
     id: 'starter',
     name: 'Starter Pack',
     tagline: 'Perfect for occasional use',
     price: { monthly: '19.000 ₫', yearly: '190.000 ₫' },
-    priceNote: 'one-time · no subscription',
-    turns: '10 AI Try-On turns',
-    turnsNote: 'valid for 30 days',
-    turnsToAdd: 10,
+    priceNote: { monthly: 'one-time · no subscription', yearly: 'one-time · no subscription' },
+    turns: { monthly: '10 AI Try-On turns', yearly: '10 AI Try-On turns' },
+    turnsNote: { monthly: 'valid for 30 days', yearly: 'valid for 30 days' },
+    turnsToAdd: { monthly: 10, yearly: 10 },
     cta: 'Choose Starter',
     ctaStyle: 'outline',
     highlight: false,
-    features: [
-      '10 AI Try-On turns',
-      'Unlimited high-res downloads',
-      'Gemini AI Priority Processing',
-      'Before / After comparisons',
-      'Email support',
-    ],
+    features: {
+      monthly: [
+        '10 AI Try-On turns',
+        'Unlimited high-res downloads',
+        'Gemini AI Priority Processing',
+        'Before / After comparisons',
+        'Email support',
+      ],
+      yearly: [
+        '10 AI Try-On turns',
+        'Unlimited high-res downloads',
+        'Gemini AI Priority Processing',
+        'Before / After comparisons',
+        'Email support',
+      ],
+    },
   },
   {
     id: 'standard',
@@ -85,21 +102,31 @@ const PLANS: Plan[] = [
     name: 'Design Enthusiast',
     tagline: 'Elevate your interiors',
     price: { monthly: '49.000 ₫', yearly: '490.000 ₫' },
-    priceNote: 'per month',
-    turns: '50 AI Try-On turns',
-    turnsNote: 'per month · rolls over',
-    turnsToAdd: 50,
+    priceNote: { monthly: 'per month', yearly: 'per year · save 10%' },
+    turns: { monthly: '50 AI Try-On turns', yearly: '600 AI Try-On turns' },
+    turnsNote: { monthly: 'per month · rolls over', yearly: 'per year · ~50/month' },
+    turnsToAdd: { monthly: 50, yearly: 600 },
     cta: 'Choose Standard',
     ctaStyle: 'charcoal',
     highlight: true,
-    features: [
-      '50 AI Try-On turns / month',
-      'Unlimited high-res downloads',
-      'Gemini AI Priority Processing',
-      'Advanced decor suggestions',
-      'Style profile & mood board',
-      'Priority email support',
-    ],
+    features: {
+      monthly: [
+        '50 AI Try-On turns / month',
+        'Unlimited high-res downloads',
+        'Gemini AI Priority Processing',
+        'Advanced decor suggestions',
+        'Style profile & mood board',
+        'Priority email support',
+      ],
+      yearly: [
+        '600 AI Try-On turns / year',
+        'Unlimited high-res downloads',
+        'Gemini AI Priority Processing',
+        'Advanced decor suggestions',
+        'Style profile & mood board',
+        'Priority email support',
+      ],
+    },
     extras: ['Exclusive member drops', 'Early access to new features'],
   },
 ]
@@ -267,11 +294,12 @@ export default function SubscriptionPage() {
     setPaymentPlan(plan)
     setPaymentOpen(true)
     // Register the order with the backend so the webhook can credit aiTurns
+    // Use yearly turnsToAdd when billing is yearly
     if (user?.id) {
       void registerSubscriptionOrder({
         orderId: subOrderId,
         userId: user.id,
-        turnsToAdd: plan.turnsToAdd,
+        turnsToAdd: plan.turnsToAdd[billing],
       }).catch((err) => console.warn('[Payment] Failed to register order:', err))
     }
   }
@@ -667,7 +695,7 @@ export default function SubscriptionPage() {
                   </h3>
                   <p className="text-[12px] text-neutral-400">
                     {billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly}
-                    {paymentPlan.priceNote ? ` · ${billing === 'yearly' && paymentPlan.id !== 'starter' ? paymentPlan.priceNote.replace('per month', 'per year') : paymentPlan.priceNote}` : ''}
+                    {paymentPlan.priceNote ? ` · ${paymentPlan.priceNote[billing]}` : ''}
                   </p>
                 </div>
                 <button
@@ -890,7 +918,7 @@ function PricingCard({
           </div>
           {plan.priceNote && (
             <p className="mt-1 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              {billing === 'yearly' && plan.id !== 'starter' ? plan.priceNote.replace('per month', 'per year') : plan.priceNote}
+              {plan.priceNote[billing]}
             </p>
           )}
         </div>
@@ -905,16 +933,16 @@ function PricingCard({
           <Camera size={14} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[#a08c6a]" />
           <div>
             <p className="text-[12px] text-black" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-              {plan.turns}
+              {plan.turns[billing]}
             </p>
             <p className="mt-0.5 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              {plan.turnsNote}
+              {plan.turnsNote[billing]}
             </p>
           </div>
         </div>
 
         <ul className="mb-6 flex-1 space-y-2.5">
-          {plan.features.map((feature, featureIndex) => (
+          {plan.features[billing].map((feature, featureIndex) => (
             <FeatureRow key={feature} text={feature} delay={featureIndex * 0.04} />
           ))}
           {plan.extras?.map((extra) => (
