@@ -3,7 +3,7 @@ import { env } from '../config/env';
 import User from '../models/user.model';
 
 // ---------------------------------------------------------------------------
-// In-memory stores.
+// In-memory stores..
 // ---------------------------------------------------------------------------
 
 interface PaymentRecord {
