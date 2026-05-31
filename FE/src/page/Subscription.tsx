@@ -14,6 +14,7 @@ import {
   Star,
   X,
   Zap,
+  ZoomIn,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -255,6 +256,7 @@ export default function SubscriptionPage() {
   const [polling, setPolling] = useState(false)
   const [qrLoaded, setQrLoaded] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
+  const [qrExpanded, setQrExpanded] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -750,7 +752,13 @@ export default function SubscriptionPage() {
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                         {/* QR Code */}
                         <div className="flex flex-col items-center gap-2">
-                          <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner">
+                          {/* Clickable QR wrapper */}
+                          <button
+                            onClick={() => qrLoaded && setQrExpanded(true)}
+                            disabled={!qrLoaded}
+                            className="group relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner transition-all duration-200 hover:border-neutral-300 hover:shadow-md focus:outline-none"
+                            title="Bấm để phóng to mã QR"
+                          >
                             {bankInfo ? (
                               <img
                                 src={buildVietQrUrl(
@@ -768,7 +776,18 @@ export default function SubscriptionPage() {
                                 <RefreshCw size={22} className="animate-spin text-neutral-300" />
                               </div>
                             ) : null}
-                          </div>
+                            {/* Zoom overlay on hover */}
+                            {qrLoaded && (
+                              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 transition-all duration-200 group-hover:bg-black/20">
+                                <div className="flex flex-col items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-lg">
+                                    <ZoomIn size={16} className="text-[#1a1a1a]" />
+                                  </div>
+                                  <span className="rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[#1a1a1a]">Phóng to</span>
+                                </div>
+                              </div>
+                            )}
+                          </button>
                           <div className="flex items-center gap-1.5 rounded-full bg-[#003087]/5 px-3 py-1">
                             <div className="h-2 w-2 rounded-full bg-[#003087]" />
                             <span className="text-[10px] font-medium uppercase tracking-widest text-[#003087]">VietQR</span>
@@ -841,6 +860,84 @@ export default function SubscriptionPage() {
                   )}
                 </AnimatePresence>
               </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* ── QR Lightbox ── */}
+      <AnimatePresence>
+        {qrExpanded && paymentPlan && bankInfo ? (
+          <motion.div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setQrExpanded(false)}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+
+            <motion.div
+              className="relative flex flex-col items-center gap-5"
+              initial={{ scale: 0.85, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.88, opacity: 0, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setQrExpanded(false)}
+                className="absolute -right-4 -top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg transition-colors hover:bg-neutral-100"
+              >
+                <X size={15} className="text-neutral-600" />
+              </button>
+
+              {/* QR Card */}
+              <div className="overflow-hidden rounded-3xl bg-white p-6 shadow-[0_32px_80px_rgba(0,0,0,0.35)]">
+                {/* Plan info */}
+                <div className="mb-4 text-center">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#a08c6a]">Thanh toán</p>
+                  <p className="mt-0.5 text-[18px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
+                    {paymentPlan.name}
+                  </p>
+                  <p className="text-[22px] font-semibold text-[#1a1a1a]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    {billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly}
+                  </p>
+                </div>
+
+                {/* Large QR */}
+                <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                  <img
+                    src={buildVietQrUrl(
+                      bankInfo,
+                      parsePrice(billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly),
+                      subOrderId,
+                    )}
+                    alt="VietQR Payment - Large"
+                    className="h-[280px] w-[280px] object-contain"
+                  />
+                </div>
+
+                {/* VietQR badge */}
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <div className="flex items-center gap-1.5 rounded-full bg-[#003087]/5 px-3 py-1.5">
+                    <div className="h-2 w-2 rounded-full bg-[#003087]" />
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-[#003087]">VietQR</span>
+                  </div>
+                  {polling && (
+                    <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5">
+                      <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                      <span className="text-[10px] text-amber-600">Đang chờ xác nhận...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Hint */}
+              <p className="text-[12px] text-white/60">Nhấn ra ngoài hoặc <span className="text-white/80">✕</span> để đóng</p>
             </motion.div>
           </motion.div>
         ) : null}
