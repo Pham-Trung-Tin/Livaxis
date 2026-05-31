@@ -229,6 +229,13 @@ function generateSubOrderId(): string {
   return 'SUB' + Date.now()
 }
 
+/** Parse chuỗi giá như '19.000 ₫' hoặc '490.000 ₫' thành số nguyên VNĐ */
+function parsePrice(priceStr: string): number {
+  // Xoá tất cả ký tự không phải số (dấu chấm, dấu phẩy, ₫, khoảng trắng, $)
+  const cleaned = priceStr.replace(/[^0-9]/g, '')
+  return parseInt(cleaned, 10) || 0
+}
+
 export default function SubscriptionPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -746,7 +753,11 @@ export default function SubscriptionPage() {
                           <div className="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner">
                             {bankInfo ? (
                               <img
-                                src={buildVietQrUrl(bankInfo, 0, subOrderId)}
+                                src={buildVietQrUrl(
+                                  bankInfo,
+                                  parsePrice(billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly),
+                                  subOrderId,
+                                )}
                                 alt="VietQR Payment"
                                 className={`h-[160px] w-[160px] object-contain transition-opacity duration-500 ${qrLoaded ? 'opacity-100' : 'opacity-0'}`}
                                 onLoad={() => setQrLoaded(true)}
@@ -780,6 +791,12 @@ export default function SubscriptionPage() {
                             { label: 'Ngân hàng', value: bankInfo?.bankShortName ?? '—', copyable: false },
                             { label: 'Số tài khoản', value: bankInfo?.accountNumber ?? '—', copyable: true, copyKey: 'account' },
                             { label: 'Chủ tài khoản', value: bankInfo?.accountName ?? '—', copyable: false },
+                            {
+                              label: 'Số tiền',
+                              value: billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly,
+                              copyable: true,
+                              copyKey: 'amount',
+                            },
                             {
                               label: 'Nội dung CK',
                               value: subOrderId,
