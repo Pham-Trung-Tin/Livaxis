@@ -6,9 +6,9 @@
     "start": "tsx src/server.ts",
     "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
     "seed:products": "tsx src/utils/seed.ts",
-    "seed:admin": "tsx src/utils/seed-admin.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:admin": "tsx src/utils/seed-admin.ts"
   },
   "dependencies": {
     "@types/passport": "^1.0.17",
@@ -32,10 +32,13 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.6.0",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.2.0",
     "mongodb-memory-server": "^10.2.3",
     "supertest": "^7.1.4",

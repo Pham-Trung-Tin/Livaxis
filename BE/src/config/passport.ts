@@ -4,10 +4,11 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy, type Profile } from 'passport-google-oauth20';
 import { env } from './env';
 import User from '../models/user.model';
+import type { UserRole } from '../constants/roles';
 
 export type GoogleAuthUser = {
   id: string;
-  role: 'user' | 'manager';
+  role: UserRole;
 };
 
 export const googleOAuthEnabled = Boolean(
