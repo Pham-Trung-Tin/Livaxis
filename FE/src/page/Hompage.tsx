@@ -16,6 +16,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
+import { useCart } from '../contexts/cart-context'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
 import heroAfterImage from '../assets/hero-after.png'
@@ -50,6 +51,7 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { user, loading: authLoading, logout } = useAuth()
+  const { itemCount } = useCart()
 
   const navLinks = [
     { label: 'Discovery', href: '/discovery' },
@@ -84,7 +86,7 @@ export function Header() {
   const handleLogout = async () => {
     await logout()
     setUserMenuOpen(false)
-    navigate('/')
+    navigate('/sign-in')
   }
 
   return (
@@ -152,8 +154,12 @@ export function Header() {
                 <span className="inline-flex h-[19px] w-[19px] animate-pulse rounded-full bg-neutral-200" />
               ) : user ? (
                 <span className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#f3ede3] text-[11px] font-semibold text-[#6f5a41]">
-                    {userInitials}
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#f3ede3] text-[11px] font-semibold text-[#6f5a41] overflow-hidden">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                    ) : (
+                      userInitials
+                    )}
                   </span>
                   <span className="hidden max-w-[130px] truncate text-[13px] text-black md:inline">{user.name}</span>
                   <ChevronDown size={13} className="hidden text-neutral-400 md:inline" />
@@ -192,8 +198,12 @@ export function Header() {
                             navigate('/profile')
                           }}
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white">
-                            {userInitials}
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[14px] font-semibold text-white overflow-hidden">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                            ) : (
+                              userInitials
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="mb-1 text-[22px] leading-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
@@ -440,12 +450,14 @@ export function Header() {
             className="relative text-neutral-500 transition-colors duration-300 hover:text-black"
           >
             <ShoppingBag size={19} strokeWidth={1.5} />
-            <span
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] text-white"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              2
-            </span>
+            {itemCount > 0 ? (
+              <span
+                className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] text-white"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {itemCount > 9 ? '9+' : itemCount}
+              </span>
+            ) : null}
           </button>
         </div>
       </div>
@@ -623,10 +635,9 @@ function Hompage() {
   const [error, setError] = useState<string | null>(null)
 
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-US', {
+    new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
+      currency: 'VND',
     }).format(price)
 
   useEffect(() => {

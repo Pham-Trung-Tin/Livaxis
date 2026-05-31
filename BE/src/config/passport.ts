@@ -7,7 +7,7 @@ import User from '../models/user.model';
 
 export type GoogleAuthUser = {
   id: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'manager';
 };
 
 export const googleOAuthEnabled = Boolean(
@@ -58,7 +58,13 @@ export const configurePassport = (): void => {
             const randomPassword = crypto.randomBytes(32).toString('hex');
             const passwordHash = await bcrypt.hash(randomPassword, 12);
 
+            // Generate a unique username from email prefix + random suffix
+            const emailPrefix = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+            const randomSuffix = crypto.randomBytes(2).toString('hex'); // 4 chars
+            const username = `${emailPrefix}_${randomSuffix}`;
+
             user = await User.create({
+              username,
               name: resolveDisplayName(profile, email),
               email,
               passwordHash,

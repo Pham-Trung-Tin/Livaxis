@@ -3,6 +3,7 @@ import {
   createProductController,
   deleteProductController,
   getProductByIdController,
+  getProductsByIdsController,
   listDiscoveryController,
   listProductsController,
   updateProductController,
@@ -16,12 +17,13 @@ const productRouter = Router();
 
 productRouter.get('/', listProductsController);
 productRouter.get('/discovery', listDiscoveryController);
+productRouter.get('/batch', getProductsByIdsController);
 productRouter.get('/:id', validateRequest(productIdSchema), getProductByIdController);
 
 productRouter.post(
   '/',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(createProductSchema),
   createProductController,
 );
@@ -29,7 +31,7 @@ productRouter.post(
 productRouter.patch(
   '/:id',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(updateProductSchema),
   updateProductController,
 );
@@ -37,7 +39,7 @@ productRouter.patch(
 productRouter.delete(
   '/:id',
   authenticate,
-  checkRole(ROLES.ADMIN),
+  checkRole(ROLES.MANAGER),
   validateRequest(productIdSchema),
   deleteProductController,
 );

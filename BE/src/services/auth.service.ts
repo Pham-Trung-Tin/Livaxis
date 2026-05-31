@@ -7,22 +7,25 @@ import { createRandomToken, hashToken } from '../utils/crypto';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 
 type SignUpInput = {
+  username: string;
   name: string;
   email: string;
+  phone?: string;
   password: string;
 };
 
 type SignInInput = {
-  email: string;
+  username: string;
   password: string;
 };
 
 export type UserPublic = {
   id: string;
+  username?: string;
   name: string;
   email: string;
   avatarUrl?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'manager' | 'admin';
   isActive: boolean;
   emailVerified: boolean;
   createdAt: Date;
@@ -31,6 +34,7 @@ export type UserPublic = {
 
 const toPublicUser = (user: IUser): UserPublic => ({
   id: user._id.toString(),
+  username: (user as any).username,
   name: user.name,
   email: user.email,
   avatarUrl: user.avatarUrl,
@@ -59,17 +63,23 @@ export const register = async (input: SignUpInput): Promise<{
   refreshToken: string;
   verificationToken?: string;
 }> => {
-  const existed = await User.findOne({ email: input.email });
-  if (existed) {
+  const existedEmail = await User.findOne({ email: input.email });
+  if (existedEmail) {
     throw new AppError(409, 'EMAIL_EXISTS', 'Email is already registered');
+  }
+  const existedUsername = await User.findOne({ username: input.username });
+  if (existedUsername) {
+    throw new AppError(409, 'USERNAME_EXISTS', 'Username is already taken');
   }
 
   const passwordHash = await bcrypt.hash(input.password, 12);
   const verificationToken = createRandomToken();
 
   const user = await User.create({
+    username: input.username,
     name: input.name,
     email: input.email,
+    phone: input.phone,
     passwordHash,
     role: 'user',
     emailVerificationTokenHash: hashToken(verificationToken),
@@ -90,9 +100,12 @@ export const login = async (input: SignInInput): Promise<{
   accessToken: string;
   refreshToken: string;
 }> => {
-  const user = await User.findOne({ email: input.email }).select('+passwordHash');
+  const identifier = input.username.toLowerCase();
+  const user = await User.findOne({
+    $or: [{ username: input.username }, { email: identifier }],
+  }).select('+passwordHash');
   if (!user) {
-    throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Username or password is incorrect');
   }
 
   if (!user.isActive) {
@@ -101,7 +114,7 @@ export const login = async (input: SignInInput): Promise<{
 
   const isMatched = await bcrypt.compare(input.password, user.passwordHash);
   if (!isMatched) {
-    throw new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+    throw new AppError(401, 'INVALID_CREDENTIALS', 'Username or password is incorrect');
   }
 
   const { accessToken, refreshToken } = buildTokens(user);
@@ -219,10 +232,6 @@ export const verifyEmail = async (token: string): Promise<void> => {
 };
 
 export const updateUserAvatar = async (userId: string, file: Express.Multer.File): Promise<UserPublic> => {
-  if (!isCloudinaryConfigured) {
-    throw new AppError(503, 'CLOUDINARY_NOT_CONFIGURED', 'Cloudinary is not configured on the server');
-  }
-
   const user = await User.findById(userId).select('+avatarPublicId');
   if (!user) {
     throw new AppError(401, 'UNAUTHORIZED', 'User not found or unauthorized');
@@ -230,6 +239,14 @@ export const updateUserAvatar = async (userId: string, file: Express.Multer.File
 
   if (!user.isActive) {
     throw new AppError(403, 'ACCOUNT_INACTIVE', 'Your account has been disabled');
+  }
+
+  if (!isCloudinaryConfigured) {
+    const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    user.avatarUrl = base64Data;
+    user.avatarPublicId = undefined;
+    await user.save();
+    return toPublicUser(user);
   }
 
   let uploaded;

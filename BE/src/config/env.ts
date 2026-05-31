@@ -53,6 +53,12 @@ export const env = {
   REPLICATE_MODEL_VERSION: process.env.REPLICATE_MODEL_VERSION,
   REPLICATE_IMAGE_FIELD: process.env.REPLICATE_IMAGE_FIELD,
   REPLICATE_PROMPT_FIELD: process.env.REPLICATE_PROMPT_FIELD,
+  // SePay
+  SEPAY_WEBHOOK_API_KEY: process.env.SEPAY_WEBHOOK_API_KEY ?? '',
+  BANK_ID: process.env.BANK_ID ?? '970423',
+  BANK_ACCOUNT_NUMBER: process.env.BANK_ACCOUNT_NUMBER ?? '',
+  BANK_ACCOUNT_NAME: process.env.BANK_ACCOUNT_NAME ?? '',
+  BANK_SHORT_NAME: process.env.BANK_SHORT_NAME ?? 'TPBank',
 };
 
 export const isProduction = env.NODE_ENV === 'production';

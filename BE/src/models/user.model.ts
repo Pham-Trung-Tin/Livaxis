@@ -5,7 +5,9 @@ export type AuthProvider = 'local' | 'google';
 
 export interface IUser extends Document {
   name: string;
+  username: string;
   email: string;
+  phone?: string;
   passwordHash: string;
   avatarUrl?: string;
   avatarPublicId?: string;
@@ -18,6 +20,9 @@ export interface IUser extends Document {
   passwordResetExpiresAt?: Date;
   emailVerificationTokenHash?: string;
   emailVerificationExpiresAt?: Date;
+  aiTurns: number;
+  aiTurnsUsed: number;
+  subscriptionPlan: 'starter' | 'standard' | 'premium' | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +36,15 @@ const userSchema = new Schema<IUser>(
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [50, 'Name cannot exceed 50 characters'],
     },
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      trim: true,
+      unique: true,
+      index: true,
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [30, 'Username cannot exceed 30 characters'],
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -39,6 +53,10 @@ const userSchema = new Schema<IUser>(
       unique: true,
       index: true,
       match: [/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/, 'Please enter a valid email address'],
+    },
+    phone: {
+      type: String,
+      trim: true,
     },
     passwordHash: {
       type: String,
@@ -70,6 +88,15 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(ROLES),
       default: ROLES.USER,
     },
+    subscriptionPlan: {
+      type: String,
+      enum: ['starter', 'standard', 'premium', null],
+      default: null,
+    },
+    aiTurnsUsed: {
+      type: Number,
+      default: 0,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -93,6 +120,10 @@ const userSchema = new Schema<IUser>(
     emailVerificationExpiresAt: {
       type: Date,
       select: false,
+    },
+    aiTurns: {
+      type: Number,
+      default: 5,
     },
   },
   {

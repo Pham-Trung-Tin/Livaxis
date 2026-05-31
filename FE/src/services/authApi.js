@@ -58,3 +58,17 @@ export const resetPassword = (payload) => {
     body: JSON.stringify(payload),
   })
 }
+
+export const uploadAvatar = (formData) => {
+  return fetch(`${API_BASE}/avatar`, {
+    method: 'PATCH',
+    credentials: 'include',
+    body: formData,
+  }).then(async (response) => {
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(data?.error?.message || 'Avatar upload failed')
+    }
+    return data
+  })
+}

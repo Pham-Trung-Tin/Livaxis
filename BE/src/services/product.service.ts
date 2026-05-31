@@ -23,8 +23,7 @@ type CreateProductInput = {
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew?: boolean;
-  stock?: number;
+  affiliateUrl: string;
 };
 
 type UpdateProductInput = Partial<CreateProductInput>;
@@ -45,14 +44,14 @@ export type ProductPublic = {
     | 'Chairs';
   price: number;
   imageUrl: string;
+  images: string[];         // Mảng ảnh thumbnail từ Cloudinary
   description?: string;
   style: 'Minimalist' | 'Modern Luxury' | 'Industrial';
   dimensions?: string;
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew: boolean;
-  stock: number;
+  affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -72,7 +71,6 @@ export type ProductListQuery = {
   materials?: string[];
   colors?: string[];
   priceRanges?: NewArrivalsPriceRange[];
-  isNewOnly?: boolean;
   sortBy?:
     | 'newest'
     | 'oldest'
@@ -91,14 +89,14 @@ const toPublicProduct = (product: IProduct): ProductPublic => ({
   category: product.category,
   price: product.price,
   imageUrl: product.imageUrl,
+  images: Array.isArray(product.images) ? product.images : [],
   description: product.description,
   style: product.style,
   dimensions: product.dimensions,
   material: product.material,
   color: product.color,
   colorHex: product.colorHex,
-  isNew: product.isNew,
-  stock: product.stock,
+  affiliateUrl: product.affiliateUrl,
   createdAt: product.createdAt,
   updatedAt: product.updatedAt,
 });
@@ -148,13 +146,32 @@ export const getProductById = async (id: string): Promise<ProductPublic> => {
   return toPublicProduct(product);
 };
 
+export const getProductsByIds = async (
+  ids: string[],
+): Promise<{
+  items: ProductPublic[];
+  missingIds: string[];
+}> => {
+  const uniqueIds = Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean)));
+
+  uniqueIds.forEach((id) => ensureValidProductId(id));
+
+  const products = await Product.find({ _id: { $in: uniqueIds } });
+  const foundIds = new Set(products.map((product) => product._id.toString()));
+
+  return {
+    items: products.map(toPublicProduct),
+    missingIds: uniqueIds.filter((id) => !foundIds.has(id)),
+  };
+};
+
 const getSort = (sortBy: ProductListQuery['sortBy']): Record<string, 1 | -1> => {
   switch (sortBy) {
     case 'oldest':
       return { createdAt: 1 };
     case 'featured':
     case 'newestFirst':
-      return { isNew: -1, createdAt: -1 };
+      return { createdAt: -1 };
     case 'priceAsc':
       return { price: 1 };
     case 'priceDesc':
@@ -218,10 +235,6 @@ export const listProducts = async (
     filters.push({ style: query.style });
   }
 
-  if (query.isNewOnly) {
-    filters.push({ isNew: true });
-  }
-
   if (query.materials && query.materials.length > 0) {
     filters.push({ material: { $in: query.materials } });
   }
@@ -261,9 +274,9 @@ export const getNewArrivalsFacets = async (): Promise<{
   colors: Array<{ name: string; hex: string }>;
 }> => {
   const [materials, colorRows] = await Promise.all([
-    Product.distinct('material', { isNew: true, material: { $exists: true, $ne: '' } }),
+    Product.distinct('material', { material: { $exists: true, $ne: '' } }),
     Product.aggregate<{ name: string; hex: string }>([
-      { $match: { isNew: true, color: { $exists: true, $ne: '' }, colorHex: { $exists: true, $ne: '' } } },
+      { $match: { color: { $exists: true, $ne: '' }, colorHex: { $exists: true, $ne: '' } } },
       {
         $group: {
           _id: '$color',

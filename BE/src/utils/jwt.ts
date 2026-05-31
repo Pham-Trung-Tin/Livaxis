@@ -3,15 +3,15 @@ import { env } from '../config/env';
 
 export type TokenPayload = {
   sub: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'manager';
 };
 
 export const signAccessToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_TTL });
+  return jwt.sign(payload, env.ACCESS_TOKEN_SECRET, { expiresIn: env.ACCESS_TOKEN_TTL as any });
 };
 
 export const signRefreshToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_TTL });
+  return jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_TTL as any });
 };
 
 export const verifyAccessToken = (token: string): TokenPayload => {

@@ -5,7 +5,10 @@ export type AuthUser = {
   id: string
   name: string
   email: string
-  role: 'user' | 'admin'
+  avatarUrl?: string
+  role: 'user' | 'manager' | 'admin'
+  subscriptionPlan?: 'starter' | 'standard' | 'premium' | null
+  aiTurnsUsed?: number
   isActive: boolean
   emailVerified: boolean
   createdAt: string

@@ -3,6 +3,8 @@ import mongoose, { Schema, type Document } from 'mongoose';
 export interface IProduct extends Document {
   name: string;
   subtitle?: string;
+  sku?: string;
+  stock: number;
   category:
     | 'Lounge Chair'
     | 'Seating'
@@ -14,15 +16,15 @@ export interface IProduct extends Document {
     | 'Tables'
     | 'Chairs';
   price: number;
-  imageUrl: string;
+  imageUrl: string;       // Ảnh chính (hiển thị ở trang Discovery)
+  images: string[];        // Mảng ảnh con (thumbnail gallery từ Cloudinary)
   description?: string;
   style: 'Minimalist' | 'Modern Luxury' | 'Industrial';
   dimensions?: string;
   material?: string;
   color?: string;
   colorHex?: string;
-  isNew: boolean;
-  stock: number;
+  affiliateUrl: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +41,17 @@ const ProductSchema: Schema = new Schema(
       trim: true,
       maxlength: 180,
     },
+    sku: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     category: {
       type: String,
       required: [true, 'Category is required'],
@@ -51,6 +64,10 @@ const ProductSchema: Schema = new Schema(
     imageUrl: {
       type: String,
       required: [true, 'Product image is required'],
+    },
+    images: {
+      type: [String],
+      default: [],
     },
     description: {
       type: String,
@@ -77,14 +94,10 @@ const ProductSchema: Schema = new Schema(
       trim: true,
       match: [/^#([0-9a-fA-F]{6})$/, 'Invalid hex color'],
     },
-    isNew: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    stock: {
-      type: Number,
-      default: 10,
+    affiliateUrl: {
+      type: String,
+      required: [true, 'Affiliate URL is required'],
+      trim: true,
     },
   },
   {
