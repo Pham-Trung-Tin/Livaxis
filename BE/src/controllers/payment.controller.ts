@@ -243,8 +243,8 @@ export async function getSubscriptionRevenue(_req: Request, res: Response): Prom
 
     const transactions = data.transactions ?? [];
 
-    // Lọc chỉ lấy giao dịch tiền vào có nội dung chứa SUB hoặc LVX (subscription)
-    const SUB_PATTERN = /(SUB|LVX)\d+/i;
+    // Lọc chỉ lấy giao dịch tiền vào có nội dung chứa SUB (subscription)
+    const SUB_PATTERN = /SUB\d+/i;
     const subscriptionTxs = transactions.filter((tx) => {
       const amountIn = parseFloat(tx.amount_in ?? '0');
       return amountIn > 0 && SUB_PATTERN.test(tx.transaction_content ?? '');
@@ -292,7 +292,7 @@ export async function getSubscriptionRevenue(_req: Request, res: Response): Prom
 
     // Lấy 20 giao dịch subscription gần nhất cho bảng Recent Orders
     const recentOrders = subscriptionTxs.slice(0, 20).map((tx) => {
-      const match = (tx.transaction_content ?? '').match(/(SUB|LVX)\d+/i);
+      const match = (tx.transaction_content ?? '').match(/SUB\d+/i);
       const orderId = match ? match[0].toUpperCase() : tx.id;
       return {
         id: orderId,

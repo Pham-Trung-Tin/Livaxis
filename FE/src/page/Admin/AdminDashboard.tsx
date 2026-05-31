@@ -91,7 +91,7 @@ export default function AdminDashboard() {
   const revenueValue = revenueLoading
     ? '...' 
     : revenueData
-    ? formatVND(revenueData.thisMonthRevenue)
+    ? formatVND(revenueData.totalRevenue)
     : '—'
 
   const revenueSub = revenueData?.monthLabel ?? 'Đang tải...'
@@ -308,15 +308,17 @@ export default function AdminDashboard() {
                 return (
                   <tr key={order.id}>
                     <td className="adm-td-mono">{order.id}</td>
-                    <td>{order.email}</td>
                     <td>
-                      <span
-                        className="adm-plan-badge"
-                        style={{ background: planColors[order.plan] + '18', color: planColors[order.plan] }}
-                      >
-                        {order.plan === 'premium' && <span>★ </span>}
-                        {order.planLabel}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{order.email}</span>
+                        <span
+                          className="adm-plan-badge"
+                          style={{ background: planColors[order.plan] + '18', color: planColors[order.plan] }}
+                        >
+                          {order.plan === 'premium' && <span>★ </span>}
+                          {order.planLabel}
+                        </span>
+                      </div>
                     </td>
                     <td className="adm-td-bold">{order.amount}</td>
                     <td className="adm-td-dim">{order.date}</td>
