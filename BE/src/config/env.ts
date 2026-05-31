@@ -55,6 +55,7 @@ export const env = {
   REPLICATE_PROMPT_FIELD: process.env.REPLICATE_PROMPT_FIELD,
   // SePay
   SEPAY_WEBHOOK_API_KEY: process.env.SEPAY_WEBHOOK_API_KEY ?? '',
+  SEPAY_API_TOKEN: process.env.SEPAY_API_TOKEN ?? '',
   BANK_ID: process.env.BANK_ID ?? '970423',
   BANK_ACCOUNT_NUMBER: process.env.BANK_ACCOUNT_NUMBER ?? '',
   BANK_ACCOUNT_NAME: process.env.BANK_ACCOUNT_NAME ?? '',

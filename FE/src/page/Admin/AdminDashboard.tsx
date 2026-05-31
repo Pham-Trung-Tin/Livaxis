@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
-import { getAdminDashboardStats, type AdminDashboardStats } from '../../services/adminApi'
+import { getAdminDashboardStats, getSubscriptionRevenue, type AdminDashboardStats, type RevenueData } from '../../services/adminApi'
 
 const CHART_DATA = {
   labels: ['10 thg 2', '15 thg 2', '20 thg 2', '25 thg 2', '2 thg 3', '7 thg 3'],
@@ -66,6 +66,8 @@ const statusColors: Record<string, { bg: string; color: string }> = {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null)
+  const [revenueData, setRevenueData] = useState<RevenueData | null>(null)
+  const [revenueLoading, setRevenueLoading] = useState(true)
   const [showRoomTryOn, setShowRoomTryOn] = useState(true)
   const [showRoomPlanner, setShowRoomPlanner] = useState(true)
 
@@ -73,15 +75,36 @@ export default function AdminDashboard() {
     getAdminDashboardStats()
       .then(setStats)
       .catch(() => null)
+
+    // Lấy doanh thu thực từ SePay
+    setRevenueLoading(true)
+    getSubscriptionRevenue()
+      .then(setRevenueData)
+      .catch(() => null)
+      .finally(() => setRevenueLoading(false))
   }, [])
+
+  // Format tiền VND
+  const formatVND = (amount: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
+
+  const revenueValue = revenueLoading
+    ? '...' 
+    : revenueData
+    ? formatVND(revenueData.thisMonthRevenue)
+    : '—'
+
+  const revenueSub = revenueData?.monthLabel ?? 'Đang tải...'
+  const revenueTrend = revenueData?.trendPercent ?? (revenueLoading ? '...' : 'Chưa có dữ liệu')
+  const revenueTrendUp = revenueData ? (revenueData.trendPercent ?? '').startsWith('+') : true
 
   const statCards = [
     {
       label: 'Total Revenue',
-      value: '25.813.000đ',
-      sub: 'Tháng 3/2026',
-      trend: '+18.4%',
-      up: true,
+      value: revenueValue,
+      sub: revenueSub,
+      trend: revenueTrend,
+      up: revenueTrendUp,
       icon: '₫',
       iconBg: '#fef3c7',
       iconColor: '#d97706',
@@ -234,7 +257,7 @@ export default function AdminDashboard() {
         <div className="adm-table-header">
           <div>
             <h3 className="adm-section-title">Recent Orders</h3>
-            <p className="adm-section-sub">Đơn hàng subscription gần đây</p>
+            <p className="adm-section-sub">Đơn hàng subscription gần đây (dữ liệu thực từ SePay)</p>
           </div>
           <div className="adm-table-actions">
             <input className="adm-search" placeholder="Tìm đơn hàng..." />
@@ -251,39 +274,61 @@ export default function AdminDashboard() {
           <thead>
             <tr>
               <th>ORDER ID</th>
-              <th>CUSTOMER EMAIL</th>
-              <th>PLAN</th>
+              <th>NỘI DUNG</th>
               <th>AMOUNT</th>
               <th>DATE</th>
               <th>STATUS</th>
             </tr>
           </thead>
           <tbody>
-            {RECENT_ORDERS.map((order) => {
-              const sc = statusColors[order.status] ?? statusColors.Completed
-              return (
-                <tr key={order.id}>
-                  <td className="adm-td-mono">{order.id}</td>
-                  <td>{order.email}</td>
-                  <td>
-                    <span
-                      className="adm-plan-badge"
-                      style={{ background: planColors[order.plan] + '18', color: planColors[order.plan] }}
-                    >
-                      {order.plan === 'premium' && <span>★ </span>}
-                      {order.planLabel}
-                    </span>
-                  </td>
-                  <td className="adm-td-bold">{order.amount}</td>
-                  <td className="adm-td-dim">{order.date}</td>
-                  <td>
-                    <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color }}>
-                      ● {order.status}
-                    </span>
-                  </td>
-                </tr>
-              )
-            })}
+            {revenueLoading ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>Đang tải dữ liệu từ SePay...</td></tr>
+            ) : revenueData && revenueData.recentOrders.length > 0 ? (
+              revenueData.recentOrders.map((order) => {
+                const sc = statusColors['Completed']
+                const amountFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)
+                const dateFormatted = new Date(order.date).toLocaleDateString('vi-VN')
+                return (
+                  <tr key={order.sePayId}>
+                    <td className="adm-td-mono">{order.id}</td>
+                    <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: '#888' }}>{order.content}</td>
+                    <td className="adm-td-bold">{amountFormatted}</td>
+                    <td className="adm-td-dim">{dateFormatted}</td>
+                    <td>
+                      <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color }}>
+                        ● {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })
+            ) : (
+              RECENT_ORDERS.map((order) => {
+                const sc = statusColors[order.status] ?? statusColors.Completed
+                return (
+                  <tr key={order.id}>
+                    <td className="adm-td-mono">{order.id}</td>
+                    <td>{order.email}</td>
+                    <td>
+                      <span
+                        className="adm-plan-badge"
+                        style={{ background: planColors[order.plan] + '18', color: planColors[order.plan] }}
+                      >
+                        {order.plan === 'premium' && <span>★ </span>}
+                        {order.planLabel}
+                      </span>
+                    </td>
+                    <td className="adm-td-bold">{order.amount}</td>
+                    <td className="adm-td-dim">{order.date}</td>
+                    <td>
+                      <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color }}>
+                        ● {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })
+            )}
           </tbody>
         </table>
       </div>

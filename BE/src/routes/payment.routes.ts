@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { sePayWebhook, getPaymentStatus, getBankInfo, registerOrder } from '../controllers/payment.controller';
+import { sePayWebhook, getPaymentStatus, getBankInfo, registerOrder, getSubscriptionRevenue } from '../controllers/payment.controller';
+import { authenticate } from '../middlewares/auth.middleware';
+import { checkRole, ROLES } from '../middlewares/permission.middleware';
 
 export const paymentRouter = Router();
 
@@ -30,3 +32,10 @@ paymentRouter.get('/status/:orderId', getPaymentStatus);
  * Returns bank account details for the frontend VietQR code builder.
  */
 paymentRouter.get('/bank-info', getBankInfo);
+
+/**
+ * GET /api/payment/subscription-revenue
+ * Admin only — gọi SePay API lấy doanh thu thực tế từ giao dịch subscription.
+ * Yêu cầu SEPAY_API_TOKEN trong .env.
+ */
+paymentRouter.get('/subscription-revenue', authenticate, checkRole(ROLES.ADMIN), getSubscriptionRevenue);

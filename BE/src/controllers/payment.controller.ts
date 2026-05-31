@@ -188,3 +188,137 @@ export function getBankInfo(_req: Request, res: Response): void {
     bankShortName: env.BANK_SHORT_NAME,
   });
 }
+
+// ---------------------------------------------------------------------------
+// GET /api/payment/subscription-revenue
+// Gọi SePay User API để lấy danh sách giao dịch, lọc chỉ lấy các giao dịch
+// tiền vào (amount_in > 0) có nội dung chứa mã đơn hàng subscription (SUB/LVX).
+// Chỉ admin mới gọi endpoint này.
+// ---------------------------------------------------------------------------
+export async function getSubscriptionRevenue(_req: Request, res: Response): Promise<void> {
+  const apiToken = env.SEPAY_API_TOKEN;
+
+  if (!apiToken) {
+    res.status(503).json({
+      success: false,
+      message: 'SEPAY_API_TOKEN chưa được cấu hình trong .env',
+    });
+    return;
+  }
+
+  try {
+    // Lấy tối đa 5000 giao dịch gần nhất (giới hạn của SePay API)
+    const sePayUrl = `https://my.sepay.vn/userapi/transactions/list?limit=5000&account_number=${env.BANK_ACCOUNT_NUMBER}`;
+
+    const response = await fetch(sePayUrl, {
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[SePay API] Error fetching transactions:', response.status, errText);
+      res.status(502).json({
+        success: false,
+        message: `SePay API lỗi: ${response.status}`,
+      });
+      return;
+    }
+
+    const data = await response.json() as {
+      status: number;
+      transactions: Array<{
+        id: string;
+        transaction_date: string;
+        amount_in: string;
+        amount_out: string;
+        transaction_content: string;
+        reference_number: string;
+        bank_brand_name: string;
+        account_number: string;
+      }>;
+    };
+
+    const transactions = data.transactions ?? [];
+
+    // Lọc chỉ lấy giao dịch tiền vào có nội dung chứa SUB hoặc LVX (subscription)
+    const SUB_PATTERN = /(SUB|LVX)\d+/i;
+    const subscriptionTxs = transactions.filter((tx) => {
+      const amountIn = parseFloat(tx.amount_in ?? '0');
+      return amountIn > 0 && SUB_PATTERN.test(tx.transaction_content ?? '');
+    });
+
+    // Tính tổng doanh thu
+    const totalRevenue = subscriptionTxs.reduce((sum, tx) => {
+      return sum + parseFloat(tx.amount_in ?? '0');
+    }, 0);
+
+    // Tính doanh thu tháng hiện tại
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const thisMonthRevenue = subscriptionTxs.reduce((sum, tx) => {
+      const txDate = new Date(tx.transaction_date);
+      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+        return sum + parseFloat(tx.amount_in ?? '0');
+      }
+      return sum;
+    }, 0);
+
+    // Tính doanh thu tháng trước (để so sánh trend)
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const lastMonthRevenue = subscriptionTxs.reduce((sum, tx) => {
+      const txDate = new Date(tx.transaction_date);
+      if (txDate.getMonth() === prevMonth && txDate.getFullYear() === prevYear) {
+        return sum + parseFloat(tx.amount_in ?? '0');
+      }
+      return sum;
+    }, 0);
+
+    // Format month label
+    const monthLabel = `Tháng ${currentMonth + 1}/${currentYear}`;
+
+    // Tính % thay đổi so với tháng trước
+    let trendPercent: string | null = null;
+    if (lastMonthRevenue > 0) {
+      const change = ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+      trendPercent = (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+    }
+
+    // Lấy 20 giao dịch subscription gần nhất cho bảng Recent Orders
+    const recentOrders = subscriptionTxs.slice(0, 20).map((tx) => {
+      const match = (tx.transaction_content ?? '').match(/(SUB|LVX)\d+/i);
+      const orderId = match ? match[0].toUpperCase() : tx.id;
+      return {
+        id: orderId,
+        sePayId: tx.id,
+        amount: parseFloat(tx.amount_in ?? '0'),
+        date: tx.transaction_date,
+        content: tx.transaction_content,
+        status: 'Completed',
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      totalRevenue,
+      thisMonthRevenue,
+      lastMonthRevenue,
+      trendPercent,
+      monthLabel,
+      transactionCount: subscriptionTxs.length,
+      recentOrders,
+    });
+  } catch (err) {
+    console.error('[SePay API] Unexpected error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy dữ liệu từ SePay',
+    });
+  }
+}
