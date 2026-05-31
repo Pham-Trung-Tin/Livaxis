@@ -22,8 +22,20 @@ export const listAdminUsersController = asyncHandler(async (req: Request, res: R
 });
 
 export const updateUserStatusController = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const { isActive } = req.body as { isActive: boolean };
+
+  if (!id) {
+    res.status(400).json({
+      success: false,
+      error: {
+        code: 'MISSING_USER_ID',
+        message: 'Missing user id',
+      },
+    });
+    return;
+  }
 
   await updateUserStatus(id, isActive);
 

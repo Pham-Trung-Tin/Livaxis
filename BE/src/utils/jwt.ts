@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
+import type { UserRole } from '../constants/roles';
 
 export type TokenPayload = {
   sub: string;
-  role: 'user' | 'manager';
+  role: UserRole;
 };
 
 export const signAccessToken = (payload: TokenPayload): string => {
