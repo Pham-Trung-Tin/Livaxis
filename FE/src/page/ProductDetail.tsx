@@ -239,7 +239,7 @@ export default function ProductDetailPage() {
 
   const [activeImage, setActiveImage] = useState(0)
   const [showSpecs, setShowSpecs] = useState(false)
-  const [showTryOn, setShowTryOn] = useState(false)
+
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
@@ -437,7 +437,7 @@ export default function ProductDetailPage() {
             <div className="space-y-3 mb-8">
               {/* Primary: AI Try-On */}
               <motion.button
-                onClick={() => setShowTryOn(true)}
+                onClick={() => navigate('/ai-room-planner')}
                 className="relative w-full flex items-center justify-center gap-3 py-4 rounded-xl border-2 border-[#c8b898]/40 overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, rgba(200,184,152,0.06) 0%, rgba(200,184,152,0.14) 100%)' }}
                 whileHover={{ scale: 1.005 }}
@@ -545,7 +545,7 @@ export default function ProductDetailPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
-                onClick={() => setShowTryOn(true)}
+                onClick={() => navigate('/ai-room-planner')}
                 className="inline-flex items-center gap-3 px-10 py-4 bg-black text-white rounded-full hover:bg-neutral-800 transition-colors"
               >
                 <Camera size={16} />
@@ -568,12 +568,7 @@ export default function ProductDetailPage() {
 
       <Footer />
 
-      <AITryOnOverlay
-        isOpen={showTryOn}
-        onClose={() => setShowTryOn(false)}
-        productName={product.name}
-        affiliateUrl={product.affiliateUrl}
-      />
+
     </div>
   )
 }
