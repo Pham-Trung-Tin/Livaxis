@@ -2,7 +2,9 @@
 // This file provides typed access to process.env variables with parsing and validation
 import dotenv from 'dotenv';
 
+
 dotenv.config();
+
 
 const requireEnv = (name: string): string => {
   const value = process.env[name];
@@ -12,10 +14,12 @@ const requireEnv = (name: string): string => {
   return value;
 };
 
+
 const parseNumber = (value: string | undefined, fallback: number): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
 
 const parseOrigins = (value: string | undefined): string[] => {
   if (!value) {
@@ -26,6 +30,7 @@ const parseOrigins = (value: string | undefined): string[] => {
     .map((origin) => origin.trim())
     .filter(Boolean);
 };
+
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? 'development',
@@ -62,4 +67,8 @@ export const env = {
   BANK_SHORT_NAME: process.env.BANK_SHORT_NAME ?? 'TPBank',
 };
 
+
 export const isProduction = env.NODE_ENV === 'production';
+
+
+
