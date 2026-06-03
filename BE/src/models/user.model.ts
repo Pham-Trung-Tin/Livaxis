@@ -22,6 +22,7 @@ export interface IUser extends Document {
   emailVerificationExpiresAt?: Date;
   aiTurns: number;
   aiTurnsUsed: number;
+  aiTurnsResetAt: Date;
   subscriptionPlan: 'starter' | 'standard' | 'premium' | null;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +98,10 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 0,
     },
+    aiTurnsResetAt: {
+      type: Date,
+      default: () => new Date(),
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -123,7 +128,7 @@ const userSchema = new Schema<IUser>(
     },
     aiTurns: {
       type: Number,
-      default: 5,
+      default: 3,
     },
   },
   {

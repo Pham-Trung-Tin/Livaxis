@@ -37,6 +37,25 @@ export type AiStatus = {
   realAiEnabled: boolean
 }
 
+export type TurnsInfo = {
+  unlimited: boolean
+  subscriptionPlan: string | null
+  turnsUsed: number | null
+  turnsRemaining: number | null
+  dailyLimit: number | null
+}
+
+export const getAiTurns = async (): Promise<TurnsInfo> => {
+  const response = await fetch(`${API_BASE}/turns`, { credentials: 'include' })
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || 'Failed to get AI turns info')
+  }
+
+  return data?.data
+}
+
 export type RemoveBackgroundPayload = {
   imageUrl?: string
   imageDataUrl?: string

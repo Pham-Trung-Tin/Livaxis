@@ -1,12 +1,13 @@
 import { Eye, EyeOff, Check, User, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { FormEvent, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { signIn } from '../services/authApi'
 
 function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setUser, refreshUser } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -30,9 +31,10 @@ function SignIn() {
       setUser(userData)
       setSuccessMessage('Sign in successful. Redirecting...')
       setStep('success')
-      const destination = userData?.role === 'admin' ? '/admin' : '/'
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname
+      const destination = userData?.role === 'admin' ? '/admin' : (from || '/')
       window.setTimeout(() => {
-        navigate(destination)
+        navigate(destination, { replace: true })
       }, 2000)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign in failed'

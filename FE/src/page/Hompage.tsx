@@ -6,18 +6,19 @@ import {
   ExternalLink,
   Heart,
   LogOut,
-  Package,
   Search,
   Settings,
   ShoppingBag,
   Sparkles,
   User,
+  Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
+import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 import heroAfterImage from '../assets/hero-after.png'
 import heroBeforeImage from '../assets/hero-before.png'
 
@@ -47,6 +48,7 @@ const steps = [
 export function Header() {
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [turnsInfo, setTurnsInfo] = useState<TurnsInfo | null>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { user, loading: authLoading, logout } = useAuth()
@@ -57,7 +59,15 @@ export function Header() {
     { label: 'Subscription', href: '/subscription' },
   ]
 
-  // Close the account dropdown when clicking outside.
+  // Fetch AI turns quota when the dropdown opens for authenticated users
+  useEffect(() => {
+    if (userMenuOpen && user) {
+      getAiTurns()
+        .then((info) => setTurnsInfo(info))
+        .catch(() => setTurnsInfo(null))
+    }
+  }, [userMenuOpen, user])
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
@@ -214,11 +224,105 @@ export function Header() {
                         </button>
                       </div>
 
+                      {/* AI Turns card — Google-style credit display */}
+                      <div
+                        style={{
+                          margin: '0 12px 12px',
+                          borderRadius: 14,
+                          border: '1px solid rgba(0,0,0,0.07)',
+                          background: 'linear-gradient(135deg, #fdfcfa 0%, #f8f4ee 100%)',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {/* Turns row */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px 10px' }}>
+                          <div style={{
+                            width: 30, height: 30,
+                            borderRadius: 8,
+                            background: turnsInfo?.unlimited
+                              ? 'linear-gradient(135deg, #e8f5e9, #c8e6c9)'
+                              : (turnsInfo?.turnsRemaining ?? 1) > 0
+                              ? 'linear-gradient(135deg, #fef9ec, #fdecc8)'
+                              : 'linear-gradient(135deg, #fdecea, #fcd0cc)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}>
+                            <Zap
+                              size={14}
+                              strokeWidth={2}
+                              style={{
+                                color: turnsInfo?.unlimited
+                                  ? '#4caf50'
+                                  : (turnsInfo?.turnsRemaining ?? 1) > 0
+                                  ? '#e5a20e'
+                                  : '#e53935',
+                              }}
+                            />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {turnsInfo ? (
+                              turnsInfo.unlimited ? (
+                                <>
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1a1a', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>
+                                    Unlimited AI Try-on
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: 11, color: '#4caf50', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'capitalize' }}>
+                                    {turnsInfo.subscriptionPlan} plan
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1a1a', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>
+                                    {turnsInfo.turnsRemaining} / {turnsInfo.dailyLimit} AI Try-on
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: 10, color: '#a08c6a', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
+                                    Resets daily at midnight
+                                  </p>
+                                </>
+                              )
+                            ) : (
+                              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', fontFamily: 'Inter, sans-serif' }}>Loading…</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Upgrade button — only for free users */}
+                        {turnsInfo && !turnsInfo.unlimited && (
+                          <div style={{ padding: '0 10px 10px' }}>
+                            <button
+                              onClick={() => { setUserMenuOpen(false); navigate('/subscription') }}
+                              style={{
+                                width: '100%',
+                                padding: '8px 0',
+                                borderRadius: 10,
+                                border: '1px solid rgba(200,184,152,0.35)',
+                                background: 'white',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#6b5d45',
+                                fontFamily: 'Inter, sans-serif',
+                                cursor: 'pointer',
+                                letterSpacing: '0.03em',
+                                transition: 'background 0.18s, border-color 0.18s',
+                              }}
+                              onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.background = '#fdf9f4'
+                                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.7)'
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.background = 'white'
+                                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.35)'
+                              }}
+                            >
+                              Upgrade
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="space-y-2 px-3 py-3">
                         {[
                           { icon: User, label: 'Profile', sub: 'Personal information', href: '/profile' },
                           { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
-                          { icon: Package, label: 'Order History', sub: 'Track & manage' },
                           { icon: Settings, label: 'Settings', sub: 'Account preferences' },
                         ].map(({ icon: Icon, label, sub, href }) => (
                           <button
@@ -284,35 +388,8 @@ export function Header() {
                             </p>
                           </div>
                         </button>
-                      </div>
-
-                      <div className="mx-5 h-px bg-neutral-100" />
-
-                      <div
-                        className="mx-3 mb-3 flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3"
-                        style={{
-                          background:
-                            'linear-gradient(135deg, rgba(200,184,152,0.10) 0%, rgba(200,184,152,0.05) 100%)',
-                          border: '1px solid rgba(200,184,152,0.20)',
-                        }}
-                        onClick={() => {
-                          setUserMenuOpen(false)
-                          navigate('/ai-room-planner')
-                        }}
-                      >
-                        <Sparkles size={14} className="shrink-0 text-[#a08c6a]" />
-                        <div>
-                          <p className="text-[11px] text-[#6b5d45]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            Try AI Room Planner
-                          </p>
-                          <p className="text-[10px] text-[#a08c6a]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                            Visualise furniture in your space
-                          </p>
                         </div>
-                        <ChevronRight size={11} className="ml-auto text-[#c8b898]/50 transition-colors group-hover:text-[#c8b898]" />
-                      </div>
-                    </>
-                  ) : (
+                    </>) : (
                     <>
                       {/* Guest menu content */}
                       <div
@@ -379,7 +456,6 @@ export function Header() {
                       <div className="px-3 py-3">
                         {[
                           { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
-                          { icon: Package, label: 'Order History', sub: 'Track & manage' },
                           { icon: Settings, label: 'Preferences', sub: 'Room style profile' },
                         ].map(({ icon: Icon, label, sub }) => (
                           <button
@@ -411,30 +487,6 @@ export function Header() {
                             <ChevronRight size={12} className="shrink-0 text-neutral-200 transition-colors group-hover:text-neutral-400" />
                           </button>
                         ))}
-                      </div>
-
-                      <div
-                        className="mx-3 mb-3 flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3"
-                        style={{
-                          background:
-                            'linear-gradient(135deg, rgba(200,184,152,0.10) 0%, rgba(200,184,152,0.05) 100%)',
-                          border: '1px solid rgba(200,184,152,0.20)',
-                        }}
-                        onClick={() => {
-                          setUserMenuOpen(false)
-                          navigate('/ai-room-planner')
-                        }}
-                      >
-                        <Sparkles size={14} className="shrink-0 text-[#a08c6a]" />
-                        <div>
-                          <p className="text-[11px] text-[#6b5d45]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            Try AI Room Planner
-                          </p>
-                          <p className="text-[10px] text-[#a08c6a]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                            Visualise furniture in your space
-                          </p>
-                        </div>
-                        <ChevronRight size={11} className="ml-auto text-[#c8b898]/50 transition-colors group-hover:text-[#c8b898]" />
                       </div>
                     </>
                   )}

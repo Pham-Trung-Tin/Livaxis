@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { removeBackground } from '@imgly/background-removal';
+import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi';
+import { useAuth } from '../contexts/auth-context';
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /* Style Presets & Catalog Data */
@@ -983,6 +985,7 @@ async function fetchAllPlannerProducts(): Promise<CatalogProduct[]> {
 
 export default function AIRoomPlanner() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Elements References
   const beforeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -1017,6 +1020,7 @@ export default function AIRoomPlanner() {
   const [designerNotes, setDesignerNotes] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastShow, setToastShow] = useState(false);
+  const [turnsInfo, setTurnsInfo] = useState<TurnsInfo | null>(null);
 
   // Dragging states
   const draggingRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
@@ -1069,6 +1073,14 @@ export default function AIRoomPlanner() {
         setAiStatus("Local preview");
       });
   }, []);
+
+  // Fetch AI turns quota on mount
+  useEffect(() => {
+    if (!user) return;
+    getAiTurns()
+      .then((info) => setTurnsInfo(info))
+      .catch(() => setTurnsInfo(null));
+  }, [user]);
 
   // Sync Designer Notes
   useEffect(() => {
@@ -1756,7 +1768,16 @@ export default function AIRoomPlanner() {
         }),
       });
 
-      if (!response.ok) throw new Error("API error");
+      if (!response.ok) {
+        // Parse error message from the server
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData?.error?.message || 'API error';
+        // Refresh turns info so the UI reflects the exhausted state
+        if (response.status === 429) {
+          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => {});
+        }
+        throw new Error(errMsg);
+      }
 
       const result = await response.json();
       if (result.success && result.data) {
@@ -1780,6 +1801,14 @@ export default function AIRoomPlanner() {
         if (generated.notes) {
           setDesignerNotes(generated.notes);
         }
+
+        // Update turns info returned from the server
+        if (generated.turnsInfo) {
+          setTurnsInfo(generated.turnsInfo as TurnsInfo);
+        } else {
+          // Fallback: re-fetch
+          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => {});
+        }
       } else {
         throw new Error("Invalid API response");
       }
@@ -1791,7 +1820,8 @@ export default function AIRoomPlanner() {
       setLastGenerationMode("mock-preview");
       setGeneratedImage(null);
       setCompareMode("after");
-      toast("AI unavailable. Showing local preview.");
+      const errMsg = e instanceof Error ? e.message : "AI unavailable. Showing local preview.";
+      toast(errMsg);
     } finally {
       setIsGenerating(false);
     }
@@ -2456,19 +2486,54 @@ export default function AIRoomPlanner() {
 
       {/* Top Header Bar */}
       <header className="topbar">
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <button
+            className="ghost-btn"
+            onClick={() => navigate('/')}
+            style={{ padding: '2px 0', fontSize: 11, opacity: 0.6, marginBottom: 10, letterSpacing: '0.04em' }}
+          >
+            ← Back to Home
+          </button>
           <p className="eyebrow">LIVAXIS STUDIO</p>
           <h1>AI Before / After Interior Planner</h1>
         </div>
-        <div className="topbar-actions">
-          <button className="ghost-btn" onClick={() => navigate('/')} style={{ marginRight: 8 }}>
-            Back to Home
-          </button>
-          <button className="ghost-btn" onClick={loadSampleRoom} style={{ marginRight: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <button className="ghost-btn" onClick={loadSampleRoom}>
             Sample room
           </button>
-          <button className="primary-btn" disabled={isGenerating || isPreparingProducts} onClick={handleGenerate}>
-            {isGenerating ? "Processing AI..." : isPreparingProducts ? "Preparing images..." : "Generate after"}
+          <button
+            className="primary-btn"
+            disabled={isGenerating || isPreparingProducts || (turnsInfo !== null && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0)}
+            onClick={() => {
+              if (turnsInfo && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0) {
+                navigate('/subscription');
+                return;
+              }
+              handleGenerate();
+            }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, lineHeight: 1.2 }}
+          >
+            <span>
+              {isGenerating
+                ? 'Processing AI...'
+                : isPreparingProducts
+                ? 'Preparing images...'
+                : turnsInfo && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0
+                ? 'Upgrade to continue'
+                : 'Generate after'}
+            </span>
+            {/* Turns sub-label — only for free users, hidden while generating */}
+            {!isGenerating && !isPreparingProducts && turnsInfo && !turnsInfo.unlimited && (
+              <span style={{
+                fontSize: 10,
+                fontWeight: 500,
+                opacity: 0.7,
+                letterSpacing: '0.04em',
+                color: (turnsInfo.turnsRemaining ?? 0) > 0 ? 'inherit' : '#ffb4a0',
+              }}>
+                {(turnsInfo.turnsRemaining ?? 0)} / {turnsInfo.dailyLimit}
+              </span>
+            )}
           </button>
         </div>
       </header>

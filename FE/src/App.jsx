@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/auth-context'
 import { ToastProvider } from './contexts/toast-context'
 import { AdminGuard } from './components/guards/AdminGuard'
+import { AuthGuard } from './components/guards/AuthGuard'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
@@ -39,7 +40,14 @@ export default function App() {
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
-            <Route path="/ai-room-planner" element={<AIRoomPlannerPage />} />
+            <Route
+              path="/ai-room-planner"
+              element={
+                <AuthGuard>
+                  <AIRoomPlannerPage />
+                </AuthGuard>
+              }
+            />
             <Route path="/new-arrivals" element={<Navigate to="/discovery" replace />} />
             {/* Redirect old cart/checkout URLs to home */}
             <Route path="/cart" element={<Navigate to="/" replace />} />
