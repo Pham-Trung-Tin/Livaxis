@@ -3,20 +3,19 @@ import {
   Camera,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   Heart,
   LogOut,
   Package,
   Search,
   Settings,
   ShoppingBag,
-  ShoppingCart,
   Sparkles,
   User,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
-import { useCart } from '../contexts/cart-context'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
 import heroAfterImage from '../assets/hero-after.png'
@@ -37,10 +36,10 @@ const steps = [
     text: "Gemini processes your space and lists integration styles: 'Integrate into Corner', 'Center Placement', and more.",
   },
   {
-    icon: ShoppingCart,
+    icon: ExternalLink,
     number: '03',
-    title: 'Finalize & Purchase',
-    text: 'Confirm the perfect fit, adjust finishes and fabrics, then add directly to your cart.',
+    title: 'Shop via Affiliate',
+    text: 'Confirm the perfect fit, then visit the retailer link directly to complete your purchase.',
   },
 ]
 
@@ -51,7 +50,6 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { user, loading: authLoading, logout } = useAuth()
-  const { itemCount } = useCart()
 
   const navLinks = [
     { label: 'Discovery', href: '/discovery' },
@@ -445,20 +443,6 @@ export function Header() {
             </AnimatePresence>
           </div>
 
-          <button
-            onClick={() => navigate('/cart')}
-            className="relative text-neutral-500 transition-colors duration-300 hover:text-black"
-          >
-            <ShoppingBag size={19} strokeWidth={1.5} />
-            {itemCount > 0 ? (
-              <span
-                className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[9px] text-white"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                {itemCount > 9 ? '9+' : itemCount}
-              </span>
-            ) : null}
-          </button>
         </div>
       </div>
     </header>
