@@ -227,7 +227,7 @@ export function Header() {
                       {/* AI Turns card — Google-style credit display */}
                       <div
                         style={{
-                          margin: '0 12px 12px',
+                          margin: '12px',
                           borderRadius: 14,
                           border: '1px solid rgba(0,0,0,0.07)',
                           background: 'linear-gradient(135deg, #fdfcfa 0%, #f8f4ee 100%)',
