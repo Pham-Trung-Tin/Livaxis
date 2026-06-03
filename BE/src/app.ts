@@ -26,7 +26,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 app.get('/health', (_req: Request, res: Response) => {
-	res.status(200).json({ success: true, message: 'Backend is healthy' });
+	res.status(200).json({ success: true, message: 'Hệ thống hoạt động bình thường' });
 });
 
 app.use('/api/auth', authRouter);

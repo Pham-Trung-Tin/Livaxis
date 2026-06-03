@@ -28,13 +28,13 @@ export const checkAiTurns = async (
   next: NextFunction,
 ): Promise<void> => {
   if (!req.user?.id) {
-    next(new AppError(401, 'UNAUTHORIZED', 'Missing user context'));
+    next(new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng'));
     return;
   }
 
   const user = await User.findById(req.user.id);
   if (!user) {
-    next(new AppError(401, 'UNAUTHORIZED', 'User not found'));
+    next(new AppError(401, 'UNAUTHORIZED', 'Không tìm thấy người dùng'));
     return;
   }
 
@@ -61,7 +61,7 @@ export const checkAiTurns = async (
       new AppError(
         429,
         'AI_TURNS_EXHAUSTED',
-        `You've used all ${FREE_DAILY_TURNS} free AI turns for today. Upgrade your plan or try again tomorrow.`,
+        `Bạn đã sử dụng hết ${FREE_DAILY_TURNS} lượt thử AI miễn phí của ngày hôm nay. Hãy nâng cấp gói dịch vụ hoặc thử lại vào ngày mai.`,
         { turnsUsed, turnsRemaining: 0, dailyLimit: FREE_DAILY_TURNS },
       ),
     );

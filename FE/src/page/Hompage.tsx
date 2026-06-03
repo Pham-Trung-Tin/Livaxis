@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  Globe,
   Heart,
   LogOut,
   Search,
@@ -16,33 +17,13 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
+import { useLanguage } from '../contexts/LanguageContext'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 import heroAfterImage from '../assets/hero-after.png'
 import heroBeforeImage from '../assets/hero-before.png'
 
-// Explainer content for the "How it works" section.
-const steps = [
-  {
-    icon: Camera,
-    number: '01',
-    title: 'Snap Your Space',
-    text: 'Take a photo of your empty room corner. Any angle, any lighting - Gemini adapts.',
-  },
-  {
-    icon: Sparkles,
-    number: '02',
-    title: 'Browse Matches',
-    text: "Gemini processes your space and lists integration styles: 'Integrate into Corner', 'Center Placement', and more.",
-  },
-  {
-    icon: ExternalLink,
-    number: '03',
-    title: 'Shop via Affiliate',
-    text: 'Confirm the perfect fit, then visit the retailer link directly to complete your purchase.',
-  },
-]
 
 // Global top navigation with account dropdown actions.
 export function Header() {
@@ -52,11 +33,12 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { user, loading: authLoading, logout } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
 
   const navLinks = [
-    { label: 'Discovery', href: '/discovery' },
-    { label: 'Collections', href: '/collections' },
-    { label: 'Subscription', href: '/subscription' },
+    { label: t('common.discovery'), href: '/discovery' },
+    { label: t('common.collections'), href: '/collections' },
+    { label: t('common.subscription'), href: '/subscription' },
   ]
 
   // Fetch AI turns quota when the dropdown opens for authenticated users
@@ -142,7 +124,7 @@ export function Header() {
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
           >
             <Sparkles size={14} />
-            AI Room Planner
+            {t('homepage.aiRoomPlanner')}
           </a>
         </nav>
 
@@ -263,24 +245,24 @@ export function Header() {
                               turnsInfo.unlimited ? (
                                 <>
                                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1a1a', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>
-                                    Unlimited AI Try-on
+                                    {t('homepage.unlimitedAiTryon')}
                                   </p>
                                   <p style={{ margin: 0, fontSize: 11, color: '#4caf50', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'capitalize' }}>
-                                    {turnsInfo.subscriptionPlan} plan
+                                    Gói {turnsInfo.subscriptionPlan}
                                   </p>
                                 </>
                               ) : (
                                 <>
                                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1a1a', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>
-                                    {turnsInfo.turnsRemaining} / {turnsInfo.dailyLimit} AI Try-on
+                                    {t('homepage.turnsRemaining').replace('{remaining}', String(turnsInfo.turnsRemaining)).replace('{limit}', String(turnsInfo.dailyLimit))}
                                   </p>
                                   <p style={{ margin: 0, fontSize: 10, color: '#a08c6a', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                                    Resets daily at midnight
+                                    {t('homepage.resetsDaily')}
                                   </p>
                                 </>
                               )
                             ) : (
-                              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', fontFamily: 'Inter, sans-serif' }}>Loading…</p>
+                              <p style={{ margin: 0, fontSize: 13, color: '#9ca3af', fontFamily: 'Inter, sans-serif' }}>{t('homepage.loading')}</p>
                             )}
                           </div>
                         </div>
@@ -313,7 +295,7 @@ export function Header() {
                                 ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.35)'
                               }}
                             >
-                              Upgrade
+                              {t('homepage.upgrade')}
                             </button>
                           </div>
                         )}
@@ -321,9 +303,9 @@ export function Header() {
 
                       <div className="space-y-2 px-3 py-3">
                         {[
-                          { icon: User, label: 'Profile', sub: 'Personal information', href: '/profile' },
-                          { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
-                          { icon: Settings, label: 'Settings', sub: 'Account preferences' },
+                          { icon: User, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub'), href: '/profile' },
+                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub') },
+                          { icon: Settings, label: t('profile.accountSettings'), sub: t('profile.personalInfoSub') },
                         ].map(({ icon: Icon, label, sub, href }) => (
                           <button
                             key={label}
@@ -378,18 +360,19 @@ export function Header() {
                               className="truncate text-[12px] text-red-500 transition-colors group-hover:text-red-700"
                               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                             >
-                              Logout
+                              {t('common.logout')}
                             </p>
                             <p
                               className="truncate text-[10px] text-red-300"
                               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                             >
-                              End this session
+                              {t('homepage.logoutSub')}
                             </p>
                           </div>
                         </button>
-                        </div>
-                    </>) : (
+                      </div>
+                    </>
+                  ) : (
                     <>
                       {/* Guest menu content */}
                       <div
@@ -398,10 +381,10 @@ export function Header() {
                       >
                         <div className="mb-4 h-px w-8" style={{ background: 'linear-gradient(90deg, #c8b898, transparent)' }} />
                         <p className="mb-1 text-[22px] leading-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                          Welcome
+                          {t('homepage.welcome')}
                         </p>
                         <p className="text-[12px] leading-snug text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                          Sign in for a personalised experience
+                          {t('homepage.signInForPersonalised')}
                         </p>
                       </div>
 
@@ -415,7 +398,7 @@ export function Header() {
                           }}
                         >
                           <span className="text-[11px] uppercase tracking-[0.22em]" style={{ fontWeight: 600 }}>
-                            Sign In
+                            {t('auth.signIn')}
                           </span>
                           <ChevronRight
                             size={13}
@@ -429,7 +412,7 @@ export function Header() {
                             className="text-[10px] uppercase tracking-[0.1em] text-neutral-300"
                             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
                           >
-                            or
+                            {t('homepage.or')}
                           </span>
                           <div className="h-px flex-1 bg-neutral-100" />
                         </div>
@@ -446,7 +429,7 @@ export function Header() {
                             className="text-[11px] uppercase tracking-[0.15em] text-neutral-600 transition-colors group-hover:text-neutral-800"
                             style={{ fontWeight: 500 }}
                           >
-                            Create Account
+                            {t('auth.createAccount')}
                           </span>
                         </button>
                       </div>
@@ -455,8 +438,8 @@ export function Header() {
 
                       <div className="px-3 py-3">
                         {[
-                          { icon: Heart, label: 'Saved Pieces', sub: 'Your wishlist' },
-                          { icon: Settings, label: 'Preferences', sub: 'Room style profile' },
+                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub') },
+                          { icon: Settings, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub') },
                         ].map(({ icon: Icon, label, sub }) => (
                           <button
                             key={label}
@@ -495,6 +478,17 @@ export function Header() {
             </AnimatePresence>
           </div>
 
+          {/* Language Switcher */}
+          <button
+            onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+            className="group flex items-center gap-1.5 rounded-full border border-[#c8b898]/20 bg-[#faf8f5]/80 px-2.5 py-1.5 text-[11px] font-semibold tracking-wider text-[#6f5a41] transition-all duration-300 hover:border-[#c8b898]/60 hover:bg-[#f5f1eb] hover:text-black"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+            title={language === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+          >
+            <Globe size={13} strokeWidth={1.5} className="text-[#a08c6a] transition-transform duration-500 group-hover:rotate-12" />
+            <span className="font-semibold uppercase">{language}</span>
+          </button>
+
         </div>
       </div>
     </header>
@@ -502,6 +496,7 @@ export function Header() {
 }
 
 export function Footer() {
+  const { t } = useLanguage()
   return (
     // Global footer with brand info, quick links, and legal links.
     <footer className="border-t border-black/5 bg-white py-16">
@@ -518,22 +513,22 @@ export function Footer() {
               className="max-w-[240px] text-[13px] leading-relaxed text-neutral-400"
               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
             >
-              Redefining luxury interiors with AI-powered visualization. See it before you buy it.
+              {t('homepage.redefiningLuxury')}
             </p>
           </div>
 
           {[
             {
-              title: 'Shop',
-              links: ['Discovery', 'Collections', 'Best Sellers', 'AI Room Planner'],
+              title: t('homepage.shopTitle'),
+              links: [t('homepage.shopLinks.0'), t('homepage.shopLinks.1'), t('homepage.shopLinks.2'), t('homepage.shopLinks.3')],
             },
             {
-              title: 'About',
-              links: ['Our Story', 'Sustainability', 'Craftsmanship', 'Press'],
+              title: t('homepage.aboutTitle'),
+              links: [t('homepage.aboutLinks.0'), t('homepage.aboutLinks.1'), t('homepage.aboutLinks.2'), t('homepage.aboutLinks.3')],
             },
             {
-              title: 'Support',
-              links: ['Contact Us', 'Shipping', 'Returns', 'FAQ'],
+              title: t('homepage.supportTitle'),
+              links: [t('homepage.supportLinks.0'), t('homepage.supportLinks.1'), t('homepage.supportLinks.2'), t('homepage.supportLinks.3')],
             },
           ].map((col) => (
             <div key={col.title}>
@@ -562,17 +557,17 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 md:flex-row">
           <span className="text-[12px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-            &copy; 2026 Livaxis. All rights reserved.
+            {t('homepage.rightsReserved')}
           </span>
           <div className="flex gap-6">
-            {['Privacy', 'Terms', 'Cookies'].map((item) => (
+            {[{ label: t('homepage.privacy'), key: 'Privacy' }, { label: t('homepage.terms'), key: 'Terms' }, { label: t('homepage.cookies'), key: 'Cookies' }].map((item) => (
               <a
-                key={item}
+                key={item.key}
                 href="#"
                 className="text-[12px] text-neutral-300 transition-colors duration-300 hover:text-neutral-500"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
-                {item}
+                {item.label}
               </a>
             ))}
           </div>
@@ -585,6 +580,7 @@ export function Footer() {
 // Interactive before/after visual slider used in the hero area.
 function BeforeAfterShowcase() {
   const [isHovered, setIsHovered] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <div
@@ -608,10 +604,10 @@ function BeforeAfterShowcase() {
               className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/60"
               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
             >
-              Your Room
+              {t('homepage.yourRoom')}
             </p>
             <p className="text-[18px] text-white" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-              Before
+              {t('homepage.before')}
             </p>
           </div>
           <motion.div
@@ -637,10 +633,10 @@ function BeforeAfterShowcase() {
               className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/60"
               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
             >
-              AI Integration
+              {t('homepage.aiIntegration')}
             </p>
             <p className="text-[18px] text-white" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-              After
+              {t('homepage.after')}
             </p>
           </div>
           <motion.div
@@ -666,9 +662,31 @@ function BeforeAfterShowcase() {
 
 function Hompage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [featuredProducts, setFeaturedProducts] = useState<NewArrivalProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const steps = [
+    {
+      icon: Camera,
+      number: '01',
+      title: t('homepage.step1Title'),
+      text: t('homepage.step1Text'),
+    },
+    {
+      icon: Sparkles,
+      number: '02',
+      title: t('homepage.step2Title'),
+      text: t('homepage.step2Text'),
+    },
+    {
+      icon: ExternalLink,
+      number: '03',
+      title: t('homepage.step3Title'),
+      text: t('homepage.step3Text'),
+    },
+  ]
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('vi-VN', {
@@ -710,7 +728,7 @@ function Hompage() {
               className="text-[11px] uppercase tracking-[0.36em] text-[#a08c6a]"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              AI room visualiser
+              {t('homepage.roomVisualiser')}
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, y: 18 }}
@@ -719,7 +737,7 @@ function Hompage() {
               className="mt-5 text-5xl leading-[0.95] tracking-[-0.04em] text-[#1d1814] sm:text-6xl lg:text-[5.25rem]"
               style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
             >
-              See It In Your Space
+              {t('homepage.heroTitle')}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 14 }}
@@ -728,7 +746,7 @@ function Hompage() {
               className="mx-auto mt-5 max-w-2xl text-sm text-[#7b7368] sm:text-base"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              Visualise furniture in your room before you buy. A calm, editorial shopping experience built for modern interiors.
+              {t('homepage.heroDesc')}
             </motion.p>
 
             <motion.div
@@ -741,8 +759,8 @@ function Hompage() {
             </motion.div>
 
             <div className="mt-8 flex justify-center">
-              <button className="group inline-flex items-center gap-2 rounded-full bg-[#161311] px-6 py-3 text-[11px] uppercase tracking-[0.24em] text-white shadow-[0_18px_40px_rgba(20,17,14,0.18)] transition-transform duration-300 hover:-translate-y-0.5">
-                Start your room scan
+              <button className="group inline-flex items-center gap-2 rounded-full bg-[#161311] px-6 py-3 text-[11px] uppercase tracking-[0.24em] text-white shadow-[0_18px_40px_rgba(20,17,14,0.18)] transition-transform duration-300 hover:-translate-y-0.5" onClick={() => navigate('/ai-room-planner')}>
+                {t('homepage.startScan')}
                 <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
               </button>
             </div>
@@ -754,13 +772,13 @@ function Hompage() {
           <div className="mx-auto max-w-[1440px] px-8 md:px-16">
             <div className="mb-16 text-center">
               <p className="text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                Curated collection
+                {t('homepage.curatedTitle')}
               </p>
               <h2 className="mt-4 text-[clamp(1.5rem,3.5vw,2.5rem)] tracking-[-0.02em] text-[#1d1814]" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                Try On Any Piece
+                {t('homepage.curatedSubtitle')}
               </h2>
               <p className="mx-auto mt-3 max-w-md text-[14px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                Every item is ready for AI visualization in your space
+                {t('homepage.curatedDesc')}
               </p>
             </div>
 
@@ -768,7 +786,7 @@ function Hompage() {
               <div className="mt-10 flex justify-center">
                 <div className="inline-flex items-center gap-2 text-[#a08c6a]">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#a08c6a]/30 border-t-[#a08c6a]" />
-                  <span className="text-sm">Loading featured pieces...</span>
+                  <span className="text-sm">{t('homepage.loadingFeatured')}</span>
                 </div>
               </div>
             ) : error ? (
@@ -824,7 +842,7 @@ function Hompage() {
                         >
                           <Camera size={15} className="text-[#a08c6a]" strokeWidth={1.5} />
                           <span className="text-[11px] uppercase tracking-[0.15em] text-[#8a7456]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            AI Try-On
+                            {t('common.aiTryOn')}
                           </span>
                         </button>
 
@@ -834,7 +852,7 @@ function Hompage() {
                         >
                           <ShoppingBag size={14} strokeWidth={1.5} />
                           <span className="text-[11px] uppercase tracking-[0.12em]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            Add
+                            {t('homepage.add')}
                           </span>
                         </button>
                       </div>
@@ -854,19 +872,19 @@ function Hompage() {
                 className="mb-4 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
-                How it works
+                {t('homepage.howItWorks')}
               </p>
               <h2
                 className="mb-4 text-[clamp(1.5rem,3.5vw,2.5rem)] text-black"
                 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
-                Three Steps to Your Dream Room
+                {t('homepage.howItWorksTitle')}
               </h2>
               <p
                 className="mx-auto max-w-md text-[14px] text-neutral-400"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
-                From photo to purchase in under 60 seconds
+                {t('homepage.howItWorksDesc')}
               </p>
             </div>
 

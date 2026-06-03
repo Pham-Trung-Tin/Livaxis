@@ -17,7 +17,7 @@ export const getTurnsController = asyncHandler(async (req: Request, res: Respons
   const user = await User.findById(req.user!.id);
 
   if (!user) {
-    res.status(404).json({ success: false, error: { message: 'User not found' } });
+    res.status(404).json({ success: false, error: { message: 'Không tìm thấy người dùng' } });
     return;
   }
 

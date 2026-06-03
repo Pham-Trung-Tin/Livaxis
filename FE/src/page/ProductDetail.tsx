@@ -18,14 +18,17 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Header } from './Hompage'
 import { Footer } from './Hompage'
 import { getProductById, type ProductDetail as ProductDetailType } from '../services/productApi'
+import { useLanguage } from '../contexts/LanguageContext'
 
 // ─── Fallback image ───────────────────────────────────────────────────────────
 function ImageWithFallback({ src, alt, className }: { src: string; alt?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
+  const { t } = useLanguage()
+
   if (failed) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[#f7f5f2] text-center text-sm text-[#8f7b5f]">
-        Image unavailable
+        {t('common.imageUnavailable')}
       </div>
     )
   }
@@ -49,6 +52,7 @@ function AITryOnOverlay({
   const [step, setStep] = useState<TryOnStep>('idle')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const { t } = useLanguage()
 
   // reset khi đóng
   useEffect(() => {
@@ -113,13 +117,13 @@ function AITryOnOverlay({
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#c8b898]/15">
                     <Camera size={15} className="text-[#8a7456]" />
                   </div>
-                  <span className="text-[10px] uppercase tracking-widest text-[#8a7456]">AI Room Try-On</span>
+                  <span className="text-[10px] uppercase tracking-widest text-[#8a7456]">{t('common.aiTryOn')}</span>
                 </div>
                 <h3 className="mb-1 text-2xl font-semibold text-black" style={{ fontFamily: "'Playfair Display', serif" }}>
-                  Try {productName || 'this product'} in your room
+                  {t('productDetail.tryInRoom').replace('sản phẩm này', productName || t('discovery.selectedItem')).replace('this product', productName || t('discovery.selectedItem'))}
                 </h3>
                 <p className="mb-7 text-sm text-neutral-500 leading-relaxed">
-                  Upload a photo of your room and our Gemini AI will place this product in your space — so you can see exactly how it looks before buying.
+                  {t('productDetail.tryInRoomDesc')}
                 </p>
 
                 {/* Drop zone */}
@@ -131,8 +135,8 @@ function AITryOnOverlay({
                     <Upload size={20} className="text-[#8a7456]" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-neutral-700">Upload a room photo</p>
-                    <p className="mt-0.5 text-xs text-neutral-400">JPG, PNG · Max 10MB</p>
+                    <p className="text-sm font-medium text-neutral-700">{t('productDetail.uploadPhotoLabel')}</p>
+                    <p className="mt-0.5 text-xs text-neutral-400">{t('productDetail.uploadPhotoDesc')}</p>
                   </div>
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
@@ -156,12 +160,12 @@ function AITryOnOverlay({
                 )}
                 <div className="flex flex-col items-center gap-3 py-4 text-center">
                   <Loader2 size={28} className="animate-spin text-[#a08c6a]" />
-                  <p className="font-medium text-neutral-800">Analyzing your room…</p>
-                  <p className="text-xs text-neutral-400">Gemini AI is placing the product in your space</p>
+                  <p className="font-medium text-neutral-800">{t('productDetail.analyzingRoom')}</p>
+                  <p className="text-xs text-neutral-400">{t('productDetail.analyzingSub')}</p>
                   <div className="mt-2 flex gap-1.5">
-                    {['Detecting space', 'Matching scale', 'Rendering fit'].map((label, i) => (
+                    {[t('productDetail.detectingSpace'), t('productDetail.matchingScale'), t('productDetail.renderingFit')].map((label, i) => (
                       <motion.span
-                        key={label}
+                        key={i}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.6 }}
@@ -184,7 +188,7 @@ function AITryOnOverlay({
                     {/* Success badge */}
                     <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm">
                       <CheckCircle2 size={13} className="text-emerald-500" />
-                      <span className="text-[11px] font-medium text-neutral-700">AI Fit Complete</span>
+                      <span className="text-[11px] font-medium text-neutral-700">{t('productDetail.fitComplete')}</span>
                     </div>
                   </div>
                 )}
@@ -192,9 +196,9 @@ function AITryOnOverlay({
                 <div className="mb-5 flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-100 p-4">
                   <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-medium text-neutral-800">Looks great in your room!</p>
+                    <p className="text-sm font-medium text-neutral-800">{t('productDetail.looksGreat')}</p>
                     <p className="mt-0.5 text-xs text-neutral-500">
-                      The product fits naturally in your space. Ready to purchase?
+                      {t('productDetail.readyToPurchase')}
                     </p>
                   </div>
                 </div>
@@ -208,7 +212,7 @@ function AITryOnOverlay({
                     className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#EE4D2D] py-4 text-white shadow-md shadow-[#EE4D2D]/20"
                   >
                     <ShoppingCart size={17} />
-                    <span className="text-[13px] font-semibold uppercase tracking-wide">Buy on Shopee</span>
+                    <span className="text-[13px] font-semibold uppercase tracking-wide">{t('productDetail.buyOnShopee')}</span>
                     <ExternalLink size={13} className="opacity-70" />
                   </motion.button>
 
@@ -217,7 +221,7 @@ function AITryOnOverlay({
                     onClick={() => { setStep('idle'); setPreviewUrl(null) }}
                     className="w-full rounded-xl border border-neutral-200 py-3 text-[12px] text-neutral-500 hover:bg-neutral-50 transition-colors"
                   >
-                    Try with another photo
+                    {t('productDetail.tryAnotherPhoto')}
                   </button>
                 </div>
               </div>
@@ -233,13 +237,13 @@ function AITryOnOverlay({
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [product, setProduct] = useState<ProductDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [activeImage, setActiveImage] = useState(0)
   const [showSpecs, setShowSpecs] = useState(false)
-
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
@@ -250,34 +254,34 @@ export default function ProductDetailPage() {
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(id)
     if (!isObjectId) {
       setLoading(false)
-      setError('Invalid product id format. Please open a product from the catalog.')
+      setError(t('productDetail.invalidIdFormat'))
       return
     }
     setLoading(true)
     setError(null)
     void getProductById(id)
       .then((p) => setProduct(p))
-      .catch((err) => setError(err.message || 'Failed to load'))
+      .catch((err) => setError(err.message || t('productDetail.loadFailed')))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
-  if (loading) return <div className="p-8 text-center">Loading product...</div>
+  if (loading) return <div className="p-8 text-center">{t('common.loading')}</div>
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>
-  if (!product) return <div className="p-8 text-center">Product not found</div>
+  if (!product) return <div className="p-8 text-center">{t('productDetail.productNotFound')}</div>
 
   // Gallery: imageUrl chính + images[] thumbnails, loại trùng
   const rawImages = Array.isArray(product.images) && product.images.length > 0 ? product.images : []
   const galleryImages = [product.imageUrl, ...rawImages.filter((img) => img !== product.imageUrl)]
-  const galleryLabels = galleryImages.map((_, i) => (i === 0 ? 'Main' : `View ${i}`))
+  const galleryLabels = galleryImages.map((_, i) => (i === 0 ? t('productDetail.galleryLabels.main') : t('productDetail.galleryLabels.view').replace('{num}', String(i))))
 
   const colorOptions = product.color ? [{ name: product.color, hex: product.colorHex ?? '#C4A08A' }] : []
   const fabricOptions = product.material ? [product.material] : []
 
   const specs = [
-    { label: 'Dimensions', value: product.dimensions ?? '—' },
-    { label: 'Material', value: product.material ?? '—' },
-    { label: 'Color', value: product.color ?? '—' },
-    { label: 'Style', value: product.style ?? '—' },
+    { label: t('productDetail.specs.dimensions'), value: product.dimensions ?? '—' },
+    { label: t('productDetail.specs.material'), value: product.material ?? '—' },
+    { label: t('productDetail.specs.color'), value: product.color ?? '—' },
+    { label: t('productDetail.specs.style'), value: product.style ?? '—' },
   ]
 
   const nextImage = () => setActiveImage((prev) => (prev + 1) % galleryImages.length)
@@ -295,7 +299,7 @@ export default function ProductDetailPage() {
       <div className="pt-[72px]">
         <div className="max-w-[1440px] mx-auto px-8 md:px-16 py-5">
           <nav className="flex items-center gap-2 text-[12px] text-neutral-400">
-            <button onClick={() => navigate('/')} className="hover:text-black transition-colors">Home</button>
+            <button onClick={() => navigate('/')} className="hover:text-black transition-colors">{t('common.home')}</button>
             <span>/</span>
             <span className="hover:text-black transition-colors cursor-pointer">{product.category}</span>
             <span>/</span>
@@ -384,17 +388,17 @@ export default function ProductDetailPage() {
                   <Star key={s} size={14} className={s <= 4 ? 'fill-[#c8b898] text-[#c8b898]' : 'fill-neutral-200 text-neutral-200'} />
                 ))}
               </div>
-              <span className="text-[12px] text-neutral-400">4.8 (127 reviews)</span>
+              <span className="text-[12px] text-neutral-400">4.8 {t('productDetail.reviews').replace('{count}', '127')}</span>
             </div>
 
             {/* Reference price — affiliate style */}
             {product.price && (
               <div className="flex items-center gap-2 mb-6">
-                <span className="text-[13px] text-neutral-400">Khoảng</span>
+                <span className="text-[13px] text-neutral-400">{t('productDetail.approx')}</span>
                 <span className="text-[15px] font-medium text-neutral-600" style={{ fontFamily: "'Inter', sans-serif" }}>
                   {product.price.toLocaleString('vi-VN')}₫
                 </span>
-                <span className="text-[11px] text-neutral-300">· giá tham khảo trên Shopee</span>
+                <span className="text-[11px] text-neutral-300">· {t('productDetail.refPriceShopee')}</span>
               </div>
             )}
 
@@ -405,7 +409,7 @@ export default function ProductDetailPage() {
             {/* Color — info only */}
             {colorOptions.length > 0 && (
               <div className="mb-6">
-                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">Color</span>
+                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">{t('productDetail.specs.color')}</span>
                 <div className="flex items-center gap-2">
                   <span
                     className="inline-block w-4 h-4 rounded-full border border-black/10 flex-shrink-0"
@@ -419,7 +423,7 @@ export default function ProductDetailPage() {
             {/* Material — info only */}
             {fabricOptions.length > 0 && (
               <div className="mb-8">
-                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">Material</span>
+                <span className="text-[11px] uppercase tracking-[0.1em] text-neutral-400 block mb-2">{t('productDetail.specs.material')}</span>
                 <div className="flex flex-wrap gap-2">
                   {fabricOptions.map((fabric) => (
                     <span
@@ -451,7 +455,7 @@ export default function ProductDetailPage() {
                 <div className="relative flex items-center gap-2.5">
                   <Camera size={18} className="text-[#8a7456]" />
                   <span className="text-[13px] tracking-[0.12em] uppercase text-[#6b5d45] font-medium">
-                    Try in Your Room (AI)
+                    {t('productDetail.tryInRoomBtn')}
                   </span>
                 </div>
               </motion.button>
@@ -465,7 +469,7 @@ export default function ProductDetailPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <ShoppingCart size={17} />
-                  <span className="text-[13px] font-semibold uppercase tracking-wide">Shop on Shopee</span>
+                  <span className="text-[13px] font-semibold uppercase tracking-wide">{t('productDetail.buyOnShopee')}</span>
                   <ExternalLink size={13} className="opacity-70" />
                 </motion.button>
               )}
@@ -477,8 +481,8 @@ export default function ProductDetailPage() {
                 <Sparkles size={16} className="text-[#a08c6a]" />
               </div>
               <div>
-                <span className="text-[11px] block text-neutral-700">Gemini AI Verified Fit</span>
-                <span className="text-[10px] text-neutral-400">See exactly how it looks in your room before buying</span>
+                <span className="text-[11px] block text-neutral-700">{t('productDetail.aiVerifiedTitle')}</span>
+                <span className="text-[10px] text-neutral-400">{t('productDetail.aiVerifiedDesc')}</span>
               </div>
             </div>
 
@@ -486,7 +490,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2 mb-8 py-4 border-y border-neutral-100">
               <Shield size={13} className="text-neutral-300 flex-shrink-0" />
               <span className="text-[11px] text-neutral-400 leading-relaxed">
-                Clicking "Shop on Shopee" will take you to the product page on Shopee. Livaxis may earn a commission at no extra cost to you.
+                {t('productDetail.shopeeDisclosure')}
               </span>
             </div>
 
@@ -495,7 +499,7 @@ export default function ProductDetailPage() {
               onClick={() => setShowSpecs(!showSpecs)}
               className="w-full flex items-center justify-between py-4 text-left"
             >
-              <span className="text-[11px] uppercase text-neutral-800">Specifications</span>
+              <span className="text-[11px] uppercase text-neutral-800">{t('productDetail.specifications')}</span>
               <motion.div
                 animate={{ rotate: showSpecs ? 45 : 0 }}
                 transition={{ duration: 0.2 }}
@@ -535,13 +539,13 @@ export default function ProductDetailPage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="mb-8 inline-flex items-center gap-2 px-5 py-2 rounded-full border bg-white">
               <Sparkles size={13} className="text-[#a08c6a]" />
-              <span className="text-[10px] uppercase text-[#8a7456]">AI Room Try-On</span>
+              <span className="text-[10px] uppercase text-[#8a7456]">{t('common.aiTryOn')}</span>
             </div>
             <h2 className="text-[clamp(1.5rem,3.5vw,2.5rem)] leading-[1.15] text-black mb-5" style={{ fontFamily: "'Playfair Display', serif" }}>
-              See it in your room<br />before you buy
+              {t('productDetail.seeItInYourSpaceTitle').split(' trước khi mua')[0]}<br />{t('productDetail.seeItInYourSpaceTitle').includes('trước khi mua') ? 'trước khi mua' : ''}
             </h2>
             <p className="text-neutral-400 text-[15px] leading-[1.8] mb-10 max-w-lg mx-auto">
-              Upload a photo of your room and our Gemini AI will seamlessly place the product in your space — then head straight to Shopee to purchase.
+              {t('productDetail.seeItInYourSpaceDesc')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
@@ -549,7 +553,7 @@ export default function ProductDetailPage() {
                 className="inline-flex items-center gap-3 px-10 py-4 bg-black text-white rounded-full hover:bg-neutral-800 transition-colors"
               >
                 <Camera size={16} />
-                <span className="text-[13px] uppercase">Try It Free</span>
+                <span className="text-[13px] uppercase">{t('productDetail.tryItFree')}</span>
               </button>
               {product.affiliateUrl && (
                 <button
@@ -557,7 +561,7 @@ export default function ProductDetailPage() {
                   className="inline-flex items-center gap-2.5 px-8 py-4 bg-[#EE4D2D] text-white rounded-full hover:bg-[#d94429] transition-colors"
                 >
                   <ShoppingCart size={15} />
-                  <span className="text-[13px] uppercase">Shop on Shopee</span>
+                  <span className="text-[13px] uppercase">{t('productDetail.buyOnShopee')}</span>
                   <ExternalLink size={12} className="opacity-70" />
                 </button>
               )}
@@ -567,8 +571,6 @@ export default function ProductDetailPage() {
       </section>
 
       <Footer />
-
-
     </div>
   )
 }

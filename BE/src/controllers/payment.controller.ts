@@ -40,12 +40,12 @@ export async function registerOrder(req: Request, res: Response): Promise<void> 
   };
 
   if (!orderId || !userId || typeof turnsToAdd !== 'number') {
-    res.status(400).json({ success: false, message: 'orderId, userId, and turnsToAdd are required' });
+    res.status(400).json({ success: false, message: 'Yêu cầu có đầy đủ orderId, userId và turnsToAdd' });
     return;
   }
 
   if (!orderId.startsWith('SUB')) {
-    res.status(400).json({ success: false, message: 'Only SUB orders are accepted' });
+    res.status(400).json({ success: false, message: 'Chỉ chấp nhận các đơn hàng SUB' });
     return;
   }
 
@@ -68,7 +68,7 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
   const expectedKey = `Apikey ${env.SEPAY_WEBHOOK_API_KEY}`;
 
   if (env.SEPAY_WEBHOOK_API_KEY && authHeader !== expectedKey) {
-    res.status(401).json({ success: false, message: 'Unauthorized' });
+    res.status(401).json({ success: false, message: 'Không có quyền truy cập' });
     return;
   }
 
@@ -85,13 +85,13 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
 
   // 2. Only process incoming transfers
   if (payload.transferType !== 'in') {
-    res.status(200).json({ success: true, message: 'Ignored outgoing transfer' });
+    res.status(200).json({ success: true, message: 'Bỏ qua giao dịch chuyển khoản đi' });
     return;
   }
 
   // 3. Idempotency – skip duplicate webhook calls
   if (payload.id && processedTransactionIds.has(payload.id)) {
-    res.status(200).json({ success: true, message: 'Duplicate – already processed' });
+    res.status(200).json({ success: true, message: 'Trùng lặp - giao dịch đã được xử lý' });
     return;
   }
 
@@ -102,8 +102,8 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
   const orderId = orderIdMatch ? orderIdMatch[0].toUpperCase() : null;
 
   if (!orderId) {
-    // Not a recognised Livaxis subscription order — acknowledge so SePay doesn't retry
-    res.status(200).json({ success: true, message: 'Not a Livaxis subscription order' });
+    // Không nhận diện được đơn hàng Livaxis subscription — phản hồi thành công để SePay không thử lại
+    res.status(200).json({ success: true, message: 'Không phải là đơn hàng subscription của Livaxis' });
     return;
   }
 

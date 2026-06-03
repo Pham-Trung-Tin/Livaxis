@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface AdminGuardProps {
   children: ReactNode
@@ -8,6 +9,7 @@ interface AdminGuardProps {
 
 export function AdminGuard({ children }: AdminGuardProps) {
   const { user, loading } = useAuth()
+  const { t } = useLanguage()
 
   if (loading) {
     return (
@@ -18,7 +20,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
             <path className="opacity-80" fill="#7c3aed" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           <p className="text-sm text-white/40" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-            Verifying access...
+            {t('guards.verifyingAccess')}
           </p>
         </div>
       </div>

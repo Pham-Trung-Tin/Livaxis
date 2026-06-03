@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
 import { getAdminDashboardStats, getSubscriptionRevenue, type AdminDashboardStats, type RevenueData } from '../../services/adminApi'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { translations } from '../../contexts/translations'
 
 const CHART_DATA = {
-  labels: ['10 thg 2', '15 thg 2', '20 thg 2', '25 thg 2', '2 thg 3', '7 thg 3'],
   roomTryOn: [165, 190, 175, 210, 155, 185, 175, 200, 165, 190, 175, 165, 185, 195, 170, 165, 180, 175, 190, 205, 175, 160, 175, 185, 170, 180, 195, 175, 170, 160],
   roomPlanner: [85, 95, 80, 90, 75, 100, 85, 90, 80, 95, 85, 80, 90, 95, 80, 85, 90, 80, 95, 100, 85, 80, 85, 90, 80, 85, 90, 80, 85, 80],
 }
@@ -65,11 +66,32 @@ const statusColors: Record<string, { bg: string; color: string }> = {
 }
 
 export default function AdminDashboard() {
+  const { language } = useLanguage()
+  const adminTrans = translations[language].admin
+
   const [stats, setStats] = useState<AdminDashboardStats | null>(null)
   const [revenueData, setRevenueData] = useState<RevenueData | null>(null)
   const [revenueLoading, setRevenueLoading] = useState(true)
   const [showRoomTryOn, setShowRoomTryOn] = useState(true)
   const [showRoomPlanner, setShowRoomPlanner] = useState(true)
+
+  const statusTranslations: Record<string, string> = language === 'vi' ? {
+    Completed: 'Hoàn thành',
+    Pending: 'Đang chờ',
+    Failed: 'Thất bại',
+    paid: 'Đã thanh toán',
+    pending: 'Chưa thanh toán',
+  } : {
+    Completed: 'Completed',
+    Pending: 'Pending',
+    Failed: 'Failed',
+    paid: 'Paid',
+    pending: 'Pending',
+  }
+
+  const chartLabels = language === 'vi' 
+    ? ['10 thg 2', '15 thg 2', '20 thg 2', '25 thg 2', '2 thg 3', '7 thg 3']
+    : ['Feb 10', 'Feb 15', 'Feb 20', 'Feb 25', 'Mar 2', 'Mar 7']
 
   useEffect(() => {
     getAdminDashboardStats()
@@ -94,13 +116,13 @@ export default function AdminDashboard() {
     ? formatVND(revenueData.totalRevenue)
     : '—'
 
-  const revenueSub = revenueData?.monthLabel ?? 'Đang tải...'
-  const revenueTrend = revenueData?.trendPercent ?? (revenueLoading ? '...' : 'Chưa có dữ liệu')
+  const revenueSub = revenueData?.monthLabel ?? (language === 'vi' ? 'Đang tải...' : 'Loading...')
+  const revenueTrend = revenueData?.trendPercent ?? (revenueLoading ? '...' : (language === 'vi' ? 'Chưa có dữ liệu' : 'No data'))
   const revenueTrendUp = revenueData ? (revenueData.trendPercent ?? '').startsWith('+') : true
 
   const statCards = [
     {
-      label: 'Total Revenue',
+      label: adminTrans.stats.totalRevenue,
       value: revenueValue,
       sub: revenueSub,
       trend: revenueTrend,
@@ -110,10 +132,10 @@ export default function AdminDashboard() {
       iconColor: '#d97706',
     },
     {
-      label: 'Active Users',
+      label: adminTrans.stats.activeUsers,
       value: stats ? stats.totalActiveUsers.toLocaleString() : '657',
-      sub: 'Người dùng hoạt động',
-      trend: `+${stats?.newUsersThisWeek ?? 32} tuần này`,
+      sub: language === 'vi' ? 'Người dùng hoạt động' : 'Active users',
+      trend: language === 'vi' ? `+${stats?.newUsersThisWeek ?? 32} tuần này` : `+${stats?.newUsersThisWeek ?? 32} this week`,
       up: true,
       icon: '👥',
       iconBg: '#ede9fe',
@@ -121,10 +143,10 @@ export default function AdminDashboard() {
       emoji: true,
     },
     {
-      label: 'AI Turns Consumed',
+      label: adminTrans.stats.aiTurnsUsed,
       value: stats ? stats.aiTurnsConsumed.toLocaleString() : '42.810',
-      sub: 'Tổng lượt AI đã dùng',
-      trend: '+5.2% vs tháng trước',
+      sub: language === 'vi' ? 'Tổng lượt AI đã dùng' : 'Total AI turns used',
+      trend: language === 'vi' ? '+5.2% vs tháng trước' : '+5.2% vs last month',
       up: true,
       icon: '⚡',
       iconBg: '#ecfdf5',
@@ -132,10 +154,10 @@ export default function AdminDashboard() {
       emoji: true,
     },
     {
-      label: 'Current API Cost',
+      label: adminTrans.stats.currentApiCost,
       value: '$312.40',
-      sub: 'Gemini API – tháng 3',
-      trend: '-8.1% vs tháng trước',
+      sub: language === 'vi' ? 'Gemini API – tháng 3' : 'Gemini API – March',
+      trend: language === 'vi' ? '-8.1% vs tháng trước' : '-8.1% vs last month',
       up: false,
       icon: '📊',
       iconBg: '#fef2f2',
@@ -152,8 +174,8 @@ export default function AdminDashboard() {
           <div key={card.label} className="adm-stat-card">
             <div className="adm-stat-top">
               <span
-                className="adm-stat-icon"
-                style={{ background: card.iconBg, color: card.iconColor }}
+                 className="adm-stat-icon"
+                 style={{ background: card.iconBg, color: card.iconColor }}
               >
                 {card.emoji ? card.icon : <span style={{ fontWeight: 700, fontSize: 16 }}>{card.icon}</span>}
               </span>
@@ -173,8 +195,8 @@ export default function AdminDashboard() {
       <div className="adm-card adm-chart-card">
         <div className="adm-chart-header">
           <div>
-            <h3 className="adm-section-title">AI Try-On Usage</h3>
-            <p className="adm-section-sub">Lượt sử dụng AI trong 30 ngày qua</p>
+            <h3 className="adm-section-title">{adminTrans.sections.aiTryOnUsage}</h3>
+            <p className="adm-section-sub">{language === 'vi' ? 'Lượt sử dụng AI trong 30 ngày qua' : 'AI usage in the last 30 days'}</p>
           </div>
           <div className="adm-chart-legend">
             <button
@@ -182,16 +204,16 @@ export default function AdminDashboard() {
               onClick={() => setShowRoomTryOn((v) => !v)}
             >
               <span className="adm-legend-dot" style={{ background: '#7c3aed' }} />
-              Room Try-On
+              {adminTrans.sections.roomTryOn}
             </button>
             <button
               className={`adm-legend-item ${!showRoomPlanner ? 'adm-legend-item--off' : ''}`}
               onClick={() => setShowRoomPlanner((v) => !v)}
             >
               <span className="adm-legend-dot" style={{ background: '#f59e0b' }} />
-              Room Planner
+              {adminTrans.sections.roomPlanner}
             </button>
-            <button className="adm-refresh-btn" title="Refresh">
+            <button className="adm-refresh-btn" title={adminTrans.buttons.refresh}>
               <RefreshCw size={14} strokeWidth={1.5} />
             </button>
           </div>
@@ -226,8 +248,8 @@ export default function AdminDashboard() {
             })}
 
             {/* X-axis labels */}
-            {CHART_DATA.labels.map((label, i) => {
-              const x = PAD_L + (i / (CHART_DATA.labels.length - 1)) * (CHART_W - PAD_L - PAD_R)
+            {chartLabels.map((label, i) => {
+              const x = PAD_L + (i / (chartLabels.length - 1)) * (CHART_W - PAD_L - PAD_R)
               return (
                 <text key={label} x={x} y={CHART_H - 4} fontSize="9" fill="#bbb" textAnchor="middle">{label}</text>
               )
@@ -256,15 +278,17 @@ export default function AdminDashboard() {
       <div className="adm-card">
         <div className="adm-table-header">
           <div>
-            <h3 className="adm-section-title">Recent Orders</h3>
-            <p className="adm-section-sub">Đơn hàng subscription gần đây (dữ liệu thực từ SePay)</p>
+            <h3 className="adm-section-title">{adminTrans.sections.recentOrders}</h3>
+            <p className="adm-section-sub">
+              {language === 'vi' ? 'Đơn hàng subscription gần đây (dữ liệu thực từ SePay)' : 'Recent subscription orders (live data from SePay)'}
+            </p>
           </div>
           <div className="adm-table-actions">
-            <input className="adm-search" placeholder="Tìm đơn hàng..." />
-            <button className="adm-icon-btn" title="Filter">
+            <input className="adm-search" placeholder={language === 'vi' ? 'Tìm đơn hàng...' : 'Search orders...'} />
+            <button className="adm-icon-btn" title={adminTrans.buttons.filter}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
             </button>
-            <button className="adm-icon-btn" title="Export">
+            <button className="adm-icon-btn" title={adminTrans.buttons.export}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
           </div>
@@ -273,21 +297,23 @@ export default function AdminDashboard() {
         <table className="adm-table">
           <thead>
             <tr>
-              <th>ORDER ID</th>
-              <th>NỘI DUNG</th>
-              <th>AMOUNT</th>
-              <th>DATE</th>
-              <th>STATUS</th>
+              <th>{adminTrans.tableHeaders.orderId}</th>
+              <th>{adminTrans.tableHeaders.content}</th>
+              <th>{adminTrans.tableHeaders.amount}</th>
+              <th>{adminTrans.tableHeaders.date}</th>
+              <th>{adminTrans.tableHeaders.status}</th>
             </tr>
           </thead>
           <tbody>
             {revenueLoading ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>Đang tải dữ liệu từ SePay...</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>
+                {language === 'vi' ? 'Đang tải dữ liệu từ SePay...' : 'Loading data from SePay...'}
+              </td></tr>
             ) : revenueData && revenueData.recentOrders.length > 0 ? (
               revenueData.recentOrders.map((order) => {
                 const sc = statusColors['Completed']
                 const amountFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)
-                const dateFormatted = new Date(order.date).toLocaleDateString('vi-VN')
+                const dateFormatted = new Date(order.date).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')
                 return (
                   <tr key={order.sePayId}>
                     <td className="adm-td-mono">{order.id}</td>
@@ -296,7 +322,7 @@ export default function AdminDashboard() {
                     <td className="adm-td-dim">{dateFormatted}</td>
                     <td>
                       <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color }}>
-                        ● {order.status}
+                        ● {statusTranslations[order.status] || order.status}
                       </span>
                     </td>
                   </tr>
@@ -324,7 +350,7 @@ export default function AdminDashboard() {
                     <td className="adm-td-dim">{order.date}</td>
                     <td>
                       <span className="adm-status-badge" style={{ background: sc.bg, color: sc.color }}>
-                        ● {order.status}
+                        ● {statusTranslations[order.status] || order.status}
                       </span>
                     </td>
                   </tr>

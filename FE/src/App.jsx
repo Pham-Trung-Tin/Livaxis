@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/auth-context'
 import { ToastProvider } from './contexts/toast-context'
 import { AdminGuard } from './components/guards/AdminGuard'
 import { AuthGuard } from './components/guards/AuthGuard'
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
@@ -26,10 +27,22 @@ const AdminProductInventory = lazy(() => import('./page/Admin/ProductInventory')
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
-          <Routes>
+    <LanguageProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </LanguageProvider>
+  )
+}
+
+function AppContent() {
+  const { t } = useLanguage()
+
+  return (
+    <Suspense fallback={<div className="p-6 text-center">{t('common.loading')}</div>}>
+      <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/sign-in" element={<SignInPage />} />
             <Route path="/sign-up" element={<SignUpPage />} />
@@ -71,7 +84,5 @@ export default function App() {
             <Route path="*" element={<HomePage />} />
           </Routes>
         </Suspense>
-      </ToastProvider>
-    </AuthProvider>
   )
 }

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { removeBackground } from '@imgly/background-removal';
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi';
 import { useAuth } from '../contexts/auth-context';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useMemo } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /* Style Presets & Catalog Data */
@@ -33,68 +35,68 @@ type CatalogProduct = {
 const catalog: CatalogProduct[] = [
   {
     id: "oak-table",
-    name: "Oak dining table",
+    name: "Bàn ăn gỗ sồi",
     type: "Table",
     color: "#8b6545",
     accent: "#4f3828",
     baseScale: 0.26,
-    note: "The table sits near the strongest floor line so the room still feels open.",
+    note: "Bàn được đặt gần đường sàn chính giúp căn phòng luôn có cảm giác rộng rãi.",
     imagePath: "assets/oak_table.png",
     draw: drawTable,
   },
   {
     id: "lounge-chair",
-    name: "Lounge chair",
+    name: "Ghế thư giãn",
     type: "Chair",
     color: "#8f7f72",
     accent: "#5d3f2c",
     baseScale: 0.18,
-    note: "The chair adds a warm accent and faces the room center.",
+    note: "Ghế tạo điểm nhấn ấm áp và hướng về phía trung tâm phòng.",
     imagePath: "assets/lounge_chair.png",
     draw: drawChair,
   },
   {
     id: "linen-sofa",
-    name: "Linen sofa",
+    name: "Sofa vải lanh",
     type: "Sofa",
     color: "#756a5f",
     accent: "#5b3a27",
     baseScale: 0.34,
-    note: "The sofa anchors the largest wall area without covering the window.",
+    note: "Sofa được đặt sát mảng tường lớn nhất mà không che khuất cửa sổ.",
     imagePath: "assets/linen_sofa.png",
     draw: drawSofa,
   },
   {
     id: "coffee-table",
-    name: "Round coffee table",
+    name: "Bàn trà tròn",
     type: "Table",
     color: "#7a573a",
     accent: "#4b3222",
     baseScale: 0.18,
-    note: "The coffee table is placed low to preserve walking space.",
+    note: "Bàn trà được đặt thấp để giữ lối đi thông thoáng.",
     imagePath: "assets/coffee_table.png",
     draw: drawCoffeeTable,
   },
   {
     id: "floor-lamp",
-    name: "Arched floor lamp",
+    name: "Đèn cây uốn cong",
     type: "Lighting",
     color: "#26312f",
     accent: "#f2cf74",
     baseScale: 0.22,
-    note: "The lamp creates a secondary light source for a more finished look.",
+    note: "Đèn tạo nguồn sáng phụ giúp không gian thêm phần hoàn thiện.",
     imagePath: "assets/floor_lamp.png",
     removeBackground: true,
     draw: drawLamp,
   },
   {
     id: "leaf-plant",
-    name: "Leaf plant",
+    name: "Cây lá xanh",
     type: "Decor",
     color: "#4f7f52",
     accent: "#8b5f3b",
     baseScale: 0.16,
-    note: "The plant softens the corner and balances the furniture volume.",
+    note: "Cây xanh làm dịu góc phòng và cân bằng bố cục đồ nội thất.",
     imagePath: "assets/leaf_plant.png",
     removeBackground: true,
     draw: drawPlant,
@@ -950,7 +952,7 @@ function mapApiProductToCatalogProduct(p: any): CatalogProduct {
             : lowerCat.includes("storage") || lowerCat.includes("shelf")
               ? 0.24
               : 0.18,
-    note: p.description || `A beautiful ${p.name} from Livaxis.`,
+    note: p.description || `__DEFAULT_NOTE__:${p.name}`,
     imagePath: p.imageUrl,
     removeBackground: true,
     isDbProduct: true,
@@ -986,6 +988,7 @@ async function fetchAllPlannerProducts(): Promise<CatalogProduct[]> {
 export default function AIRoomPlanner() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   // Elements References
   const beforeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -994,6 +997,37 @@ export default function AIRoomPlanner() {
 
   // States mirroring EXE app.js
   const [productsList, setProductsList] = useState<CatalogProduct[]>(catalog);
+
+  const localizedProductsList = useMemo(() => {
+    return productsList.map((product) => {
+      if (!product.isDbProduct) {
+        const keyBase = `aiRoomPlanner.catalog.${product.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}`;
+        return {
+          ...product,
+          name: t(`${keyBase}.name`),
+          note: t(`${keyBase}.note`),
+        };
+      }
+      if (product.note.startsWith('__DEFAULT_NOTE__:')) {
+        const prodName = product.note.split('__DEFAULT_NOTE__:')[1];
+        return {
+          ...product,
+          note: t('aiRoomPlanner.defaultProductNote').replace('{name}', prodName)
+        };
+      }
+      return product;
+    });
+  }, [productsList, t]);
+
+  const TYPE_KEYS: Record<string, string> = {
+    Table: 'discovery.tables',
+    Chair: 'discovery.chairs',
+    Sofa: 'discovery.sofas',
+    Bed: 'discovery.beds',
+    Lighting: 'discovery.lighting',
+    Storage: 'discovery.storage',
+    Decor: 'discovery.decor',
+  };
   const [roomImage, setRoomImage] = useState<HTMLImageElement | null>(null);
   const [roomDataUrl, setRoomDataUrl] = useState<string | null>(null);
   const [imageName, setImageName] = useState("Sample room");
@@ -1013,7 +1047,7 @@ export default function AIRoomPlanner() {
   const [lastProvider, setLastProvider] = useState("local");
   const [lastGenerationMode, setLastGenerationMode] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<HTMLImageElement | null>(null);
-  const [aiStatus, setAiStatus] = useState("Checking API");
+  const [aiStatusKey, setAiStatusKey] = useState("checkingApi");
   const [stylePrompt, setStylePrompt] = useState(stylePresets["modern"]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [preparingProductIds, setPreparingProductIds] = useState<Set<string>>(new Set());
@@ -1062,7 +1096,7 @@ export default function AIRoomPlanner() {
         if (res.success && res.data) {
           setBackendOnline(true);
           setLastProvider(res.data.provider || "mock-preview");
-          setAiStatus(res.data.label || "Backend ready");
+          setAiStatusKey("backendReady");
         } else {
           throw new Error("fail");
         }
@@ -1070,7 +1104,7 @@ export default function AIRoomPlanner() {
       .catch(() => {
         setBackendOnline(false);
         setLastProvider("browser-fallback");
-        setAiStatus("Local preview");
+        setAiStatusKey("localPreview");
       });
   }, []);
 
@@ -1084,31 +1118,35 @@ export default function AIRoomPlanner() {
 
   // Sync Designer Notes
   useEffect(() => {
-    const selectedProducts = productsList.filter((product) => selected.has(product.id));
+    const selectedProducts = localizedProductsList.filter((product) => selected.has(product.id));
     if (!selectedProducts.length) {
       const emptyMessage =
         sourceType === "upload"
-          ? "Old demo selections were reset for this uploaded room. Choose the exact product you want to preview."
-          : "Choose a catalog product to create an after preview.";
+          ? t('aiRoomPlanner.resetDemoSelections')
+          : t('aiRoomPlanner.chooseCatalogToCreate');
       setDesignerNotes([emptyMessage]);
       return;
     }
 
     const isComposite = pipelineMode === "composite";
+    const modeLabel = isComposite
+      ? (language === 'vi' ? 'Ghép ảnh thông minh (AI Composite)' : 'Smart AI Composite')
+      : (language === 'vi' ? 'Trí tuệ nhân tạo tạo sinh (Generative AI)' : 'Generative AI');
+
     const notes = [
       backendOnline
-        ? `Backend connected. Mode: ${isComposite ? "Smart AI Composite" : "Generative AI"}.`
-        : `Browser Mode: Local ${isComposite ? "Composite" : "Generative (requires backend)"} Preview.`,
+        ? t('aiRoomPlanner.backendConnectedMode').replace('{mode}', modeLabel)
+        : t('aiRoomPlanner.browserModeLocal').replace('{mode}', isComposite ? (language === 'vi' ? 'Ghép ảnh' : 'Composite') : (language === 'vi' ? 'Tạo sinh (yêu cầu máy chủ)' : 'Generative (requires backend)')),
       isComposite
-        ? "Smart AI Composite Mode is active: your selected furniture is blended directly into your original room to preserve your background 100% identically."
-        : "Generative AI Mode is active: the AI will attempt to generate a photorealistic room around your selected products, which may alter the background.",
+        ? t('aiRoomPlanner.smartAiModeActive')
+        : t('aiRoomPlanner.genAiModeActive'),
       lightMatch
-        ? "Lighting match is enabled, so generated products receive soft shadows and a warm floor blend."
-        : "Lighting match is disabled, so the output keeps stronger product contrast.",
+        ? t('aiRoomPlanner.lightMatchEnabled')
+        : t('aiRoomPlanner.lightMatchDisabled'),
       ...selectedProducts.map((product) => product.note),
     ];
     setDesignerNotes(notes);
-  }, [selected, sourceType, pipelineMode, backendOnline, lightMatch]);
+  }, [selected, sourceType, pipelineMode, backendOnline, lightMatch, t, language, localizedProductsList]);
 
   // Drawing helpers
   const drawRoom = useCallback((ctx: CanvasRenderingContext2D) => {
@@ -1171,7 +1209,7 @@ export default function AIRoomPlanner() {
   }, [stage]);
 
   const drawFallbackBadge = useCallback((ctx: CanvasRenderingContext2D) => {
-    const label = "LOCAL PLACEMENT PREVIEW - AI API NOT CONNECTED";
+    const label = "XEM TRƯỚC BỐ TRÍ CỤC BỘ - CHƯA KẾT NỐI API AI";
     const padX = 18;
     const padY = 12;
     ctx.save();
@@ -1421,7 +1459,7 @@ export default function AIRoomPlanner() {
         setRoomDataUrl("assets/sample_room.png");
       }
 
-      setImageName("Sample room");
+      setImageName("Phòng mẫu");
       setSourceType("sample");
       setLastGenerationMode(null);
       setGeneratedImage(null);
@@ -1429,9 +1467,9 @@ export default function AIRoomPlanner() {
       setPlacements(new Map());
       setActiveId(null);
       setPreparingProductIds(new Set());
-      toast("Sample room loaded");
+      toast(t('aiRoomPlanner.sampleRoomLoaded'));
     };
-  }, [toast]);
+  }, [toast, t]);
 
   // Load Room File
   const loadRoomFile = (file: File) => {
@@ -1449,7 +1487,7 @@ export default function AIRoomPlanner() {
         setPlacements(new Map());
         setActiveId(null);
         setPreparingProductIds(new Set());
-        toast("Room uploaded. Choose furniture to place.");
+        toast(t('aiRoomPlanner.roomUploadedToast'));
       };
       img.src = reader.result as string;
     };
@@ -1519,7 +1557,7 @@ export default function AIRoomPlanner() {
   const toggleProduct = async (id: string) => {
     setGeneratedImage(null);
     setLastGenerationMode(null);
-    const product = productsList.find((item) => item.id === id);
+    const product = localizedProductsList.find((item) => item.id === id);
     if (!product) return;
 
     if (selected.has(id)) {
@@ -1541,12 +1579,12 @@ export default function AIRoomPlanner() {
 
     if (!isProductImageReady(product)) {
       setProductPreparing(id, true);
-      toast(`Preparing ${product.name} image...`);
+      toast(t('aiRoomPlanner.preparingProductImage').replace('{name}', product.name));
       try {
         await prepareProductImageForExport(product);
       } catch (error) {
         console.warn("Product image preparation failed:", error);
-        toast("Could not prepare this product image");
+        toast(t('aiRoomPlanner.couldNotPrepareImage'));
         return;
       } finally {
         setProductPreparing(id, false);
@@ -1697,15 +1735,15 @@ export default function AIRoomPlanner() {
   // Trigger real AI generation
   const handleGenerate = async () => {
     if (!roomDataUrl) {
-      toast("Upload a room photo first");
+      toast(t('aiRoomPlanner.uploadPhotoFirst'));
       return;
     }
     if (!selected.size) {
-      toast("Select at least one product");
+      toast(t('aiRoomPlanner.selectAtLeastOneProduct'));
       return;
     }
     if (isPreparingProducts) {
-      toast("Wait for product images to finish loading");
+      toast(t('aiRoomPlanner.waitForImages'));
       return;
     }
 
@@ -1713,7 +1751,7 @@ export default function AIRoomPlanner() {
     setGeneratedImage(null);
 
     try {
-      const selectedCatalogProducts = productsList.filter((p) => selected.has(p.id));
+      const selectedCatalogProducts = localizedProductsList.filter((p) => selected.has(p.id));
       await Promise.allSettled(selectedCatalogProducts.map((product) => prepareProductImageForExport(product)));
 
       const selectedProducts = selectedCatalogProducts
@@ -1752,7 +1790,7 @@ export default function AIRoomPlanner() {
       const maskPayload = createPlacementMask();
 
       if (pipelineMode === "generative" && !hasCompositePayload) {
-        throw new Error("Could not export the exact product reference for AI blending");
+        throw new Error(t('aiRoomPlanner.couldNotExportRef'));
       }
 
       const response = await fetch("/api/ai-room-planner/generate", {
@@ -1791,11 +1829,11 @@ export default function AIRoomPlanner() {
           const outputImage = await loadGeneratedImage(generated.imageDataUrl);
           setGeneratedImage(outputImage);
           setCompareMode("after");
-          toast(generated.message || "Preview generated!");
+          toast(generated.message || t('aiRoomPlanner.previewGenerated'));
         } else {
           setGeneratedImage(null);
           setCompareMode("after");
-          toast(generated.message || "Preview rendered locally");
+          toast(generated.message || t('aiRoomPlanner.previewRenderedLocally'));
         }
 
         if (generated.notes) {
@@ -1820,7 +1858,7 @@ export default function AIRoomPlanner() {
       setLastGenerationMode("mock-preview");
       setGeneratedImage(null);
       setCompareMode("after");
-      const errMsg = e instanceof Error ? e.message : "AI unavailable. Showing local preview.";
+      const errMsg = e instanceof Error ? e.message : t('aiRoomPlanner.aiUnavailableLocalShow');
       toast(errMsg);
     } finally {
       setIsGenerating(false);
@@ -2039,7 +2077,7 @@ export default function AIRoomPlanner() {
         }
 
         .room-planner-container .product-card.loading::after {
-          content: "Preparing";
+          content: attr(data-loading-label);
           position: absolute;
           top: 8px;
           right: 8px;
@@ -2492,14 +2530,14 @@ export default function AIRoomPlanner() {
             onClick={() => navigate('/')}
             style={{ padding: '2px 0', fontSize: 11, opacity: 0.6, marginBottom: 10, letterSpacing: '0.04em' }}
           >
-            ← Back to Home
+            ← {t('aiRoomPlanner.backToHome')}
           </button>
           <p className="eyebrow">LIVAXIS STUDIO</p>
-          <h1>AI Before / After Interior Planner</h1>
+          <h1>{t('aiRoomPlanner.title')}</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           <button className="ghost-btn" onClick={loadSampleRoom}>
-            Sample room
+            {t('aiRoomPlanner.sampleRoom')}
           </button>
           <button
             className="primary-btn"
@@ -2515,12 +2553,12 @@ export default function AIRoomPlanner() {
           >
             <span>
               {isGenerating
-                ? 'Processing AI...'
+                ? t('aiRoomPlanner.processingAi')
                 : isPreparingProducts
-                ? 'Preparing images...'
+                ? t('aiRoomPlanner.preparingImages')
                 : turnsInfo && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0
-                ? 'Upgrade to continue'
-                : 'Generate after'}
+                ? t('aiRoomPlanner.upgradeToContinue')
+                : t('aiRoomPlanner.generateAfter')}
             </span>
             {/* Turns sub-label — only for free users, hidden while generating */}
             {!isGenerating && !isPreparingProducts && turnsInfo && !turnsInfo.unlimited && (
@@ -2531,7 +2569,7 @@ export default function AIRoomPlanner() {
                 letterSpacing: '0.04em',
                 color: (turnsInfo.turnsRemaining ?? 0) > 0 ? 'inherit' : '#ffb4a0',
               }}>
-                {(turnsInfo.turnsRemaining ?? 0)} / {turnsInfo.dailyLimit}
+                {t('homepage.turnsRemaining').replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0)).replace('{limit}', String(turnsInfo.dailyLimit))}
               </span>
             )}
           </button>
@@ -2544,8 +2582,8 @@ export default function AIRoomPlanner() {
         <aside className="side-panel">
           <section className="tool-section">
             <div className="section-heading">
-              <span>Room image</span>
-              <span className="status-pill">{imageName}</span>
+              <span>{t('aiRoomPlanner.roomImage')}</span>
+              <span className="status-pill">{imageName === "Phòng mẫu" ? t('aiRoomPlanner.sampleRoom') : imageName}</span>
             </div>
 
             <label className="drop-zone" onDragOver={(e) => e.preventDefault()} onDrop={(e) => {
@@ -2563,24 +2601,25 @@ export default function AIRoomPlanner() {
                 }}
               />
               <span className="drop-icon" onClick={() => fileInputRef.current?.click()}>+</span>
-              <strong onClick={() => fileInputRef.current?.click()}>Upload room photo</strong>
-              <small>JPG, PNG, or WebP</small>
+              <strong onClick={() => fileInputRef.current?.click()}>{t('aiRoomPlanner.uploadRoomPhoto')}</strong>
+              <small>{t('aiRoomPlanner.uploadRoomPhotoDesc')}</small>
             </label>
           </section>
 
           <section className="tool-section">
             <div className="section-heading">
-              <span>Furniture catalog</span>
-              <span>{selected.size} selected</span>
+              <span>{t('aiRoomPlanner.furnitureCatalog')}</span>
+              <span>{t('aiRoomPlanner.selectedCount').replace('{count}', String(selected.size))}</span>
             </div>
             <div className="catalog-grid">
-              {productsList.map((product) => {
+              {localizedProductsList.map((product) => {
                 const isSelected = selected.has(product.id);
                 const isPreparing = preparingProductIds.has(product.id);
                 return (
                   <button
                     key={product.id}
                     className={`product-card ${isSelected ? "active" : ""} ${isPreparing ? "loading" : ""}`}
+                    data-loading-label={t('aiRoomPlanner.preparing')}
                     onClick={() => toggleProduct(product.id)}
                     disabled={isPreparing}
                     aria-busy={isPreparing}
@@ -2594,7 +2633,7 @@ export default function AIRoomPlanner() {
                     />
                     <span>
                       <span className="product-name">{product.name}</span>
-                      <span className="product-type">{product.type}</span>
+                      <span className="product-type">{t(TYPE_KEYS[product.type] || 'discovery.allProducts')}</span>
                     </span>
                   </button>
                 );
@@ -2604,7 +2643,7 @@ export default function AIRoomPlanner() {
 
           <section className="tool-section">
             <div className="section-heading">
-              <span>Placement pipeline</span>
+              <span>{t('aiRoomPlanner.placementPipeline')}</span>
             </div>
             <div className="pipeline-grid">
               <label className={`pipeline-card ${pipelineMode === "composite" ? "active" : ""}`}>
@@ -2620,8 +2659,8 @@ export default function AIRoomPlanner() {
                   }}
                 />
                 <div>
-                  <span className="pipeline-card-title">Reference Placement</span>
-                  <span className="pipeline-card-desc">Uses the real product image as the source, extracts the object, then overlays it into your room with matched scale, shadow, and lighting.</span>
+                  <span className="pipeline-card-title">{t('aiRoomPlanner.refPlacementTitle')}</span>
+                  <span className="pipeline-card-desc">{t('aiRoomPlanner.refPlacementDesc')}</span>
                 </div>
               </label>
               <label className={`pipeline-card ${pipelineMode === "generative" ? "active" : ""}`}>
@@ -2637,8 +2676,8 @@ export default function AIRoomPlanner() {
                   }}
                 />
                 <div>
-                  <span className="pipeline-card-title">AI Blend Enhancement</span>
-                  <span className="pipeline-card-desc">Sends the reference composite to the AI provider for relighting and blending. If provider fails, the exact-product composite stays visible.</span>
+                  <span className="pipeline-card-title">{t('aiRoomPlanner.aiBlendTitle')}</span>
+                  <span className="pipeline-card-desc">{t('aiRoomPlanner.aiBlendDesc')}</span>
                 </div>
               </label>
             </div>
@@ -2646,31 +2685,33 @@ export default function AIRoomPlanner() {
 
           <section className="tool-section">
             <div className="section-heading">
-              <span>Generation style</span>
-              <span className="status-pill">{aiStatus}</span>
+              <span>{t('aiRoomPlanner.generationStyle')}</span>
+              <span className="status-pill">{t(`aiRoomPlanner.${aiStatusKey}`)}</span>
             </div>
             <div className="presets-section">
-              <span className="presets-label">Style Preset</span>
+              <span className="presets-label">{t('aiRoomPlanner.stylePreset')}</span>
               <div className="presets-grid">
-                {Object.keys(stylePresets).map((preset) => (
-                  <button
-                    key={preset}
-                    className={`preset-btn ${stylePreset === preset ? "active" : ""}`}
-                    onClick={() => {
-                      setStylePreset(preset);
-                      setStylePrompt(stylePresets[preset]);
-                      setGeneratedImage(null);
-                      setLastGenerationMode(null);
-                    }}
-                    type="button"
-                  >
-                    {preset.charAt(0).toUpperCase() + preset.slice(1)}
-                  </button>
-                ))}
+                {Object.keys(stylePresets).map((preset) => {
+                  return (
+                    <button
+                      key={preset}
+                      className={`preset-btn ${stylePreset === preset ? "active" : ""}`}
+                      onClick={() => {
+                        setStylePreset(preset);
+                        setStylePrompt(stylePresets[preset]);
+                        setGeneratedImage(null);
+                        setLastGenerationMode(null);
+                      }}
+                      type="button"
+                    >
+                      {t(`aiRoomPlanner.presets.${preset}`)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <label className="field-row">
-              <span>Prompt</span>
+              <span>{t('aiRoomPlanner.prompt')}</span>
               <textarea
                 value={stylePrompt}
                 onChange={(e) => {
@@ -2679,11 +2720,11 @@ export default function AIRoomPlanner() {
                   setLastGenerationMode(null);
                 }}
                 rows={3}
-                placeholder="Modern luxury living room, realistic lighting, keep room structure unchanged"
+                placeholder={t('aiRoomPlanner.promptPlaceholder')}
               />
             </label>
             <label className="range-row">
-              <span>Product size</span>
+              <span>{t('aiRoomPlanner.productSize')}</span>
               <input
                 type="range"
                 min="70"
@@ -2697,7 +2738,7 @@ export default function AIRoomPlanner() {
               />
             </label>
             <label className="range-row">
-              <span>Floor depth</span>
+              <span>{t('aiRoomPlanner.floorDepth')}</span>
               <input
                 type="range"
                 min="55"
@@ -2730,7 +2771,7 @@ export default function AIRoomPlanner() {
                   setLastGenerationMode(null);
                 }}
               />
-              <span>Match room lighting</span>
+              <span>{t('aiRoomPlanner.matchRoomLighting')}</span>
             </label>
           </section>
         </aside>
@@ -2739,8 +2780,8 @@ export default function AIRoomPlanner() {
         <section className="stage-panel">
           <div className="stage-header">
             <div>
-              <p className="eyebrow">Preview</p>
-              <h2>Before / After</h2>
+              <p className="eyebrow">{t('aiRoomPlanner.preview')}</p>
+              <h2>{t('aiRoomPlanner.beforeAfter')}</h2>
             </div>
             <div className="mode-tabs">
               <button
@@ -2748,14 +2789,14 @@ export default function AIRoomPlanner() {
                 onClick={() => setCompareMode("compare")}
                 type="button"
               >
-                Compare
+                {t('aiRoomPlanner.compare')}
               </button>
               <button
                 className={`tab-btn ${compareMode === "after" ? "active" : ""}`}
                 onClick={() => setCompareMode("after")}
                 type="button"
               >
-                After only
+                {t('aiRoomPlanner.afterOnly')}
               </button>
             </div>
           </div>
@@ -2801,11 +2842,11 @@ export default function AIRoomPlanner() {
 
           <div className="stage-footer">
             <div className="legend">
-              <span className="legend-item before-dot">Before</span>
-              <span className="legend-item after-dot">After</span>
+              <span className="legend-item before-dot">{t('aiRoomPlanner.legendBefore')}</span>
+              <span className="legend-item after-dot">{t('aiRoomPlanner.legendAfter')}</span>
             </div>
             <button className="ghost-btn" onClick={handleDownload} type="button">
-              Download result
+              {t('aiRoomPlanner.downloadResult')}
             </button>
           </div>
         </section>
@@ -2814,23 +2855,23 @@ export default function AIRoomPlanner() {
         <aside className="side-panel output-panel">
           <section className="tool-section">
             <div className="section-heading">
-              <span>Selected items</span>
+              <span>{t('aiRoomPlanner.selectedItems')}</span>
               <button className="text-btn" onClick={() => {
                 setSelected(new Set());
                 setPlacements(new Map());
                 setActiveId(null);
                 setGeneratedImage(null);
                 setLastGenerationMode(null);
-                toast("Selections cleared");
+                toast(t('aiRoomPlanner.selectionsCleared'));
               }} type="button">
-                Clear
+                {t('aiRoomPlanner.clearAll')}
               </button>
             </div>
             <div className="selected-list">
-              {productsList.filter((p) => selected.has(p.id)).length === 0 ? (
-                <div className="selected-empty">Select furniture from the catalog</div>
+              {localizedProductsList.filter((p) => selected.has(p.id)).length === 0 ? (
+                <div className="selected-empty">{t('aiRoomPlanner.selectFurnitureDesc')}</div>
               ) : (
-                productsList
+                localizedProductsList
                   .filter((p) => selected.has(p.id))
                   .map((product) => {
                     const p = placements.get(product.id) || { scale: 1, rotation: 0, flipped: false };
@@ -2845,7 +2886,10 @@ export default function AIRoomPlanner() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
                           <div>
                             <strong>{product.name}</strong>
-                            <small>{Math.round(p.scale * globalScale * 100)}% size, {p.rotation || 0}° rot{p.flipped ? ", flipped" : ""}</small>
+                            <small>{t('aiRoomPlanner.itemSpecDesc')
+                              .replace('{scale}', String(Math.round(p.scale * globalScale * 100)))
+                              .replace('{rotation}', String(p.rotation || 0))
+                              .replace('{flipped}', p.flipped ? t('aiRoomPlanner.itemFlipped') : '')}</small>
                           </div>
                           <button
                             className="mini-btn"
@@ -2860,7 +2904,7 @@ export default function AIRoomPlanner() {
                         </div>
                         <div className="selected-controls" style={{ width: "100%", marginTop: 8 }}>
                           <label className="control-row">
-                            <span>Size:</span>
+                            <span>{t('aiRoomPlanner.itemSizeLabel')}</span>
                             <input
                               type="range"
                               min="60"
@@ -2870,7 +2914,7 @@ export default function AIRoomPlanner() {
                             />
                           </label>
                           <label className="control-row" style={{ marginTop: 6 }}>
-                            <span>Rotate:</span>
+                            <span>{t('aiRoomPlanner.itemRotateLabel')}</span>
                             <input
                               type="range"
                               min="0"
@@ -2887,7 +2931,7 @@ export default function AIRoomPlanner() {
                               onChange={(e) => handlePlacementFlip(product.id, e.target.checked)}
                             />
                             <label htmlFor={`flip-${product.id}`} onClick={(e) => e.stopPropagation()}>
-                              Flip horizontally
+                              {t('aiRoomPlanner.itemFlipLabel')}
                             </label>
                           </div>
                         </div>
@@ -2900,7 +2944,7 @@ export default function AIRoomPlanner() {
 
           <section className="tool-section">
             <div className="section-heading">
-              <span>AI designer notes</span>
+              <span>{t('aiRoomPlanner.aiNotes')}</span>
             </div>
             <div className="notes">
               {designerNotes.map((note, i) => (

@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 interface AuthGuardProps {
   children: ReactNode
@@ -8,6 +9,7 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, loading } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -34,7 +36,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
             <path opacity={0.8} fill="#1a1a1a" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: 13, color: 'rgba(26,26,26,0.5)', margin: 0 }}>
-            Loading...
+            {t('common.loading')}
           </p>
         </div>
         <style>{`@keyframes auth-spin { to { transform: rotate(360deg); } }`}</style>
@@ -145,7 +147,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 lineHeight: 1.2,
               }}
             >
-              Sign in to continue
+              {t('guards.signInToContinue')}
             </h2>
 
             {/* Body */}
@@ -159,7 +161,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 lineHeight: 1.6,
               }}
             >
-              Create a free account or sign in to start visualising furniture in your space.
+              {t('guards.authGuardDesc')}
             </p>
 
             {/* Buttons */}
@@ -184,7 +186,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 onMouseEnter={e => ((e.target as HTMLButtonElement).style.background = '#333')}
                 onMouseLeave={e => ((e.target as HTMLButtonElement).style.background = '#1a1a1a')}
               >
-                Sign In
+                {t('guards.signIn')}
               </button>
 
               <button
@@ -215,7 +217,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                   btn.style.background = 'transparent'
                 }}
               >
-                Create Account
+                {t('guards.createAccount')}
               </button>
             </div>
 
@@ -229,7 +231,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 margin: '24px 0 0',
               }}
             >
-              Free to join · No credit card required
+              {t('guards.freeToJoin')}
             </p>
           </div>
         </div>

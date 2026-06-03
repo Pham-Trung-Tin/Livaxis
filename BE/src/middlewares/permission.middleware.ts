@@ -11,12 +11,12 @@ export const checkRole = (allowedRole: UserRole) => {
     const role = getAuthenticatedRole(req);
 
     if (!role) {
-      next(new AppError(401, 'UNAUTHORIZED', 'Missing user context'));
+      next(new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng'));
       return;
     }
 
     if (role !== allowedRole) {
-      next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action'));
+      next(new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện hành động này'));
       return;
     }
 
@@ -29,12 +29,12 @@ export const checkPermission = (permission: Permission) => {
     const role = getAuthenticatedRole(req);
 
     if (!role) {
-      next(new AppError(401, 'UNAUTHORIZED', 'Missing user context'));
+      next(new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng'));
       return;
     }
 
     if (!hasPermission(role, permission)) {
-      next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action'));
+      next(new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện hành động này'));
       return;
     }
 
@@ -47,12 +47,12 @@ export const checkAnyPermission = (permissions: Permission[]) => {
     const role = getAuthenticatedRole(req);
 
     if (!role) {
-      next(new AppError(401, 'UNAUTHORIZED', 'Missing user context'));
+      next(new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng'));
       return;
     }
 
     if (!hasAnyPermission(role, permissions)) {
-      next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action'));
+      next(new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện hành động này'));
       return;
     }
 
@@ -65,12 +65,12 @@ export const checkAllPermissions = (permissions: Permission[]) => {
     const role = getAuthenticatedRole(req);
 
     if (!role) {
-      next(new AppError(401, 'UNAUTHORIZED', 'Missing user context'));
+      next(new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng'));
       return;
     }
 
     if (!hasAllPermissions(role, permissions)) {
-      next(new AppError(403, 'FORBIDDEN', 'You do not have permission to perform this action'));
+      next(new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện hành động này'));
       return;
     }
 

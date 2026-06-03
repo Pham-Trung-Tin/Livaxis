@@ -19,7 +19,7 @@ const extractToken = (req: Request): string | null => {
 export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   const token = extractToken(req);
   if (!token) {
-    next(new AppError(401, 'UNAUTHORIZED', 'Missing access token'));
+    next(new AppError(401, 'UNAUTHORIZED', 'Thiếu mã xác thực (access token)'));
     return;
   }
 
@@ -28,7 +28,7 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     const user = await User.findById(payload.sub);
 
     if (!user || !user.isActive) {
-      next(new AppError(401, 'UNAUTHORIZED', 'User not found or inactive'));
+      next(new AppError(401, 'UNAUTHORIZED', 'Không tìm thấy người dùng hoặc tài khoản đã bị khóa'));
       return;
     }
 
@@ -39,6 +39,6 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
 
     next();
   } catch {
-    next(new AppError(401, 'UNAUTHORIZED', 'Invalid or expired access token'));
+    next(new AppError(401, 'UNAUTHORIZED', 'Mã xác thực không hợp lệ hoặc đã hết hạn'));
   }
 };

@@ -21,6 +21,8 @@ import { useNavigate } from 'react-router-dom'
 import { Footer, Header } from './Hompage'
 import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, registerSubscriptionOrder, type BankInfo } from '../services/paymentApi'
 import { useAuth } from '../contexts/auth-context'
+import { useLanguage } from '../contexts/LanguageContext'
+import { translations } from '../contexts/translations'
 
 type BillingCycle = 'monthly' | 'yearly'
 
@@ -41,151 +43,7 @@ type Plan = {
   extras?: string[]
 }
 
-const PLANS: Plan[] = [
-  {
-    id: 'free',
-    name: 'Daily Inspiration',
-    tagline: 'Begin your design journey',
-    price: { monthly: '$0', yearly: '$0' },
-    turns: { monthly: '3 AI Try-On turns', yearly: '3 AI Try-On turns' },
-    turnsNote: { monthly: 'per day · resets at midnight', yearly: 'per day · resets at midnight' },
-    turnsToAdd: { monthly: 0, yearly: 0 },
-    cta: 'Current Plan',
-    ctaStyle: 'ghost',
-    highlight: false,
-    features: {
-      monthly: [
-        '3 AI Try-On turns / day',
-        'Standard resolution exports',
-        'Basic room analysis',
-        'Community gallery access',
-      ],
-      yearly: [
-        '3 AI Try-On turns / day',
-        'Standard resolution exports',
-        'Basic room analysis',
-        'Community gallery access',
-      ],
-    },
-  },
-  {
-    id: 'starter',
-    name: 'Starter Pack',
-    tagline: 'Perfect for occasional use',
-    price: { monthly: '19.000 ₫', yearly: '190.000 ₫' },
-    priceNote: { monthly: 'one-time · no subscription', yearly: 'one-time · no subscription' },
-    turns: { monthly: '10 AI Try-On turns', yearly: '10 AI Try-On turns' },
-    turnsNote: { monthly: 'valid for 30 days', yearly: 'valid for 30 days' },
-    turnsToAdd: { monthly: 10, yearly: 10 },
-    cta: 'Choose Starter',
-    ctaStyle: 'outline',
-    highlight: false,
-    features: {
-      monthly: [
-        '10 AI Try-On turns',
-        'Unlimited high-res downloads',
-        'Gemini AI Priority Processing',
-        'Before / After comparisons',
-        'Email support',
-      ],
-      yearly: [
-        '10 AI Try-On turns',
-        'Unlimited high-res downloads',
-        'Gemini AI Priority Processing',
-        'Before / After comparisons',
-        'Email support',
-      ],
-    },
-  },
-  {
-    id: 'standard',
-    badge: 'MOST POPULAR',
-    name: 'Design Enthusiast',
-    tagline: 'Elevate your interiors',
-    price: { monthly: '49.000 ₫', yearly: '490.000 ₫' },
-    priceNote: { monthly: 'per month', yearly: 'per year · save 10%' },
-    turns: { monthly: '50 AI Try-On turns', yearly: '600 AI Try-On turns' },
-    turnsNote: { monthly: 'per month · rolls over', yearly: 'per year · ~50/month' },
-    turnsToAdd: { monthly: 50, yearly: 600 },
-    cta: 'Choose Standard',
-    ctaStyle: 'charcoal',
-    highlight: true,
-    features: {
-      monthly: [
-        '50 AI Try-On turns / month',
-        'Unlimited high-res downloads',
-        'Gemini AI Priority Processing',
-        'Advanced decor suggestions',
-        'Style profile & mood board',
-        'Priority email support',
-      ],
-      yearly: [
-        '600 AI Try-On turns / year',
-        'Unlimited high-res downloads',
-        'Gemini AI Priority Processing',
-        'Advanced decor suggestions',
-        'Style profile & mood board',
-        'Priority email support',
-      ],
-    },
-    extras: ['Exclusive member drops', 'Early access to new features'],
-  },
-]
-
-const COMPARISON_ROWS = [
-  { label: 'AI Try-On turns', values: ['3/day', '10', '50/mo'] },
-  { label: 'High-res downloads', values: [false, true, true] },
-  { label: 'Gemini Priority Processing', values: [false, true, true] },
-  { label: 'Before/After comparisons', values: [false, true, true] },
-  { label: 'Style profile & mood board', values: [false, false, true] },
-  { label: 'Multi-room projects', values: [false, false, false] },
-  { label: 'Design concierge', values: [false, false, false] },
-  { label: 'Client presentation exports', values: [false, false, false] },
-]
-
-const TESTIMONIALS = [
-  {
-    quote:
-      'The Design Enthusiast plan completely changed how I plan interiors. Seeing the sofa in my actual room before buying was a big win.',
-    author: 'Linh Nguyen',
-    role: 'Interior Stylist, Hanoi',
-  },
-  {
-    quote:
-      'As a professional designer, the priority processing and client exports are invaluable. My clients love the AI simulations.',
-    author: 'Thomas Beaumont',
-    role: 'Principal Designer, London',
-  },
-  {
-    quote:
-      'I started on the free plan and upgraded within a week. The rendering speed makes the whole experience feel immediate.',
-    author: 'An Tran',
-    role: 'Architect, Ho Chi Minh City',
-  },
-]
-
-const FAQS = [
-  {
-    q: 'Do AI Try-On turns expire?',
-    a: 'Daily Inspiration resets at midnight. Starter Pack turns stay valid for 30 days. Design Enthusiast turns roll over every month.',
-  },
-  {
-    q: 'Can I switch plans mid-month?',
-    a: 'Yes. You can upgrade at any time. Downgrades take effect at the end of your current billing cycle.',
-  },
-  {
-    q: 'What does Gemini AI Priority Processing mean?',
-    a: 'Paid plans move your renders into a faster processing lane so results usually return much sooner.',
-  },
-  {
-    q: 'Is there a free trial for paid plans?',
-    a: 'The free plan is available indefinitely. Paid plans do not include a trial, but you can cancel according to the plan terms.',
-  },
-  {
-    q: 'Can I upgrade later?',
-    a: 'Yes. You can start small and upgrade whenever your projects need more turns or higher usage limits.',
-  },
-]
+// Globals removed to localize dynamically inside component
 
 function FeatureRow({ text, delay }: { text: string; delay: number }) {
   return (
@@ -240,6 +98,77 @@ function parsePrice(priceStr: string): number {
 export default function SubscriptionPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { language, t } = useLanguage()
+  const subTrans = translations[language].subscription
+
+  const PLANS: Plan[] = [
+    {
+      id: 'free',
+      name: subTrans.plans.free.name,
+      tagline: subTrans.plans.free.tagline,
+      price: { monthly: '0 ₫', yearly: '0 ₫' },
+      turns: { monthly: subTrans.plans.free.turns, yearly: subTrans.plans.free.turns },
+      turnsNote: { monthly: subTrans.plans.free.turnsNote, yearly: subTrans.plans.free.turnsNote },
+      turnsToAdd: { monthly: 0, yearly: 0 },
+      cta: subTrans.plans.free.cta,
+      ctaStyle: 'ghost',
+      highlight: false,
+      features: {
+        monthly: subTrans.plans.free.features,
+        yearly: subTrans.plans.free.features,
+      },
+    },
+    {
+      id: 'starter',
+      name: subTrans.plans.starter.name,
+      tagline: subTrans.plans.starter.tagline,
+      price: { monthly: '19.000 ₫', yearly: '190.000 ₫' },
+      priceNote: { monthly: subTrans.plans.starter.priceNote, yearly: subTrans.plans.starter.priceNote },
+      turns: { monthly: subTrans.plans.starter.turns, yearly: subTrans.plans.starter.turns },
+      turnsNote: { monthly: subTrans.plans.starter.turnsNote, yearly: subTrans.plans.starter.turnsNote },
+      turnsToAdd: { monthly: 10, yearly: 10 },
+      cta: subTrans.plans.starter.cta,
+      ctaStyle: 'outline',
+      highlight: false,
+      features: {
+        monthly: subTrans.plans.starter.features,
+        yearly: subTrans.plans.starter.features,
+      },
+    },
+    {
+      id: 'standard',
+      badge: subTrans.mostPopularBadge.toUpperCase(),
+      name: subTrans.plans.standard.name,
+      tagline: subTrans.plans.standard.tagline,
+      price: { monthly: '49.000 ₫', yearly: '490.000 ₫' },
+      priceNote: { monthly: subTrans.plans.standard.priceNote.monthly, yearly: subTrans.plans.standard.priceNote.yearly },
+      turns: { monthly: subTrans.plans.standard.turns.monthly, yearly: subTrans.plans.standard.turns.yearly },
+      turnsNote: { monthly: subTrans.plans.standard.turnsNote.monthly, yearly: subTrans.plans.standard.turnsNote.yearly },
+      turnsToAdd: { monthly: 50, yearly: 600 },
+      cta: subTrans.plans.standard.cta,
+      ctaStyle: 'charcoal',
+      highlight: true,
+      features: {
+        monthly: subTrans.plans.standard.features.monthly,
+        yearly: subTrans.plans.standard.features.yearly,
+      },
+      extras: subTrans.plans.standard.extras,
+    },
+  ]
+
+  const COMPARISON_ROWS = [
+    { label: subTrans.compareHeaders[0], values: [language === 'vi' ? '3/ngày' : '3/day', '10', language === 'vi' ? '50/tháng' : '50/month'] },
+    { label: subTrans.compareHeaders[1], values: [false, true, true] },
+    { label: subTrans.compareHeaders[2], values: [false, true, true] },
+    { label: subTrans.compareHeaders[3], values: [false, true, true] },
+    { label: subTrans.compareHeaders[4], values: [false, false, true] },
+    { label: subTrans.compareHeaders[5], values: [false, false, false] },
+    { label: subTrans.compareHeaders[6], values: [false, false, false] },
+    { label: subTrans.compareHeaders[7], values: [false, false, false] },
+  ]
+
+  const TESTIMONIALS = subTrans.testimonials
+
   const [billing, setBilling] = useState<BillingCycle>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const heroRef = useRef<HTMLDivElement | null>(null)
@@ -345,7 +274,7 @@ export default function SubscriptionPage() {
             <div className="flex items-center gap-2 rounded-full border border-[#c8b898]/30 bg-[rgba(200,184,152,0.10)] px-3.5 py-1.5">
               <Sparkles size={11} className="text-[#a08c6a]" />
               <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a7456]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                Gemini AI Powered
+                {subTrans.poweredByGemini}
               </span>
             </div>
             <div className="h-px w-10 bg-gradient-to-l from-transparent to-[#c8b898]/60" />
@@ -358,10 +287,10 @@ export default function SubscriptionPage() {
             className="mb-5 text-[44px] leading-[1.08] text-black sm:text-[58px] md:text-[68px]"
             style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
           >
-            Unlock Your
+            {subTrans.unlockTitle}
             <br />
             <em className="italic" style={{ fontWeight: 400 }}>
-              Design Potential
+              {subTrans.potentialTitle}
             </em>
           </motion.h1>
 
@@ -372,7 +301,7 @@ export default function SubscriptionPage() {
             className="mx-auto mb-10 max-w-lg text-[14px] leading-relaxed text-neutral-400"
             style={{ fontWeight: 300 }}
           >
-            Visualise Livaxis pieces inside your space using Gemini AI. Pick the plan that matches your project volume and creative pace.
+            {subTrans.heroDesc}
           </motion.p>
 
           <motion.div
@@ -392,14 +321,14 @@ export default function SubscriptionPage() {
                 }}
               >
                 <span
-                  className="text-[12px] uppercase tracking-[0.08em] capitalize"
+                  className="text-[12px] uppercase tracking-[0.08em]"
                   style={{
                     fontFamily: 'Inter, sans-serif',
                     fontWeight: billing === cycle ? 500 : 400,
                     color: billing === cycle ? '#1a1a1a' : '#999',
                   }}
                 >
-                  {cycle}
+                  {cycle === 'monthly' ? subTrans.toggleMonthly : subTrans.toggleYearly}
                 </span>
                 {cycle === 'yearly' && (
                   <span
@@ -410,7 +339,7 @@ export default function SubscriptionPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Save 10%
+                    {subTrans.savePercentage}
                   </span>
                 )}
               </button>
@@ -434,7 +363,7 @@ export default function SubscriptionPage() {
           </div>
 
           <p className="mt-8 text-center text-[11px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-            Prices in Vietnamese Dong (VNĐ). One-time packs do not auto-renew. Monthly plans are billed at the start of each period. Cancel anytime.
+            {subTrans.priceDisclosure}
           </p>
         </section>
 
@@ -446,22 +375,22 @@ export default function SubscriptionPage() {
             {[
               {
                 icon: Download,
-                title: 'Unlimited High-Res Downloads',
-                desc: 'Export simulations in full resolution for print, proposals, and presentations.',
+                title: subTrans.featureTitle1,
+                desc: subTrans.featureDesc1,
               },
               {
                 icon: Cpu,
-                title: 'Gemini AI Priority Processing',
-                desc: 'Paid plans move your renders ahead in the queue so you get results faster.',
+                title: subTrans.featureTitle2,
+                desc: subTrans.featureDesc2,
               },
               {
                 icon: Infinity,
-                title: 'Rollover Turns',
-                desc: 'Unused turns stay available on monthly plans, so nothing gets wasted.',
+                title: subTrans.featureTitle3,
+                desc: subTrans.featureDesc3,
               },
             ].map(({ icon: Icon, title, desc }, index) => (
               <motion.div
-                key={title}
+                key={index}
                 initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
@@ -492,10 +421,10 @@ export default function SubscriptionPage() {
             className="mb-12 text-center"
           >
             <p className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-              Feature Comparison
+              {subTrans.featureComparison}
             </p>
             <h2 className="text-[32px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-              Everything, side by side
+              {subTrans.featureComparisonSub}
             </h2>
           </motion.div>
 
@@ -520,7 +449,7 @@ export default function SubscriptionPage() {
                   {plan.badge && (
                     <div className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-md bg-[#1a1a1a] px-2 py-0.5">
                       <span className="text-[8px] uppercase tracking-[0.14em] text-white" style={{ fontWeight: 600 }}>
-                        Popular
+                        {subTrans.mostPopular}
                       </span>
                     </div>
                   )}
@@ -607,7 +536,7 @@ export default function SubscriptionPage() {
         <section className="mx-auto max-w-[760px] px-6 pb-24">
           <div className="mb-10 text-center">
             <h2 className="text-[28px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-              Common questions
+              {subTrans.faqTitle}
             </h2>
           </div>
           <FAQAccordion />
@@ -639,16 +568,16 @@ export default function SubscriptionPage() {
               <div className="mb-6 flex items-center justify-center gap-2">
                 <Sparkles size={14} className="text-[#c8b898]" />
                 <span className="text-[10px] uppercase tracking-[0.22em] text-[#c8b898]/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                  Livaxis · Premium
+                  {language === 'vi' ? 'Livaxis · Cao cấp' : 'Livaxis · Premium'}
                 </span>
               </div>
               <h2 className="mb-5 text-[36px] leading-tight text-white sm:text-[46px]" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                Your room, reimagined.
+                {subTrans.reimaginedTitle}
                 <br />
-                <em className="italic text-[#c8b898]">Start today.</em>
+                <em className="italic text-[#c8b898]">{subTrans.startToday}</em>
               </h2>
               <p className="mx-auto mb-10 max-w-md text-[13px] leading-relaxed text-white/40" style={{ fontWeight: 300 }}>
-                Join design-conscious users who already use AI-assisted room planning to move faster from idea to purchase.
+                {subTrans.startTodayDesc}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
@@ -657,7 +586,7 @@ export default function SubscriptionPage() {
                 >
                   <Sparkles size={14} strokeWidth={1.5} className="text-[#a08c6a]" />
                   <span className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
-                    Try for Free
+                    {subTrans.ctaFree}
                   </span>
                   <ArrowRight size={13} className="opacity-40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </button>
@@ -667,7 +596,7 @@ export default function SubscriptionPage() {
                   style={{ border: '1px solid rgba(255,255,255,0.12)' }}
                 >
                   <span className="text-[11px] uppercase tracking-[0.18em] text-white/60" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                    View Plans
+                    {subTrans.ctaViewPlans}
                   </span>
                 </button>
               </div>
@@ -698,7 +627,7 @@ export default function SubscriptionPage() {
               {/* Header */}
               <div className="flex items-start justify-between border-b border-neutral-100 px-7 py-5">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#a08c6a]">Subscription</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-[#a08c6a]">{language === 'vi' ? 'Gói dịch vụ' : 'Service Plan'}</p>
                   <h3 className="mt-0.5 text-[20px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
                     {paymentPlan.name}
                   </h3>
@@ -734,19 +663,25 @@ export default function SubscriptionPage() {
                         <Check size={32} className="text-emerald-500" strokeWidth={2.5} />
                       </motion.div>
                       <p className="text-[20px] text-black" style={{ fontFamily: 'Playfair Display, serif' }}>
-                        Thanh toán thành công!
+                        {language === 'vi' ? 'Thanh toán thành công!' : 'Payment Successful!'}
                       </p>
-                      <p className="text-[13px] text-neutral-400">Gói <span className="font-medium text-black">{paymentPlan.name}</span> đã được kích hoạt.</p>
+                      <p className="text-[13px] text-neutral-400">
+                        {language === 'vi' ? 'Gói ' : 'Plan '}
+                        <span className="font-medium text-black">{paymentPlan.name}</span>
+                        {language === 'vi' ? ' đã được kích hoạt.' : ' has been activated.'}
+                      </p>
                       <button
                         onClick={closePay}
                         className="mt-2 rounded-xl bg-[#1a1a1a] px-8 py-3 text-[11px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-black"
                       >
-                        Đóng
+                        {t('common.close')}
                       </button>
                     </motion.div>
                   ) : (
                     <motion.div key="qr" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                      <p className="text-[13px] text-neutral-500">Quét mã QR hoặc chuyển khoản theo thông tin bên dưới — hệ thống sẽ tự xác nhận.</p>
+                      <p className="text-[13px] text-neutral-500">
+                        {language === 'vi' ? 'Quét mã QR hoặc chuyển khoản theo thông tin bên dưới — hệ thống sẽ tự xác nhận.' : 'Scan the QR code or transfer funds using the details below — the system will automatically verify.'}
+                      </p>
 
                       {/* QR + bank info side-by-side */}
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -757,7 +692,7 @@ export default function SubscriptionPage() {
                             onClick={() => qrLoaded && setQrExpanded(true)}
                             disabled={!qrLoaded}
                             className="group relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50 p-3 shadow-inner transition-all duration-200 hover:border-neutral-300 hover:shadow-md focus:outline-none"
-                            title="Bấm để phóng to mã QR"
+                            title={language === 'vi' ? 'Bấm để phóng to mã QR' : 'Click to zoom QR code'}
                           >
                             {bankInfo ? (
                               <img
@@ -783,7 +718,9 @@ export default function SubscriptionPage() {
                                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-lg">
                                     <ZoomIn size={16} className="text-[#1a1a1a]" />
                                   </div>
-                                  <span className="rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[#1a1a1a]">Phóng to</span>
+                                  <span className="rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[#1a1a1a]">
+                                    {language === 'vi' ? 'Phóng to' : 'Zoom'}
+                                  </span>
                                 </div>
                               </div>
                             )}
@@ -796,10 +733,10 @@ export default function SubscriptionPage() {
                             {polling ? (
                               <>
                                 <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
-                                Đang chờ xác nhận...
+                                {language === 'vi' ? 'Đang chờ xác nhận...' : 'Waiting for verification...'}
                               </>
                             ) : (
-                              <span>Hệ thống xác nhận tự động</span>
+                              <span>{language === 'vi' ? 'Hệ thống xác nhận tự động' : 'Automatic system verification'}</span>
                             )}
                           </div>
                         </div>
@@ -807,17 +744,17 @@ export default function SubscriptionPage() {
                         {/* Bank details */}
                         <div className="flex-1 space-y-2.5">
                           {[
-                            { label: 'Ngân hàng', value: bankInfo?.bankShortName ?? '—', copyable: false },
-                            { label: 'Số tài khoản', value: bankInfo?.accountNumber ?? '—', copyable: true, copyKey: 'account' },
-                            { label: 'Chủ tài khoản', value: bankInfo?.accountName ?? '—', copyable: false },
+                            { label: language === 'vi' ? 'Ngân hàng' : 'Bank', value: bankInfo?.bankShortName ?? '—', copyable: false },
+                            { label: language === 'vi' ? 'Số tài khoản' : 'Account Number', value: bankInfo?.accountNumber ?? '—', copyable: true, copyKey: 'account' },
+                            { label: language === 'vi' ? 'Chủ tài khoản' : 'Account Holder', value: bankInfo?.accountName ?? '—', copyable: false },
                             {
-                              label: 'Số tiền',
+                              label: language === 'vi' ? 'Số tiền' : 'Amount',
                               value: billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly,
                               copyable: true,
                               copyKey: 'amount',
                             },
                             {
-                              label: 'Nội dung CK',
+                              label: language === 'vi' ? 'Nội dung CK' : 'Transfer Content',
                               value: subOrderId,
                               copyable: true,
                               copyKey: 'content',
@@ -849,9 +786,19 @@ export default function SubscriptionPage() {
 
                           <div className="rounded-xl border border-amber-200/60 bg-amber-50/60 px-4 py-2.5">
                             <p className="text-[11px] leading-relaxed text-amber-700">
-                              ⚠️ Vui lòng giữ đúng nội dung chuyển khoản{' '}
-                              <span className="font-semibold">{subOrderId}</span>{' '}
-                              để hệ thống tự động kích hoạt gói.
+                              {language === 'vi' ? (
+                                <>
+                                  ⚠️ Vui lòng giữ đúng nội dung chuyển khoản{' '}
+                                  <span className="font-semibold">{subOrderId}</span>{' '}
+                                  để hệ thống tự động kích hoạt gói.
+                                </>
+                              ) : (
+                                <>
+                                  ⚠️ Please keep the exact transfer content{' '}
+                                  <span className="font-semibold">{subOrderId}</span>{' '}
+                                  for the system to automatically activate the plan.
+                                </>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -899,7 +846,7 @@ export default function SubscriptionPage() {
               <div className="overflow-hidden rounded-3xl bg-white p-6 shadow-[0_32px_80px_rgba(0,0,0,0.35)]">
                 {/* Plan info */}
                 <div className="mb-4 text-center">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#a08c6a]">Thanh toán</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#a08c6a]">{language === 'vi' ? 'Thanh toán' : 'Payment'}</p>
                   <p className="mt-0.5 text-[18px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
                     {paymentPlan.name}
                   </p>
@@ -930,14 +877,18 @@ export default function SubscriptionPage() {
                   {polling && (
                     <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5">
                       <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
-                      <span className="text-[10px] text-amber-600">Đang chờ xác nhận...</span>
+                      <span className="text-[10px] text-amber-600">
+                        {language === 'vi' ? 'Đang chờ xác nhận...' : 'Waiting for verification...'}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Hint */}
-              <p className="text-[12px] text-white/60">Nhấn ra ngoài hoặc <span className="text-white/80">✕</span> để đóng</p>
+              <p className="text-[12px] text-white/60">
+                {language === 'vi' ? 'Nhấn ra ngoài hoặc ✕ để đóng' : 'Click outside or ✕ to close'}
+              </p>
             </motion.div>
           </motion.div>
         ) : null}
@@ -963,6 +914,8 @@ function PricingCard({
 }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
+  const { language } = useLanguage()
+  const subTrans = translations[language].subscription
 
   const ctaStyles: Record<Plan['ctaStyle'], string> = {
     ghost: 'cursor-default border border-neutral-200 bg-white text-neutral-400',
@@ -1002,7 +955,7 @@ function PricingCard({
       <div className={`flex flex-1 flex-col p-6 ${plan.badge ? 'pt-10' : ''}`}>
         <div className="mb-5">
           <p className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-            {plan.id === 'free' ? 'Free Forever' : plan.id === 'starter' ? 'One-Time Pack' : 'Most Popular'}
+            {plan.id === 'free' ? subTrans.freeForever : plan.id === 'starter' ? subTrans.oneTimePack : subTrans.mostPopularBadge}
           </p>
           <h3 className="text-[19px] leading-snug text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
             {plan.name}
@@ -1093,7 +1046,7 @@ function PricingCard({
         {plan.id !== 'free' && (
           <p className="mt-2.5 flex items-center justify-center gap-1 text-center text-[9px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
             <Shield size={9} strokeWidth={1.5} className="opacity-60" />
-            {plan.id === 'starter' ? 'One-time · no auto-renewal' : 'Cancel anytime · No hidden fees'}
+            {plan.id === 'starter' ? subTrans.planStarterNote : subTrans.planBilledMonthly}
           </p>
         )}
       </div>
@@ -1113,10 +1066,12 @@ function PricingCard({
 
 function FAQAccordion() {
   const [open, setOpen] = useState<number | null>(null)
+  const { language } = useLanguage()
+  const faqs = translations[language].subscription.faqs
 
   return (
     <div className="space-y-2">
-      {FAQS.map((faq, index) => (
+      {faqs.map((faq, index) => (
         <motion.div
           key={faq.q}
           initial={{ opacity: 0, y: 10 }}

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/auth-context'
 import { signUp } from '../services/authApi'
 import { Formik } from 'formik'
 import * as Yup from 'yup'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1758448511348-54b10c30239f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwbHV4dXJ5JTIwYmVkcm9vbSUyMHNvZnQlMjBuYXR1cmFsJTIwbGlnaHRpbmclMjBuZXV0cmFsJTIwdG9uZXN8ZW58MXx8fHwxNzcyOTc1NDY3fDA&ixlib=rb-4.1.0&q=80&w=1080'
@@ -14,7 +15,7 @@ const STYLE_CARDS = [
   {
     id: 'minimalist',
     label: 'Minimalist',
-    sub: 'Clean lines, white spaces',
+    sub: 'Đường nét tối giản, không gian thoáng đãng',
     image:
       'https://images.unsplash.com/photo-1772475385327-ae6212f900aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwd2hpdGUlMjBsaXZpbmclMjByb29tJTIwY2xlYW4lMjBsaW5lcyUyMGludGVyaW9yfGVufDF8fHx8MTc3Mjk3NTQ2N3ww&ixlib=rb-4.1.0&q=80&w=400',
     accent: '#e8e4df',
@@ -22,7 +23,7 @@ const STYLE_CARDS = [
   {
     id: 'modern-luxury',
     label: 'Modern Luxury',
-    sub: 'Marble, gold accents',
+    sub: 'Đá cẩm thạch, chi tiết ánh vàng',
     image:
       'https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsdXh1cnklMjBtYXJibGUlMjBnb2xkJTIwaW50ZXJpb3IlMjBkZXNpZ258ZW58MXx8fHwxNzcyOTc1NDY4fDA&ixlib=rb-4.1.0&q=80&w=400',
     accent: '#c8b898',
@@ -30,7 +31,7 @@ const STYLE_CARDS = [
   {
     id: 'scandi',
     label: 'Scandi',
-    sub: 'Light wood, cozy textures',
+    sub: 'Gỗ sáng màu, họa tiết ấm cúng',
     image:
       'https://images.unsplash.com/photo-1606602266678-d29114013ac6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2FuZGluYXZpYW4lMjBoeWdnZSUyMGNvenklMjBsaWdodCUyMHdvb2QlMjBiZWRyb29tJTIwbm9yZGljfGVufDF8fHx8MTc3Mjk3NTQ3MXww&ixlib=rb-4.1.0&q=80&w=400',
     accent: '#d4c9b5',
@@ -38,7 +39,7 @@ const STYLE_CARDS = [
   {
     id: 'industrial',
     label: 'Industrial',
-    sub: 'Raw materials, dark tones',
+    sub: 'Vật liệu thô, tông màu tối',
     image:
       'https://images.unsplash.com/photo-1532279978316-c52202e84d66?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmR1c3RyaWFsJTIwZGFyayUyMGxvZnQlMjBpbnRlcmlvciUyMHJhdyUyMGNvbmNyZXRlJTIwYnJpY2t8ZW58MXx8fHwxNzcyOTc1NDY5fDA&ixlib=rb-4.1.0&q=80&w=400',
     accent: '#4a4540',
@@ -117,14 +118,15 @@ function FloatingInput({
 }
 
 function PasswordStrength({ password }: { password: string }) {
+  const { t } = useLanguage()
   const checks = [
-    { label: '6+ characters', pass: password.length >= 6 },
-    { label: 'Uppercase letter', pass: /[A-Z]/.test(password) },
-    { label: 'Number or symbol', pass: /[0-9\W]/.test(password) },
+    { label: t('auth.passwordMinLength'), pass: password.length >= 6 },
+    { label: t('auth.passwordUppercase'), pass: /[A-Z]/.test(password) },
+    { label: t('auth.passwordNumberSymbol'), pass: /[0-9\W]/.test(password) },
   ]
   const score = checks.filter((check) => check.pass).length
   const colors = ['#e5e7eb', '#f87171', '#fbbf24', '#4ade80']
-  const labels = ['', 'Weak', 'Fair', 'Strong']
+  const labels = ['', t('auth.weak'), t('auth.fair'), t('auth.strong')]
 
   if (!password) return null
 
@@ -243,6 +245,7 @@ function StyleCard({
 function SignUpPage() {
   const navigate = useNavigate()
   const { setUser } = useAuth()
+  const { t } = useLanguage()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'form' | 'success'>('form')
@@ -252,15 +255,31 @@ function SignUpPage() {
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [])
 
-  
-
   const validationSchema = Yup.object().shape({
-    username: Yup.string().trim().min(3, 'Username must be at least 3 characters').max(30).required('Username is required'),
-    name: Yup.string().trim().min(2, 'Name must be at least 2 characters').max(50).required('Full name is required'),
-    email: Yup.string().email('Email is invalid').required('Email is required'),
-    phone: Yup.string().trim().matches(/^\+?[0-9]{7,15}$/, 'Phone number is invalid').nullable().notRequired(),
-    password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-    confirmPassword: Yup.string().oneOf([Yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
+    username: Yup.string()
+      .trim()
+      .min(3, t('auth.validation.usernameMin'))
+      .max(30)
+      .required(t('auth.validation.usernameRequired')),
+    name: Yup.string()
+      .trim()
+      .min(2, t('auth.validation.nameMin'))
+      .max(50)
+      .required(t('auth.validation.nameRequired')),
+    email: Yup.string()
+      .email(t('auth.validation.emailInvalid'))
+      .required(t('auth.validation.emailRequired')),
+    phone: Yup.string()
+      .trim()
+      .matches(/^\+?[0-9]{7,15}$/, t('auth.validation.phoneInvalid'))
+      .nullable()
+      .notRequired(),
+    password: Yup.string()
+      .min(6, t('auth.validation.passwordMin'))
+      .required(t('auth.validation.passwordRequired')),
+    confirmPassword: Yup.string()
+      .oneOf([Yup.ref('password')], t('auth.validation.confirmPasswordMatch'))
+      .required(t('auth.validation.confirmPasswordRequired')),
   })
 
   const handleSubmitFormik = async (values: any) => {
@@ -281,7 +300,7 @@ function SignUpPage() {
       setStep('success')
       window.setTimeout(() => navigate('/'), 2000)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign up failed'
+      const message = error instanceof Error ? error.message : t('common.errorOccurred')
       setErrorMessage(message)
       setLoading(false)
     }
@@ -320,12 +339,10 @@ function SignUpPage() {
             className="text-[13px] leading-relaxed text-white/80"
             style={{ fontWeight: 300, textShadow: '0 1px 6px rgba(0,0,0,0.3)' }}
           >
-            &quot;Every room has a story.
-            <br />
-            Let us help you tell yours.&quot;
+            {t('auth.roomStory')}
           </p>
           <p className="mt-3 text-[11px] uppercase tracking-[0.10em] text-white/40" style={{ fontWeight: 400 }}>
-            - Livaxis Design Studio
+            {t('auth.designStudio')}
           </p>
         </div>
       </div>
@@ -338,7 +355,7 @@ function SignUpPage() {
           >
             <ArrowLeft size={16} strokeWidth={1.5} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
             <span className="text-[12px] uppercase tracking-[0.08em]" style={{ fontWeight: 400 }}>
-              Back
+              {t('common.back')}
             </span>
           </button>
           <button onClick={() => navigate('/')} className="lg:hidden" style={{ fontFamily: 'Playfair Display, serif' }}>
@@ -370,10 +387,10 @@ function SignUpPage() {
                   className="mb-3 text-[32px] text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
-                  Welcome to Livaxis
+                  {t('auth.welcome')}
                 </h2>
                 <p className="text-[13px] text-neutral-400" style={{ fontWeight: 300 }}>
-                  Your account is ready. Redirecting you home...
+                  {t('auth.signUpSuccess')}
                 </p>
                 <motion.div
                   className="mt-8 h-px bg-[#c8b898]"
@@ -396,10 +413,10 @@ function SignUpPage() {
                     className="mb-2 text-[34px] leading-tight text-black"
                     style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400, fontStyle: 'italic' }}
                   >
-                    Start Your Design Journey
+                    {t('auth.signUpTitle')}
                   </h1>
                   <p className="text-[13px] leading-relaxed text-neutral-400" style={{ fontWeight: 300 }}>
-                    Join Livaxis for a personalised AI experience.
+                    {t('auth.signUpSub')}
                   </p>
                 </div>
 
@@ -415,31 +432,31 @@ function SignUpPage() {
                       ) : null}
                       <div className="space-y-5">
                         <div>
-                          <FloatingInput id="username" label="Username" value={values.username} onChange={(v) => setFieldValue('username', v)} autoComplete="username" icon={<User size={16} strokeWidth={1.5} />} />
+                          <FloatingInput id="username" label={t('auth.username')} value={values.username} onChange={(v) => setFieldValue('username', v)} autoComplete="username" icon={<User size={16} strokeWidth={1.5} />} />
                           {touched.username && errors.username ? (
                             <p className="mt-1 text-[12px] text-red-600">{(errors.username as string) || ''}</p>
                           ) : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="fullname" label="Full Name" value={values.name} onChange={(v) => setFieldValue('name', v)} autoComplete="name" icon={<User size={16} strokeWidth={1.5} />} />
+                          <FloatingInput id="fullname" label={t('auth.fullName')} value={values.name} onChange={(v) => setFieldValue('name', v)} autoComplete="name" icon={<User size={16} strokeWidth={1.5} />} />
                           {touched.name && errors.name ? <p className="mt-1 text-[12px] text-red-600">{(errors.name as string) || ''}</p> : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="email" label="Email Address" type="email" value={values.email} onChange={(v) => setFieldValue('email', v)} autoComplete="email" icon={<Mail size={16} strokeWidth={1.5} />} />
+                          <FloatingInput id="email" label={t('auth.email')} type="email" value={values.email} onChange={(v) => setFieldValue('email', v)} autoComplete="email" icon={<Mail size={16} strokeWidth={1.5} />} />
                           {touched.email && errors.email ? <p className="mt-1 text-[12px] text-red-600">{(errors.email as string) || ''}</p> : null}
                         </div>
 
                         <div>
-                          <FloatingInput id="phone" label="Phone (optional)" value={values.phone} onChange={(v) => setFieldValue('phone', v)} autoComplete="tel" icon={<Phone size={16} strokeWidth={1.5} />} />
+                          <FloatingInput id="phone" label={t('auth.phoneOptional')} value={values.phone} onChange={(v) => setFieldValue('phone', v)} autoComplete="tel" icon={<Phone size={16} strokeWidth={1.5} />} />
                           {touched.phone && errors.phone ? <p className="mt-1 text-[12px] text-red-600">{(errors.phone as string) || ''}</p> : null}
                         </div>
 
                         <div>
                           <FloatingInput
                             id="password"
-                            label="Create Password"
+                            label={t('auth.createPassword')}
                             type={showPassword ? 'text' : 'password'}
                             value={values.password}
                             onChange={(v) => setFieldValue('password', v)}
@@ -451,7 +468,7 @@ function SignUpPage() {
                                 onClick={() => setShowPassword((value) => !value)}
                                 className="text-neutral-300 transition-colors duration-200 hover:text-neutral-600"
                                 tabIndex={-1}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                aria-label={showPassword ? (t('auth.hidePassword') || 'Ẩn mật khẩu') : (t('auth.showPassword') || 'Hiện mật khẩu')}
                               >
                                 {showPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
                               </button>
@@ -462,20 +479,20 @@ function SignUpPage() {
                         </div>
 
                         <div>
-                          <FloatingInput id="confirmPassword" label="Confirm Password" type={showPassword ? 'text' : 'password'} value={values.confirmPassword} onChange={(v) => setFieldValue('confirmPassword', v)} autoComplete="new-password" icon={<Lock size={16} strokeWidth={1.5} />} />
+                          <FloatingInput id="confirmPassword" label={t('auth.confirmPassword')} type={showPassword ? 'text' : 'password'} value={values.confirmPassword} onChange={(v) => setFieldValue('confirmPassword', v)} autoComplete="new-password" icon={<Lock size={16} strokeWidth={1.5} />} />
                           {touched.confirmPassword && errors.confirmPassword ? <p className="mt-1 text-[12px] text-red-600">{(errors.confirmPassword as string) || ''}</p> : null}
                         </div>
                       </div>
 
                       <div className="pb-2 pt-5">
                         <p className="text-center text-[11px] leading-relaxed text-neutral-400" style={{ fontWeight: 300 }}>
-                          By creating an account you agree to our{' '}
+                          {t('auth.termsAgreement')}{' '}
                           <button type="button" className="underline underline-offset-2 transition-colors hover:text-black">
-                            Terms of Service
+                            {t('auth.termsOfService')}
                           </button>{' '}
-                          and{' '}
+                          {t('auth.and')}{' '}
                           <button type="button" className="underline underline-offset-2 transition-colors hover:text-black">
-                            Privacy Policy
+                            {t('auth.privacyPolicy')}
                           </button>
                           .
                         </p>
@@ -483,20 +500,20 @@ function SignUpPage() {
 
                       <div className="pt-1">
                         <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#1a1a1a] py-3.5 text-white transition-all duration-300 hover:bg-black disabled:opacity-60">
-                          {loading ? (
+                           {loading ? (
                             <span className="flex items-center gap-2.5">
                               <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none">
                                 <circle className="opacity-20" cx="12" cy="12" r="10" stroke="white" strokeWidth="2.5" />
                                 <path className="opacity-80" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                               </svg>
                               <span className="text-[11px] uppercase tracking-[0.22em]" style={{ fontWeight: 600 }}>
-                                Creating Account...
+                                {t('auth.creatingAccount')}
                               </span>
                             </span>
                           ) : (
                             <span className="flex items-center gap-2.5">
                               <span className="text-[11px] uppercase tracking-[0.22em]" style={{ fontWeight: 600 }}>
-                                Create Account
+                                {t('auth.createAccount')}
                               </span>
                               <ChevronRight size={13} className="opacity-50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
                             </span>
@@ -513,13 +530,13 @@ function SignUpPage() {
 
         <div className="px-8 pb-8 text-center">
           <p className="text-[12px] text-neutral-400" style={{ fontWeight: 300 }}>
-            Already have an account?{' '}
+            {t('auth.alreadyHaveAccount')}{' '}
             <button
               onClick={() => navigate('/sign-in')}
               className="text-black underline underline-offset-2 transition-colors duration-200 hover:text-[#a08c6a]"
               style={{ fontWeight: 400 }}
             >
-              Sign In
+              {t('auth.signIn')}
             </button>
           </p>
         </div>
