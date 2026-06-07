@@ -23,7 +23,7 @@ import type { NewArrivalProduct } from '../services/productApi'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 import heroAfterImage from '../assets/hero-after.png'
 import heroBeforeImage from '../assets/hero-before.png'
-
+// test deploy
 
 // Global top navigation with account dropdown actions.
 export function Header() {
@@ -66,11 +66,11 @@ export function Header() {
 
   const userInitials = user?.name
     ? user.name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('')
     : 'U'
 
   const handleLogout = async () => {
@@ -108,9 +108,8 @@ export function Header() {
             >
               {link.label}
               <span
-                className={`absolute -bottom-1 left-0 h-px bg-black transition-all duration-300 ${
-                  hoveredLink === link.label ? 'w-full' : 'w-0'
-                }`}
+                className={`absolute -bottom-1 left-0 h-px bg-black transition-all duration-300 ${hoveredLink === link.label ? 'w-full' : 'w-0'
+                  }`}
               />
             </a>
           ))}
@@ -224,8 +223,8 @@ export function Header() {
                             background: turnsInfo?.unlimited
                               ? 'linear-gradient(135deg, #e8f5e9, #c8e6c9)'
                               : (turnsInfo?.turnsRemaining ?? 1) > 0
-                              ? 'linear-gradient(135deg, #fef9ec, #fdecc8)'
-                              : 'linear-gradient(135deg, #fdecea, #fcd0cc)',
+                                ? 'linear-gradient(135deg, #fef9ec, #fdecc8)'
+                                : 'linear-gradient(135deg, #fdecea, #fcd0cc)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                           }}>
                             <Zap
@@ -235,8 +234,8 @@ export function Header() {
                                 color: turnsInfo?.unlimited
                                   ? '#4caf50'
                                   : (turnsInfo?.turnsRemaining ?? 1) > 0
-                                  ? '#e5a20e'
-                                  : '#e53935',
+                                    ? '#e5a20e'
+                                    : '#e53935',
                               }}
                             />
                           </div>
@@ -288,11 +287,11 @@ export function Header() {
                               }}
                               onMouseEnter={(e) => {
                                 (e.currentTarget as HTMLButtonElement).style.background = '#fdf9f4'
-                                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.7)'
+                                  ; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.7)'
                               }}
                               onMouseLeave={(e) => {
                                 (e.currentTarget as HTMLButtonElement).style.background = 'white'
-                                ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.35)'
+                                  ; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(200,184,152,0.35)'
                               }}
                             >
                               {t('homepage.upgrade')}
