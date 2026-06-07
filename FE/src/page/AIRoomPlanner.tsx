@@ -1995,6 +1995,43 @@ export default function AIRoomPlanner() {
       const selectedCatalogProducts = localizedProductsList.filter((p) => selected.has(p.id));
       await Promise.allSettled(selectedCatalogProducts.map((product) => prepareProductImageForExport(product)));
 
+      // Auto-place: ask AI to analyze room and determine optimal positions
+      if (pipelineMode === "auto-place") {
+        try {
+          const posResponse = await fetch("/api/ai-room-planner/auto-position", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomImage: roomDataUrl,
+              products: selectedCatalogProducts.map((p) => ({
+                id: p.id,
+                name: p.name,
+                category: p.type,
+              })),
+            }),
+          });
+          const posData = await posResponse.json();
+          if (posData.success && Array.isArray(posData.data)) {
+            for (const pos of posData.data) {
+              placements.set(pos.id, {
+                x: pos.x,
+                y: pos.y,
+                scale: pos.scale,
+                rotation: 0,
+                rotationY: pos.rotationY,
+                flipped: pos.flipped,
+                hasManualRotationY: false,
+                hasManualFlip: false,
+              });
+            }
+          }
+        } catch (err) {
+          console.warn("Auto-position AI failed, using current positions:", err);
+        }
+        // Update React state for UI
+        setPlacements(new Map(placements));
+      }
+
       const selectedProducts = selectedCatalogProducts
         .map((p) => ({
           id: p.id,
@@ -2004,28 +2041,28 @@ export default function AIRoomPlanner() {
           placement: placements.get(p.id),
         }));
 
-      // Send the composited preview so any AI provider sees the exact chosen products
-      // already placed in the uploaded room.
+      // Export composite using an OFFSCREEN canvas (avoids selection ring from main canvas)
       let imagePayload = roomDataUrl;
       let hasCompositePayload = false;
-      if (afterCanvasRef.current) {
-        try {
-          const afterCtx = afterCanvasRef.current.getContext("2d");
-          if (afterCtx) {
-            afterCtx.clearRect(0, 0, stage.width, stage.height);
-            drawRoom(afterCtx);
-            drawAiLighting(afterCtx);
-            drawSelectedProducts(afterCtx, false, () => {});
-            drawAfterVignette(afterCtx);
+
+      try {
+        const offscreen = document.createElement("canvas");
+        offscreen.width = stage.width;
+        offscreen.height = stage.height;
+        const offCtx = offscreen.getContext("2d");
+        if (offCtx) {
+          drawRoom(offCtx);
+          drawAiLighting(offCtx);
+          drawSelectedProducts(offCtx, false, () => {});
+          // Skip vignette for auto-place to avoid dark borders in AI input
+          if (pipelineMode !== "auto-place") {
+            drawAfterVignette(offCtx);
           }
-          await new Promise<void>((resolve) => {
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-          });
-          imagePayload = afterCanvasRef.current.toDataURL("image/png");
+          imagePayload = offscreen.toDataURL("image/png");
           hasCompositePayload = true;
-        } catch (err) {
-          console.warn("Could not export composited canvas with product reference:", err);
         }
+      } catch (err) {
+        console.warn("Could not export composited canvas with product reference:", err);
       }
 
       const maskPayload = createPlacementMask();
@@ -2034,11 +2071,14 @@ export default function AIRoomPlanner() {
         throw new Error(t('aiRoomPlanner.couldNotExportRef'));
       }
 
+      // Auto-place sends raw clean room; other modes send composite
+      const finalRoomImage = imagePayload;
+
       const response = await fetch("/api/ai-room-planner/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomImage: imagePayload,
+          roomImage: finalRoomImage,
           maskImage: maskPayload,
           prompt: stylePrompt,
           style: stylePrompt,
@@ -3030,6 +3070,23 @@ export default function AIRoomPlanner() {
                   <span className="pipeline-card-desc">{t('aiRoomPlanner.aiBlendDesc')}</span>
                 </div>
               </label>
+              <label className={`pipeline-card ${pipelineMode === "auto-place" ? "active" : ""}`}>
+                <input
+                  type="radio"
+                  name="pipelineMode"
+                  value="auto-place"
+                  checked={pipelineMode === "auto-place"}
+                  onChange={() => {
+                    setPipelineMode("auto-place");
+                    setGeneratedImage(null);
+                    setLastGenerationMode(null);
+                  }}
+                />
+                <div>
+                  <span className="pipeline-card-title">Auto Place</span>
+                  <span className="pipeline-card-desc">AI automatically places products in the best position — no manual setup needed</span>
+                </div>
+              </label>
             </div>
             {pipelineMode === "generative" && (
               <div className="check-row-compact" style={{ marginTop: 12, paddingLeft: 8 }}>
@@ -3046,120 +3103,129 @@ export default function AIRoomPlanner() {
             )}
           </section>
 
-          <section className="tool-section">
-            <div className="section-heading">
-              <span>{t('aiRoomPlanner.generationStyle')}</span>
-              <span className="status-pill">{t(`aiRoomPlanner.${aiStatusKey}`)}</span>
-            </div>
-            <div className="presets-section">
-              <span className="presets-label">{t('aiRoomPlanner.stylePreset')}</span>
-              <div className="presets-grid">
-                {Object.keys(stylePresets).map((preset) => {
-                  return (
-                    <button
-                      key={preset}
-                      className={`preset-btn ${stylePreset === preset ? "active" : ""}`}
-                      onClick={() => {
-                        setStylePreset(preset);
-                        setStylePrompt(stylePresets[preset]);
-                        setGeneratedImage(null);
-                        setLastGenerationMode(null);
-                      }}
-                      type="button"
-                    >
-                      {t(`aiRoomPlanner.presets.${preset}`)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <label className="field-row">
-              <span>{t('aiRoomPlanner.prompt')}</span>
-              <textarea
-                value={stylePrompt}
-                onChange={(e) => {
-                  setStylePrompt(e.target.value);
-                  setGeneratedImage(null);
-                  setLastGenerationMode(null);
-                }}
-                rows={3}
-                placeholder={t('aiRoomPlanner.promptPlaceholder')}
-              />
-            </label>
-            <label className="range-row">
-              <span>{t('aiRoomPlanner.productSize')}</span>
-              <input
-                type="range"
-                min="70"
-                max="145"
-                value={globalScale * 100}
-                onChange={(e) => {
-                  setGlobalScale(Number(e.target.value) / 100);
-                  setGeneratedImage(null);
-                  setLastGenerationMode(null);
-                }}
-              />
-            </label>
-            <label className="range-row">
-              <span>{t('aiRoomPlanner.floorDepth')}</span>
-              <input
-                type="range"
-                min="55"
-                max="88"
-                value={floorDepth * 100}
-                onChange={(e) => {
-                  const val = Number(e.target.value) / 100;
-                  setFloorDepth(val);
-                  setGeneratedImage(null);
-                  setLastGenerationMode(null);
-                  const next = new Map(placements);
-                  [...selected].forEach((id, idx) => {
-                    const p = next.get(id);
-                    if (p && !p.userMoved) {
-                      p.y = val + (idx % 3) * 0.025;
-                    }
-                  });
-                  setPlacements(next);
-                }}
-              />
-            </label>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={lightMatch}
-                onChange={(e) => {
-                  setLightMatch(e.target.checked);
-                  setGeneratedImage(null);
-                  setLastGenerationMode(null);
-                }}
-              />
-              <span>{t('aiRoomPlanner.matchRoomLighting')}</span>
-            </label>
-          </section>
         </aside>
 
         {/* Center Stage Panel (Preview Comparison) */}
         <section className="stage-panel">
           <div className="stage-header">
             <div>
-              <p className="eyebrow">{t('aiRoomPlanner.preview')}</p>
-              <h2>{t('aiRoomPlanner.beforeAfter')}</h2>
+              <p className="eyebrow">Preview · <span className="status-pill">{t(`aiRoomPlanner.${aiStatusKey}`)}</span></p>
+              <h2>Before / After</h2>
             </div>
-            <div className="mode-tabs">
-              <button
-                className={`tab-btn ${compareMode === "compare" ? "active" : ""}`}
-                onClick={() => setCompareMode("compare")}
-                type="button"
-              >
-                {t('aiRoomPlanner.compare')}
-              </button>
-              <button
-                className={`tab-btn ${compareMode === "after" ? "active" : ""}`}
-                onClick={() => setCompareMode("after")}
-                type="button"
-              >
-                {t('aiRoomPlanner.afterOnly')}
-              </button>
+            <div className="stage-inline-controls">
+              {/* Inline Pipeline Toggle */}
+              <div className="inline-pipeline-toggle">
+                <button
+                  className={`preset-btn-sm ${pipelineMode === "composite" ? "active" : ""}`}
+                  onClick={() => { setPipelineMode("composite"); setGeneratedImage(null); setLastGenerationMode(null); }}
+                  type="button"
+                >Composite</button>
+                <button
+                  className={`preset-btn-sm ${pipelineMode === "generative" ? "active" : ""}`}
+                  onClick={() => { setPipelineMode("generative"); setGeneratedImage(null); setLastGenerationMode(null); }}
+                  type="button"
+                >AI Blend</button>
+                <button
+                  className={`preset-btn-sm ${pipelineMode === "auto-place" ? "active" : ""}`}
+                  onClick={() => { setPipelineMode("auto-place"); setGeneratedImage(null); setLastGenerationMode(null); }}
+                  type="button"
+                >Auto Place</button>
+              </div>
+              {/* Inline Style Presets */}
+              <div className="inline-presets">
+                {Object.keys(stylePresets).map((preset) => (
+                  <button
+                    key={preset}
+                    className={`preset-btn-sm ${stylePreset === preset ? "active" : ""}`}
+                    onClick={() => {
+                      setStylePreset(preset);
+                      setStylePrompt(stylePresets[preset]);
+                      setGeneratedImage(null);
+                      setLastGenerationMode(null);
+                    }}
+                    type="button"
+                  >
+                    {preset.charAt(0).toUpperCase() + preset.slice(1)}
+                  </button>
+                ))}
+              </div>
+              {/* Compare Mode Tabs */}
+              <div className="mode-tabs">
+                <button
+                  className={`tab-btn ${compareMode === "compare" ? "active" : ""}`}
+                  onClick={() => setCompareMode("compare")}
+                  type="button"
+                >Compare</button>
+                <button
+                  className={`tab-btn ${compareMode === "after" ? "active" : ""}`}
+                  onClick={() => setCompareMode("after")}
+                  type="button"
+                >After only</button>
+              </div>
+            </div>
+
+            {/* Compact Controls Row */}
+            <div className="stage-controls-row">
+              <div className="compact-field">
+                <span>Prompt</span>
+                <textarea
+                  value={stylePrompt}
+                  onChange={(e) => {
+                    setStylePrompt(e.target.value);
+                    setGeneratedImage(null);
+                    setLastGenerationMode(null);
+                  }}
+                  rows={2}
+                  placeholder="Modern luxury living room..."
+                />
+              </div>
+              <div className="compact-sliders">
+                <label className="compact-range">
+                  <span>Size</span>
+                  <input
+                    type="range" min="70" max="145"
+                    value={globalScale * 100}
+                    onChange={(e) => {
+                      setGlobalScale(Number(e.target.value) / 100);
+                      setGeneratedImage(null);
+                      setLastGenerationMode(null);
+                    }}
+                  />
+                </label>
+                <label className="compact-range">
+                  <span>Depth</span>
+                  <input
+                    type="range" min="55" max="88"
+                    value={floorDepth * 100}
+                    onChange={(e) => {
+                      const val = Number(e.target.value) / 100;
+                      setFloorDepth(val);
+                      setGeneratedImage(null);
+                      setLastGenerationMode(null);
+                      const next = new Map(placements);
+                      [...selected].forEach((id, idx) => {
+                        const p = next.get(id);
+                        if (p && !p.userMoved) {
+                          p.y = val + (idx % 3) * 0.025;
+                        }
+                      });
+                      setPlacements(next);
+                    }}
+                  />
+                </label>
+                <label className="compact-check">
+                  <input
+                    type="checkbox"
+                    checked={lightMatch}
+                    onChange={(e) => {
+                      setLightMatch(e.target.checked);
+                      setGeneratedImage(null);
+                      setLastGenerationMode(null);
+                    }}
+                  />
+                  <span>Light</span>
+                </label>
+              </div>
             </div>
           </div>
 
