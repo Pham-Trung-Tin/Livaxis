@@ -23,7 +23,7 @@ import type { NewArrivalProduct } from '../services/productApi'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 import heroAfterImage from '../assets/hero-after.png'
 import heroBeforeImage from '../assets/hero-before.png'
-// test deploy
+// test deploy 2
 
 // Global top navigation with account dropdown actions.
 export function Header() {
