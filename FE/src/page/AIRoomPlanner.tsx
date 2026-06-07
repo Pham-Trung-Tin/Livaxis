@@ -41,7 +41,7 @@ const catalog: CatalogProduct[] = [
     accent: "#4f3828",
     baseScale: 0.26,
     note: "Bàn được đặt gần đường sàn chính giúp căn phòng luôn có cảm giác rộng rãi.",
-    imagePath: "assets/oak_table.png",
+    imagePath: "/assets/oak_table.png",
     draw: drawTable,
   },
   {
@@ -52,7 +52,7 @@ const catalog: CatalogProduct[] = [
     accent: "#5d3f2c",
     baseScale: 0.18,
     note: "Ghế tạo điểm nhấn ấm áp và hướng về phía trung tâm phòng.",
-    imagePath: "assets/lounge_chair.png",
+    imagePath: "/assets/lounge_chair.png",
     draw: drawChair,
   },
   {
@@ -63,7 +63,7 @@ const catalog: CatalogProduct[] = [
     accent: "#5b3a27",
     baseScale: 0.34,
     note: "Sofa được đặt sát mảng tường lớn nhất mà không che khuất cửa sổ.",
-    imagePath: "assets/linen_sofa.png",
+    imagePath: "/assets/linen_sofa.png",
     draw: drawSofa,
   },
   {
@@ -74,7 +74,7 @@ const catalog: CatalogProduct[] = [
     accent: "#4b3222",
     baseScale: 0.18,
     note: "Bàn trà được đặt thấp để giữ lối đi thông thoáng.",
-    imagePath: "assets/coffee_table.png",
+    imagePath: "/assets/coffee_table.png",
     draw: drawCoffeeTable,
   },
   {
@@ -85,7 +85,7 @@ const catalog: CatalogProduct[] = [
     accent: "#f2cf74",
     baseScale: 0.22,
     note: "Đèn tạo nguồn sáng phụ giúp không gian thêm phần hoàn thiện.",
-    imagePath: "assets/floor_lamp.png",
+    imagePath: "/assets/floor_lamp.png",
     removeBackground: true,
     draw: drawLamp,
   },
@@ -97,7 +97,7 @@ const catalog: CatalogProduct[] = [
     accent: "#8b5f3b",
     baseScale: 0.16,
     note: "Cây xanh làm dịu góc phòng và cân bằng bố cục đồ nội thất.",
-    imagePath: "assets/leaf_plant.png",
+    imagePath: "/assets/leaf_plant.png",
     removeBackground: true,
     draw: drawPlant,
   },
@@ -639,6 +639,61 @@ function getProductImageRect(
   };
 }
 
+function erodeAlpha(
+  src: HTMLImageElement | HTMLCanvasElement,
+  drawW: number,
+  drawH: number,
+): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = drawW;
+  c.height = drawH;
+  const cx = c.getContext("2d", { willReadFrequently: true });
+  if (!cx) return c;
+
+  cx.drawImage(src, 0, 0, drawW, drawH);
+
+  try {
+    const id = cx.getImageData(0, 0, drawW, drawH);
+    const d = id.data;
+    const w = drawW;
+    const h = drawH;
+    const alphaCopy = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) alphaCopy[i] = d[i * 4 + 3];
+
+    // 2-pixel erosion: if any neighbor within 2px is transparent, reduce alpha
+    const radius = 2;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        if (alphaCopy[idx] === 0) continue;
+
+        let minAlpha = 255;
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) {
+              minAlpha = 0;
+              break;
+            }
+            const nIdx = ny * w + nx;
+            if (alphaCopy[nIdx] < minAlpha) minAlpha = alphaCopy[nIdx];
+          }
+          if (minAlpha === 0) break;
+        }
+
+        d[idx * 4 + 3] = Math.min(d[idx * 4 + 3], minAlpha);
+      }
+    }
+
+    cx.putImageData(id, 0, 0);
+  } catch {
+    // CORS — return un-eroded
+  }
+
+  return c;
+}
+
 function drawProductReferenceImage(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | HTMLCanvasElement,
@@ -646,7 +701,43 @@ function drawProductReferenceImage(
   offsetTop: number,
 ) {
   const rect = getProductImageRect(img, box, offsetTop);
-  ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+  const drawW = Math.ceil(rect.width);
+  const drawH = Math.ceil(rect.height);
+
+  if (drawW < 4 || drawH < 4) {
+    ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+    return;
+  }
+
+  // Very subtle edge feathering — only 1px anti-alias, no aggressive bottom fade
+  const feather = Math.max(1, Math.min(drawW, drawH) * 0.008);
+  const off = document.createElement("canvas");
+  off.width = drawW;
+  off.height = drawH;
+  const offCtx = off.getContext("2d");
+  if (!offCtx) {
+    ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height);
+    return;
+  }
+
+  offCtx.drawImage(img, 0, 0, drawW, drawH);
+  offCtx.globalCompositeOperation = "destination-out";
+
+  // Minimal left edge softening
+  const gLeft = offCtx.createLinearGradient(0, 0, feather, 0);
+  gLeft.addColorStop(0, "rgba(0,0,0,0.25)");
+  gLeft.addColorStop(1, "rgba(0,0,0,0)");
+  offCtx.fillStyle = gLeft;
+  offCtx.fillRect(0, 0, feather, drawH);
+
+  // Minimal right edge softening
+  const gRight = offCtx.createLinearGradient(drawW - feather, 0, drawW, 0);
+  gRight.addColorStop(0, "rgba(0,0,0,0)");
+  gRight.addColorStop(1, "rgba(0,0,0,0.25)");
+  offCtx.fillStyle = gRight;
+  offCtx.fillRect(drawW - feather, 0, feather, drawH);
+
+  ctx.drawImage(off, rect.x, rect.y);
 }
 
 function getAlphaCanvas(img: HTMLImageElement | HTMLCanvasElement): HTMLCanvasElement | null {
@@ -717,7 +808,9 @@ function shouldUseServerCutout(product: CatalogProduct) {
 function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (/^https?:\/\//i.test(src)) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
     img.src = src;
@@ -1041,6 +1134,7 @@ export default function AIRoomPlanner() {
   const [globalScale, setGlobalScale] = useState(1);
   const [floorDepth, setFloorDepth] = useState(0.72);
   const [lightMatch, setLightMatch] = useState(true);
+  const [floorBlend, setFloorBlend] = useState<'shadow' | 'rug' | 'clean'>('shadow');
   const [stylePreset, setStylePreset] = useState("modern");
   const [pipelineMode, setPipelineMode] = useState("composite");
   const [backendOnline, setBackendOnline] = useState(false);
@@ -1054,6 +1148,7 @@ export default function AIRoomPlanner() {
   const [designerNotes, setDesignerNotes] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastShow, setToastShow] = useState(false);
+  const [sharpOverlay, setSharpOverlay] = useState(false);
   const [turnsInfo, setTurnsInfo] = useState<TurnsInfo | null>(null);
 
   // Dragging states
@@ -1097,6 +1192,9 @@ export default function AIRoomPlanner() {
           setBackendOnline(true);
           setLastProvider(res.data.provider || "mock-preview");
           setAiStatusKey("backendReady");
+          if (res.data.realAiEnabled) {
+            setPipelineMode("generative");
+          }
         } else {
           throw new Error("fail");
         }
@@ -1252,48 +1350,78 @@ export default function AIRoomPlanner() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, stage.width, stage.height);
 
-    productsList
-      .filter((product) => selected.has(product.id))
-      .forEach((product) => {
-        const placement = placements.get(product.id);
-        if (!placement) return;
+    // Scale mask ellipses depending on floorBlend mode
+    const maskScale = floorBlend === 'clean' ? 0.3 : floorBlend === 'rug' ? 1.6 : 1;
 
-        const box = getProductBox(product, placement);
-        ctx.save();
-        ctx.filter = "blur(18px)";
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-        ctx.ellipse(
-          box.cx,
-          box.bottom + box.height * 0.08,
-          box.width * 0.56,
-          box.height * 0.16,
-          0,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-        ctx.restore();
+    const selectedProducts = productsList.filter((product) => selected.has(product.id));
 
-        ctx.save();
-        ctx.filter = "blur(8px)";
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-        ctx.ellipse(
-          box.cx,
-          box.bottom,
-          box.width * 0.34,
-          box.height * 0.07,
-          0,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-        ctx.restore();
-      });
+    // PASS 1: Draw ALL white areas (outer ring + floor) for all products
+    selectedProducts.forEach((product) => {
+      const placement = placements.get(product.id);
+      if (!placement) return;
+      const box = getProductBox(product, placement);
+      const rotY = (placement.rotationY || 0) * Math.PI / 180;
+      const scaleX = Math.abs(Math.cos(rotY));
+      const pad = Math.max(box.width, box.height) * 0.12;
+
+      // Outer area around product
+      ctx.save();
+      ctx.filter = "blur(20px)";
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.ellipse(
+        box.cx,
+        box.top + box.height * 0.5,
+        (box.width * 0.5 + pad) * scaleX,
+        box.height * 0.5 + pad,
+        0, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+
+      // Floor area below product
+      ctx.save();
+      ctx.filter = "blur(18px)";
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.ellipse(
+        box.cx,
+        box.bottom + box.height * 0.1,
+        box.width * 0.55 * maskScale * scaleX,
+        box.height * 0.18 * maskScale,
+        0, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // PASS 2: Cut out ALL product centers AFTER all white areas are drawn
+    // This ensures no product's protection gets overwritten by another product's mask
+    selectedProducts.forEach((product) => {
+      const placement = placements.get(product.id);
+      if (!placement) return;
+      const box = getProductBox(product, placement);
+      const rotY = (placement.rotationY || 0) * Math.PI / 180;
+      const scaleX = Math.abs(Math.cos(rotY));
+
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.filter = "blur(4px)";
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.ellipse(
+        box.cx,
+        box.top + box.height * 0.48,
+        box.width * 0.46 * scaleX,
+        box.height * 0.46,
+        0, 0, Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    });
 
     return canvas.toDataURL("image/png");
-  }, [stage, productsList, selected, placements, getProductBox]);
+  }, [stage, productsList, selected, placements, getProductBox, floorBlend]);
 
   const drawSelectionRing = useCallback((ctx: CanvasRenderingContext2D, box: any) => {
     ctx.save();
@@ -1307,25 +1435,43 @@ export default function AIRoomPlanner() {
 
   const drawFloorShadow = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
     ctx.save();
-    // Layer 1: Ambient occlusion shadow (wide, soft)
-    const ambientGradient = ctx.createRadialGradient(x, y + h * 0.1, 0, x, y + h * 0.1, Math.max(w * 1.2, h * 2));
-    ambientGradient.addColorStop(0, "rgba(0,0,0,0.12)");
-    ambientGradient.addColorStop(0.5, "rgba(0,0,0,0.06)");
-    ambientGradient.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = ambientGradient;
+    
+    // Shift shadow slightly to the left to simulate directional lighting from the right/window
+    const sx = x - w * 0.15;
+    const sy = y + h * 0.08;
+
+    // Layer 1: Wide ambient shadow spread — gives the product a "presence" on the floor
+    const ambientGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 1.8, h * 3));
+    ambientGrad.addColorStop(0, "rgba(0, 0, 0, 0.18)");
+    ambientGrad.addColorStop(0.3, "rgba(0, 0, 0, 0.10)");
+    ambientGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.04)");
+    ambientGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = ambientGrad;
     ctx.beginPath();
-    ctx.ellipse(x, y + h * 0.1, w * 0.7, h * 1.1, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, w * 1.2, h * 2.0, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Layer 2: Contact shadow (tight, dark - directly under the product base)
-    const contactGradient = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w, h));
-    contactGradient.addColorStop(0, "rgba(0,0,0,0.35)");
-    contactGradient.addColorStop(0.4, "rgba(0,0,0,0.18)");
-    contactGradient.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = contactGradient;
+    // Layer 2: Medium directional cast shadow (slightly offset, shaped like the product base)
+    const castGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 0.9, h * 1.2));
+    castGrad.addColorStop(0, "rgba(0, 0, 0, 0.26)");
+    castGrad.addColorStop(0.5, "rgba(0, 0, 0, 0.10)");
+    castGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = castGrad;
     ctx.beginPath();
-    ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, w * 0.7, h * 0.9, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    // Layer 3: Tight dark contact shadow — the critical "grounding" layer
+    const contactGrad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w * 0.45, h * 0.5));
+    contactGrad.addColorStop(0, "rgba(0, 0, 0, 0.45)");
+    contactGrad.addColorStop(0.4, "rgba(0, 0, 0, 0.22)");
+    contactGrad.addColorStop(0.7, "rgba(0, 0, 0, 0.08)");
+    contactGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = contactGrad;
+    ctx.beginPath();
+    ctx.ellipse(x, y, w * 0.5, h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }, []);
 
@@ -1342,16 +1488,57 @@ export default function AIRoomPlanner() {
     const y = stage.height * placement.y;
     const box = getProductBox(product, placement);
 
-    ctx.save();
-    drawFloorShadow(ctx, box.cx, box.bottom, box.width * 0.78, box.height * 0.13);
+    // 3D Y-rotation: scale horizontally by cos(rotationY)
+    const rotY = (placement.rotationY || 0) * Math.PI / 180;
+    const scaleX = Math.cos(rotY);
+    const flipDir = placement.flipped ? -1 : 1;
+    const absScaleX = Math.abs(scaleX);
 
-    ctx.translate(x, y);
-    if (placement.flipped) {
-      ctx.scale(-1, 1);
+    ctx.save();
+
+    // Rug mode: draw a visual rug guide for AI to use as context
+    if (floorBlend === 'rug') {
+      ctx.save();
+      const rx = box.width * 0.9 * absScaleX;
+      const ry = box.height * 0.24;
+      ctx.fillStyle = "#f4efe2";
+      ctx.beginPath();
+      ctx.ellipse(box.cx, box.bottom + box.height * 0.05, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#d7cfbc";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(box.cx, box.bottom + box.height * 0.05, rx * 0.8, ry * 0.8, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = "#c6bca7";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(box.cx, box.bottom + box.height * 0.05, rx * 0.65, ry * 0.65, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = "#b5ab95";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.ellipse(box.cx, box.bottom + box.height * 0.05, rx * 0.4, ry * 0.4, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = "#c6bca7";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
     }
+
+    // ── DRAW PRODUCT (clean, no effects) ──
+    ctx.translate(x, y);
+    // Apply perspective vertical skew (shear Y) based on horizontal position relative to room center
+    const skewY = (placement.x - 0.48) * 0.15;
+    ctx.transform(1, skewY, 0, 1, 0, 0);
+
     if (placement.rotation) {
       ctx.rotate((placement.rotation * Math.PI) / 180);
     }
+    // Apply horizontal flip AND Y-rotation scale together
+    ctx.scale(flipDir * scaleX, 1);
 
     const img = getProductImage(product, renderTrigger);
 
@@ -1368,7 +1555,7 @@ export default function AIRoomPlanner() {
     ctx.restore();
 
     if (showSelection && activeId === product.id) drawSelectionRing(ctx, box);
-  }, [placements, stage, globalScale, activeId, drawFloorShadow, getProductBox, drawSelectionRing]);
+  }, [placements, stage, globalScale, activeId, getProductBox, drawSelectionRing, floorBlend]);
 
   const drawSelectedProducts = useCallback((
     ctx: CanvasRenderingContext2D,
@@ -1402,6 +1589,11 @@ export default function AIRoomPlanner() {
 
     if (generatedImage) {
       afterCtx.drawImage(generatedImage, 0, 0, width, height);
+      // Redraw selected products on top of the generated room to keep the original product images 100% sharp and unchanged.
+      // This solves the issue where AI completely distorts, alters, or erases the product.
+      if (sharpOverlay) {
+        drawSelectedProducts(afterCtx, false);
+      }
       drawAfterVignette(afterCtx);
       return;
     }
@@ -1433,12 +1625,12 @@ export default function AIRoomPlanner() {
     if (roomImage) {
       renderAll();
     }
-  }, [roomImage, stage, selected, placements, globalScale, floorDepth, lightMatch, activeId, lastGenerationMode, renderAll]);
+  }, [roomImage, stage, selected, placements, globalScale, floorDepth, lightMatch, activeId, lastGenerationMode, sharpOverlay, renderAll]);
 
   // Load Sample Room
   const loadSampleRoom = useCallback(() => {
     const img = new Image();
-    img.src = "assets/sample_room.png";
+    img.src = "/assets/sample_room.png";
     img.onload = () => {
       setRoomImage(img);
       
@@ -1453,10 +1645,10 @@ export default function AIRoomPlanner() {
           setRoomDataUrl(canvas.toDataURL("image/png"));
         } catch (e) {
           console.warn("Failed to convert sample room to DataURL:", e);
-          setRoomDataUrl("assets/sample_room.png");
+          setRoomDataUrl("/assets/sample_room.png");
         }
       } else {
-        setRoomDataUrl("assets/sample_room.png");
+        setRoomDataUrl("/assets/sample_room.png");
       }
 
       setImageName("Phòng mẫu");
@@ -1520,7 +1712,19 @@ export default function AIRoomPlanner() {
       { x: 0.79, y: floorDepth - 0.04, scale: 1.05 },
       { x: 0.19, y: floorDepth - 0.02, scale: 0.98 },
     ];
-    const p = { ...pattern[index === -1 ? 0 : index % pattern.length], rotation: 0, flipped: false };
+    const item = pattern[index === -1 ? 0 : index % pattern.length];
+    // Auto-calculate initial 3D Y-rotation based on X-coordinate perspective
+    const initialRotationY = Math.min(35, Math.round(Math.abs((item.x - 0.48) * 65)));
+    // Auto flip horizontally based on position
+    const initialFlipped = id.toLowerCase().includes("lamp") ? (item.x >= 0.48) : (item.x < 0.48);
+    const p = { 
+      ...item, 
+      rotation: 0, 
+      rotationY: initialRotationY, 
+      flipped: initialFlipped, 
+      hasManualRotationY: false,
+      hasManualFlip: false
+    };
     currentPlacements.set(id, p);
     return p;
   };
@@ -1629,6 +1833,21 @@ export default function AIRoomPlanner() {
     const p = next.get(id);
     if (p) {
       p.flipped = val;
+      p.hasManualFlip = true; // Mark as manually flipped
+      setPlacements(next);
+      setActiveId(id);
+    }
+  };
+
+  // Adjust placement Y-rotation (3D yaw)
+  const handlePlacementRotateY = (id: string, val: number) => {
+    setGeneratedImage(null);
+    setLastGenerationMode(null);
+    const next = new Map(placements);
+    const p = next.get(id);
+    if (p) {
+      p.rotationY = val;
+      p.hasManualRotationY = true; // Mark as manually controlled
       setPlacements(next);
       setActiveId(id);
     }
@@ -1648,10 +1867,16 @@ export default function AIRoomPlanner() {
     let localX = cx - x;
     let localY = cy - y;
 
-    if (placement.flipped) {
-      localX = -localX;
+    // 1. Inverse scale/flip first
+    const rotY = (placement.rotationY || 0) * Math.PI / 180;
+    const scaleX = Math.cos(rotY);
+    const flipDir = placement.flipped ? -1 : 1;
+    const combinedScaleX = flipDir * scaleX;
+    if (Math.abs(combinedScaleX) > 0.01) {
+      localX = localX / combinedScaleX;
     }
 
+    // 2. Inverse 2D rotation second
     if (placement.rotation) {
       const angle = (-placement.rotation * Math.PI) / 180;
       const cos = Math.cos(angle);
@@ -1661,6 +1886,10 @@ export default function AIRoomPlanner() {
       localX = nextX;
       localY = nextY;
     }
+
+    // 3. Inverse perspective vertical skew third
+    const skewY = (placement.x - 0.48) * 0.15;
+    localY = localY - skewY * localX;
 
     const rect = getProductImageRect(img, box, size * getProductRatios(product).top);
     if (
@@ -1724,6 +1953,18 @@ export default function AIRoomPlanner() {
       p.x = Math.min(0.94, Math.max(0.06, (point.x - draggingRef.current.offsetX) / stage.width));
       p.y = Math.min(0.94, Math.max(0.42, (point.y - draggingRef.current.offsetY) / stage.height));
       p.userMoved = true;
+      
+      // Auto perspective 3D rotation (Y-rotation) based on X position relative to room center
+      if (!p.hasManualRotationY) {
+        const distanceFromCenter = p.x - 0.48; // room vanishing point is around 0.48
+        p.rotationY = Math.min(35, Math.round(Math.abs(distanceFromCenter * 65)));
+      }
+
+      // Auto flip horizontally based on horizontal position relative to center
+      if (!p.hasManualFlip) {
+        p.flipped = draggingRef.current.id.toLowerCase().includes("lamp") ? (p.x >= 0.48) : (p.x < 0.48);
+      }
+      
       setPlacements(next);
     }
   };
@@ -1802,6 +2043,7 @@ export default function AIRoomPlanner() {
           prompt: stylePrompt,
           style: stylePrompt,
           pipelineMode,
+          floorBlend,
           products: selectedProducts,
         }),
       });
@@ -1979,6 +2221,114 @@ export default function AIRoomPlanner() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
+        }
+
+        .room-planner-container .stage-header {
+          flex-wrap: wrap;
+        }
+
+        .room-planner-container .stage-inline-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .room-planner-container .inline-pipeline-toggle,
+        .room-planner-container .inline-presets {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: var(--surface-strong);
+          border-radius: 8px;
+          padding: 3px;
+        }
+
+        .room-planner-container .preset-btn-sm {
+          padding: 4px 10px;
+          font-size: 11px;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          color: #9ca3af;
+          transition: all 0.15s;
+        }
+
+        .room-planner-container .preset-btn-sm:hover {
+          color: #d1d5db;
+          background: rgba(255,255,255,0.05);
+        }
+
+        .room-planner-container .preset-btn-sm.active {
+          background: var(--teal-dark);
+          color: #fff;
+        }
+
+        .room-planner-container .stage-controls-row {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          margin-top: 10px;
+          padding: 10px 0;
+          border-top: 1px solid var(--line);
+        }
+
+        .room-planner-container .compact-field {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
+        }
+
+        .room-planner-container .compact-field textarea {
+          background: var(--surface-strong);
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          padding: 6px 8px;
+          font-size: 12px;
+          resize: vertical;
+          min-height: 38px;
+        }
+
+        .room-planner-container .compact-sliders {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .room-planner-container .compact-range {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
+          cursor: pointer;
+        }
+
+        .room-planner-container .compact-range input[type="range"] {
+          width: 80px;
+          accent-color: var(--teal);
+        }
+
+        .room-planner-container .compact-check {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .room-planner-container .compact-check input {
+          margin: 0;
+          accent-color: var(--teal);
         }
 
         .room-planner-container .section-heading {
@@ -2590,7 +2940,7 @@ export default function AIRoomPlanner() {
               e.preventDefault();
               const file = e.dataTransfer.files[0];
               if (file) loadRoomFile(file);
-            }}>
+            }} onClick={() => fileInputRef.current?.click()}>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -2681,6 +3031,19 @@ export default function AIRoomPlanner() {
                 </div>
               </label>
             </div>
+            {pipelineMode === "generative" && (
+              <div className="check-row-compact" style={{ marginTop: 12, paddingLeft: 8 }}>
+                <input
+                  type="checkbox"
+                  id="sharpOverlay"
+                  checked={sharpOverlay}
+                  onChange={(e) => setSharpOverlay(e.target.checked)}
+                />
+                <label htmlFor="sharpOverlay" style={{ color: "var(--muted)", fontSize: "13px", cursor: "pointer", userSelect: "none", marginLeft: "6px" }}>
+                  Sharp Product Overlay (Giữ ảnh sản phẩm gốc sắc nét)
+                </label>
+              </div>
+            )}
           </section>
 
           <section className="tool-section">
@@ -2749,7 +3112,6 @@ export default function AIRoomPlanner() {
                   setFloorDepth(val);
                   setGeneratedImage(null);
                   setLastGenerationMode(null);
-                  // Update untracked placements to match floorDepth
                   const next = new Map(placements);
                   [...selected].forEach((id, idx) => {
                     const p = next.get(id);
@@ -2874,7 +3236,7 @@ export default function AIRoomPlanner() {
                 localizedProductsList
                   .filter((p) => selected.has(p.id))
                   .map((product) => {
-                    const p = placements.get(product.id) || { scale: 1, rotation: 0, flipped: false };
+                    const p = placements.get(product.id) || { scale: 1, rotation: 0, rotationY: 0, flipped: false };
                     const isActive = activeId === product.id;
                     return (
                       <div
@@ -2923,6 +3285,16 @@ export default function AIRoomPlanner() {
                               onChange={(e) => handlePlacementRotate(product.id, Number(e.target.value))}
                             />
                           </label>
+                          <label className="control-row" style={{ marginTop: 6 }}>
+                            <span>Rotate Y (3D):</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="360"
+                              value={p.rotationY || 0}
+                              onChange={(e) => handlePlacementRotateY(product.id, Number(e.target.value))}
+                            />
+                          </label>
                           <div className="check-row-compact" style={{ marginTop: 6 }}>
                             <input
                               type="checkbox"
@@ -2933,6 +3305,21 @@ export default function AIRoomPlanner() {
                             <label htmlFor={`flip-${product.id}`} onClick={(e) => e.stopPropagation()}>
                               {t('aiRoomPlanner.itemFlipLabel')}
                             </label>
+                          </div>
+                          <div className="select-row" style={{ marginTop: 6 }}>
+                            <span>Floor Blend:</span>
+                            <select
+                              value={floorBlend}
+                              onChange={(e) => {
+                                setFloorBlend(e.target.value as 'shadow' | 'rug' | 'clean');
+                                setGeneratedImage(null);
+                                setLastGenerationMode(null);
+                              }}
+                            >
+                              <option value="shadow">Subtle Shadow</option>
+                              <option value="rug">Modern Rug</option>
+                              <option value="clean">Clean Floor</option>
+                            </select>
                           </div>
                         </div>
                       </div>
