@@ -8,6 +8,7 @@ export interface GeneratePayload {
     id: string;
     name: string;
     category: string;
+    imageUrl?: string;
     placement?: {
       flipped?: boolean;
       rotation?: number;
@@ -16,6 +17,7 @@ export interface GeneratePayload {
   prompt?: string;
   style?: string;
   pipelineMode?: 'composite' | 'generative';
+  floorBlend?: 'shadow' | 'rug' | 'clean';
 }
 
 export interface GenerateResult {
@@ -45,9 +47,10 @@ export interface RemoveBackgroundResult {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const backgroundRemovalCache = new Map<string, string>();
 
-function getConfiguredProvider(): 'stability' | 'replicate' | 'free-ai' {
+function getConfiguredProvider(): 'gemini' | 'stability' | 'replicate' | 'free-ai' {
   const requested = env.AI_IMAGE_PROVIDER?.toLowerCase();
 
+  if (requested === 'gemini' && env.GEMINI_API_KEY) return 'gemini';
   if (requested === 'stability' && env.STABILITY_API_KEY) return 'stability';
   if (requested === 'replicate' && env.REPLICATE_API_TOKEN && (env.REPLICATE_MODEL || env.REPLICATE_MODEL_VERSION)) {
     return 'replicate';
@@ -79,9 +82,11 @@ export function getAiStatus() {
     label:
       provider === 'stability'
         ? 'Stability ready'
-        : provider === 'replicate'
-          ? 'Replicate ready'
-          : 'Free AI ready',
+        : provider === 'gemini'
+          ? 'Gemini ready'
+          : provider === 'replicate'
+            ? 'Replicate ready'
+            : 'Free AI ready',
     realAiEnabled: provider !== 'free-ai',
   };
 }
@@ -95,23 +100,39 @@ export async function generateInterior(payload: GeneratePayload): Promise<Genera
     return generateWithFreeAi(payload, true);
   }
 
+  // Generative mode: use configured provider
   const provider = getConfiguredProvider();
 
-  if (provider === 'stability') {
+  if (provider === 'gemini') {
     try {
-      return await generateWithStability(payload);
+      return await generateWithGemini(payload);
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'Unknown AI provider error';
-      console.warn(`Stability generation failed, trying Replicate fallback: ${reason}`);
-      if (env.REPLICATE_API_TOKEN && (env.REPLICATE_MODEL || env.REPLICATE_MODEL_VERSION)) {
-        try {
-          return await generateWithReplicate(payload);
-        } catch (repError) {
-          const repReason = repError instanceof Error ? repError.message : 'Unknown Replicate error';
-          console.warn(`Replicate fallback generation failed: ${repReason}`);
-          return generateWithFreeAi(payload, false, `Stability failed: ${reason}. Replicate fallback failed: ${repReason}`);
-        }
+      const reason = error instanceof Error ? error.message : 'Unknown Gemini error';
+      console.warn(`Gemini generation failed, trying Stability fallback: ${reason}`);
+      if (env.STABILITY_API_KEY) {
+        try { return await generateWithStability(payload); } catch {}
       }
+      return generateWithFreeAi(payload, false, reason);
+    }
+  }
+
+  if (provider === 'stability') {
+    // Primary: Inpaint mode — only modifies floor/shadow area around products (mask-based)
+    // This preserves the original products 100% while adding natural shadows and lighting
+    if (payload.maskImage) {
+      try {
+        return await generateWithStability(payload);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'Unknown Stability inpaint error';
+        console.warn(`Stability Inpaint failed, trying Image-to-Image fallback: ${reason}`);
+      }
+    }
+    // Fallback: Image-to-Image with low strength to preserve product appearance
+    try {
+      return await generateWithStabilityImg2Img(payload);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Unknown Stability error';
+      console.warn(`Stability Image-to-Image also failed: ${reason}`);
       return generateWithFreeAi(payload, false, reason);
     }
   }
@@ -120,15 +141,15 @@ export async function generateInterior(payload: GeneratePayload): Promise<Genera
     try {
       return await generateWithReplicate(payload);
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'Unknown AI provider error';
-      console.warn(`Replicate generation failed, trying Stability fallback: ${reason}`);
-      if (env.STABILITY_API_KEY) {
+      const reason = error instanceof Error ? error.message : 'Unknown Replicate error';
+      console.warn(`Replicate generation failed: ${reason}`);
+      // Fallback: try Stability inpaint for at least floor blending
+      if (env.STABILITY_API_KEY && payload.maskImage) {
         try {
+          console.warn('Trying Stability AI inpaint as fallback...');
           return await generateWithStability(payload);
         } catch (stabError) {
-          const stabReason = stabError instanceof Error ? stabError.message : 'Unknown Stability error';
-          console.warn(`Stability fallback generation failed: ${stabReason}`);
-          return generateWithFreeAi(payload, false, `Replicate failed: ${reason}. Stability fallback failed: ${stabReason}`);
+          console.warn(`Stability fallback also failed: ${stabError instanceof Error ? stabError.message : stabError}`);
         }
       }
       return generateWithFreeAi(payload, false, reason);
@@ -147,6 +168,60 @@ function dataUrlToBlob(dataUrl: string, fallbackMime = 'image/png'): Blob {
   const mimeType = match[1] || fallbackMime;
   const buffer = Buffer.from(match[2], 'base64');
   return new Blob([buffer], { type: mimeType });
+}
+
+function dataUrlToGeminiImageInput(dataUrl: string, fallbackMime = 'image/png') {
+  const match = dataUrl.match(/^data:([^;,]+)?;base64,(.+)$/);
+  if (!match) {
+    throw new AppError(400, 'INVALID_IMAGE_DATA', 'Expected a base64 data URL image');
+  }
+
+  return {
+    type: 'image',
+    mime_type: match[1] || fallbackMime,
+    data: match[2],
+  };
+}
+
+async function blobToGeminiImageInput(blob: Blob) {
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  return {
+    type: 'image',
+    mime_type: blob.type || 'image/jpeg',
+    data: buffer.toString('base64'),
+  };
+}
+
+function findGeminiImageBlock(value: unknown): { mimeType: string; data: string } | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const record = value as Record<string, unknown>;
+  const data = record.data;
+  const type = record.type;
+  const mimeType = record.mime_type || record.mimeType;
+
+  if (
+    typeof data === 'string' &&
+    data.length > 0 &&
+    typeof mimeType === 'string' &&
+    (type === 'image' || mimeType.startsWith('image/'))
+  ) {
+    return { mimeType, data };
+  }
+
+  for (const item of Object.values(record)) {
+    if (Array.isArray(item)) {
+      for (const child of item) {
+        const found = findGeminiImageBlock(child);
+        if (found) return found;
+      }
+    } else {
+      const found = findGeminiImageBlock(item);
+      if (found) return found;
+    }
+  }
+
+  return null;
 }
 
 async function fetchRemoteImageAsBlob(imageUrl: string): Promise<Blob> {
@@ -319,16 +394,28 @@ export async function removeProductBackground(payload: RemoveBackgroundPayload):
 }
 
 function buildPrompt(payload: GeneratePayload): string {
-  const userPrompt = payload.prompt || payload.style || 'modern realistic interior design';
+  const userStyle = payload.prompt || payload.style || 'modern realistic interior design';
+  const productNames = payload.products.map((p) => p.name).filter(Boolean).join(', ');
 
   return [
-    'This is an interior room photograph with furniture already placed.',
-    'Make MINIMAL changes to the image.',
-    'Do NOT add, remove, replace, move, or redesign ANY furniture or object in the scene.',
-    'ONLY apply subtle lighting improvements: soften shadows under furniture legs, add natural ambient light from windows, improve color temperature consistency, and add gentle ambient occlusion where furniture meets the floor.',
-    `Style direction for lighting ONLY: ${userPrompt}.`,
-    'Keep all furniture, walls, floor, ceiling, windows, perspective, and camera angle 100% identical.',
-    'The output should look like the exact same photo taken with slightly better studio lighting.',
+    `Photorealistic interior design photograph. Products: ${productNames}.`,
+    'GOAL: Make the placed product(s) look like they BELONG in this room — as if photographed here originally. The product must appear three-dimensional, solid, and physically present in the space.',
+    'PRODUCT RULES:',
+    '- Keep each product\'s core identity: same shape, color, material, and design language.',
+    '- You MAY make small enhancements to help the product look more realistic: add a decorative cushion on a sofa, a small book on a table, or adjust the viewing angle slightly to match room perspective.',
+    '- Do NOT replace, remove, or dramatically redesign any product.',
+    'BLENDING RULES:',
+    '- Blend product edges seamlessly into the room environment — no hard cutout edges visible.',
+    '- Match room lighting: color temperature, light direction from windows, natural highlights and reflections on the product surface.',
+    '- Do NOT add dark shadows, ambient occlusion patches, or shadow blobs on the floor. Keep the floor clean and natural.',
+    'DECORATION RULES:',
+    '- You SHOULD add tasteful complementary items to make the scene feel lived-in: a stylish rug, potted plants, a vase with flowers, books, a throw blanket, decorative cushions, a floor lamp, or wall art.',
+    '- These additions should enhance realism and make the main product look grounded and three-dimensional.',
+    'OUTPUT:',
+    '- Same canvas size, same crop, same camera angle as input.',
+    '- Final result must look like one unified professional interior photography — not a composite.',
+    '- No gray halos, rectangular borders, or UI artifacts.',
+    `Style: ${userStyle}.`,
   ].join(' ');
 }
 
@@ -387,8 +474,85 @@ function buildReplicateInput(payload: GeneratePayload, prompt: string): Record<s
     aspect_ratio: 'match_input_image',
     output_format: 'jpg',
     safety_tolerance: 2,
-    prompt_upsampling: false,
-    guidance_scale: 2.5,
+    prompt_upsampling: true,
+    guidance_scale: 4.5,
+  };
+}
+
+async function generateWithGemini(payload: GeneratePayload): Promise<GenerateResult> {
+  if (!env.GEMINI_API_KEY) {
+    throw new AppError(500, 'GEMINI_CONFIG_ERROR', 'Missing GEMINI_API_KEY');
+  }
+
+  const model = env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+  const prompt = buildPrompt(payload);
+  const isMultiple = payload.products.length > 1;
+  const productTerm = isMultiple ? 'catalog products' : 'catalog product';
+  const productNames = payload.products.map((product) => product.name).filter(Boolean).join(', ');
+  const roomInput = dataUrlToGeminiImageInput(payload.roomImage);
+  const referenceInputs = (
+    await Promise.all(
+      payload.products.slice(0, 10).map(async (product) => {
+        if (!product.imageUrl) return null;
+
+        try {
+          return blobToGeminiImageInput(await fetchRemoteImageAsBlob(product.imageUrl));
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : 'Unknown product reference fetch error';
+          console.warn(`Gemini product reference fetch failed for ${product.name}: ${reason}`);
+          return null;
+        }
+      }),
+    )
+  ).filter((item): item is { type: string; mime_type: string; data: string } => Boolean(item));
+
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'POST',
+    headers: {
+      'x-goog-api-key': env.GEMINI_API_KEY,
+      'Content-Type': 'application/json',
+      'Api-Revision': '2026-05-20',
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        { type: 'text', text: prompt },
+        roomInput,
+        ...referenceInputs,
+      ],
+      response_format: {
+        type: 'image',
+        mime_type: 'image/jpeg',
+        aspect_ratio: '16:9',
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new AppError(502, 'GEMINI_ERROR', `Gemini image generation failed: ${response.status} ${text}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  const imageBlock = findGeminiImageBlock(data.output_image) || findGeminiImageBlock(data);
+
+  if (!imageBlock) {
+    throw new AppError(502, 'GEMINI_NO_IMAGE', 'Gemini did not return an image in the response');
+  }
+
+  return {
+    mode: 'ai-generated',
+    provider: 'gemini',
+    providerLabel: 'Gemini Image',
+    realAiEnabled: true,
+    imageDataUrl: `data:${imageBlock.mimeType};base64,${imageBlock.data}`,
+    prompt: prompt,
+    message: 'Gemini image blend generated successfully',
+    notes: [
+      'Gemini used the room composite plus catalog product references.',
+      'The prompt allows staging while preserving selected product identity.',
+      `Prompt: ${prompt}`,
+    ],
   };
 }
 
@@ -409,9 +573,12 @@ async function generateWithStability(payload: GeneratePayload): Promise<Generate
   form.append(
     'prompt',
     [
-      'The original product is protected outside the mask and must remain completely unchanged.',
-      'Do not add, replace, redraw, redesign, or invent any chair, table, sofa, or furniture.',
-      'Only improve the masked edge area, contact shadows, ambient occlusion, lighting spill, color match, and photoreal blending around the existing product, ensuring the legs and base of the furniture are realistically seated on the floor with soft, natural contact shadows.',
+      'CRITICAL: The existing furniture in the CENTER of the image must NOT be replaced, removed, or redesigned. Keep the EXACT same product — same shape, same color, same material, same style.',
+      'Inside the masked area (thin edge fringe + floor): blend the product edges seamlessly into the room environment.',
+      'Match room lighting direction and color temperature on the product surface.',
+      'Do NOT add dark shadows, shadow blobs, dark rings, glowing edges, or any border/halo/vignette effect around the product. Keep the floor and surroundings clean and natural.',
+      'You may add small decorative items (a rug, plant, cushion, book) near the product to enhance realism.',
+      'Do NOT replace the product with different furniture. The product identity must be preserved exactly.',
       payload.prompt || payload.style || 'modern realistic interior design',
     ].join(' '),
   );
@@ -445,6 +612,55 @@ async function generateWithStability(payload: GeneratePayload): Promise<Generate
     notes: [
       'Stability AI blended lighting and shadows around the exact product reference.',
       'The generated image is used directly so no extra product frame is drawn on top.',
+      `Prompt: ${prompt}`,
+    ],
+  };
+}
+
+async function generateWithStabilityImg2Img(payload: GeneratePayload): Promise<GenerateResult> {
+  if (!env.STABILITY_API_KEY) {
+    throw new AppError(500, 'STABILITY_CONFIG_ERROR', 'Missing STABILITY_API_KEY');
+  }
+
+  const prompt = buildPrompt(payload);
+  const form = new FormData();
+
+  form.append('image', dataUrlToBlob(payload.roomImage), 'room-composite.png');
+  form.append('prompt', prompt);
+  form.append('negative_prompt', 'flat cutout, pasted image, 2D sticker, floating object, no shadow, no depth, paper doll, collage, photoshop overlay, unrealistic lighting, gray halo, white border, blurry edges');
+  form.append('mode', 'image-to-image');
+  form.append('model', 'sd3.5-large');
+  form.append('strength', '0.30');
+  form.append('output_format', 'png');
+
+  const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.STABILITY_API_KEY}`,
+      Accept: 'image/*',
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new AppError(502, 'STABILITY_ERROR', `Stability SD3 image-to-image failed: ${response.status} ${text}`);
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/png';
+  const buffer = Buffer.from(await response.arrayBuffer());
+
+  return {
+    mode: 'ai-generated',
+    provider: 'stability',
+    providerLabel: 'Stability AI SD3.5 Image-to-Image',
+    realAiEnabled: true,
+    imageDataUrl: `data:${contentType};base64,${buffer.toString('base64')}`,
+    prompt,
+    message: 'AI room design generated successfully via Stability SD3.5',
+    notes: [
+      'Stability SD3.5 Image-to-Image generated a photorealistic 3D staging view.',
+      'Products are seamlessly blended with natural shadows, lighting, and perspective.',
       `Prompt: ${prompt}`,
     ],
   };
@@ -566,3 +782,4 @@ async function generateWithReplicate(payload: GeneratePayload): Promise<Generate
     ],
   };
 }
+
