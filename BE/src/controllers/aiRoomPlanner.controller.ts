@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
-import { generateInterior, getAiStatus, removeProductBackground } from '../services/aiRoomPlanner.service';
+import { generateInterior, getAiStatus, getAutoPositions, removeProductBackground } from '../services/aiRoomPlanner.service';
 import { incrementAiTurnsUsed } from '../middlewares/aiTurns.middleware';
 import User from '../models/user.model';
 
@@ -62,28 +62,37 @@ export const getTurnsController = asyncHandler(async (req: Request, res: Respons
   });
 });
 
-/** POST /api/ai-room-planner/generate — generate room (guarded by checkAiTurns middleware) */
+/** POST /api/ai-room-planner/generate — generate room */
 export const generateController = asyncHandler(async (req: Request, res: Response) => {
   const result = await generateInterior(req.body);
 
-  // Increment counter for free users after a successful generation
-  await incrementAiTurnsUsed(req.user!.id);
-
-  // Re-read the updated turn info for the response
-  const user = await User.findById(req.user!.id);
+  // Increment counter for free users after a successful generation (only if authenticated)
   let turnsInfo: Record<string, unknown> = { unlimited: true };
 
-  if (user && !user.subscriptionPlan) {
-    const turnsUsed = user.aiTurnsUsed ?? 0;
-    turnsInfo = {
-      unlimited: false,
-      turnsUsed,
-      turnsRemaining: Math.max(0, FREE_DAILY_TURNS - turnsUsed),
-      dailyLimit: FREE_DAILY_TURNS,
-    };
+  if (req.user?.id) {
+    await incrementAiTurnsUsed(req.user.id);
+
+    // Re-read the updated turn info for the response
+    const user = await User.findById(req.user.id);
+    if (user && !user.subscriptionPlan) {
+      const turnsUsed = user.aiTurnsUsed ?? 0;
+      turnsInfo = {
+        unlimited: false,
+        turnsUsed,
+        turnsRemaining: Math.max(0, FREE_DAILY_TURNS - turnsUsed),
+        dailyLimit: FREE_DAILY_TURNS,
+      };
+    }
   }
 
   res.status(200).json({ success: true, data: { ...result, turnsInfo } });
+});
+
+/** POST /api/ai-room-planner/auto-position — AI analyzes room and suggests product positions */
+export const autoPositionController = asyncHandler(async (req: Request, res: Response) => {
+  const { roomImage, products } = req.body;
+  const positions = await getAutoPositions(roomImage, products);
+  res.status(200).json({ success: true, data: positions });
 });
 
 /** POST /api/ai-room-planner/remove-background */

@@ -16,7 +16,7 @@ export interface GeneratePayload {
   }>;
   prompt?: string;
   style?: string;
-  pipelineMode?: 'composite' | 'generative';
+  pipelineMode?: 'composite' | 'generative' | 'auto-place';
   floorBlend?: 'shadow' | 'rug' | 'clean';
 }
 
@@ -91,6 +91,106 @@ export function getAiStatus() {
   };
 }
 
+/** Use Gemini text model to analyze room image and suggest optimal product positions */
+export async function getAutoPositions(
+  roomImage: string,
+  products: Array<{ id: string; name: string; category?: string }>,
+): Promise<Array<{ id: string; x: number; y: number; scale: number; rotationY: number; flipped: boolean }>> {
+  if (!env.GEMINI_API_KEY) {
+    // Fallback: return smart default positions without AI
+    return products.map((p, i) => {
+      const presets = [
+        { x: 0.25, y: 0.62, scale: 0.95, rotationY: 15, flipped: false },
+        { x: 0.72, y: 0.60, scale: 0.90, rotationY: 18, flipped: true },
+        { x: 0.18, y: 0.55, scale: 1.0, rotationY: 22, flipped: false },
+        { x: 0.80, y: 0.58, scale: 0.85, rotationY: 20, flipped: true },
+      ];
+      const pos = presets[i % presets.length];
+      return { id: p.id, ...pos };
+    });
+  }
+
+  const roomInput = dataUrlToGeminiImageInput(roomImage);
+  const productList = products.map((p) => `"${p.name}" (${p.category || 'furniture'})`).join(', ');
+
+  const analysisPrompt = [
+    `You are an expert interior designer. Analyze this room photo and determine the BEST position for each furniture product.`,
+    `Products to place: ${productList}`,
+    `The image coordinate system: x=0 is LEFT edge, x=1 is RIGHT edge, y=0 is TOP edge, y=1 is BOTTOM edge.`,
+    `The floor is typically between y=0.45 and y=0.85.`,
+    `RULES:`,
+    `- SPREAD products across DIFFERENT areas of the room. Do NOT cluster them all in one corner.`,
+    `- First product: left side (x: 0.15-0.35). Second product: right side (x: 0.65-0.85). Third product: center-back (x: 0.40-0.60, y: 0.45-0.55). Alternate sides for additional products.`,
+    `- Place furniture against walls or near corners when possible — but DISTRIBUTE them evenly.`,
+    `- Consider the room's perspective: items further back (higher in image, smaller y) should be smaller (scale < 1), items closer (lower, larger y) should be larger.`,
+    `- rotationY (0-35 degrees): slight 3D rotation to match the room's camera angle.`,
+    `- flipped: true if the product should face left (typically when placed on the right side of the room).`,
+    `- Scale range: 0.6 to 1.2 (1.0 = normal size).`,
+    `- Avoid placing products where they would overlap with existing room features (fireplace, stairs, doors, windows).`,
+    `- Each product MUST be at a DIFFERENT position — minimum 0.25 distance apart in x or y.`,
+    `Respond with ONLY a valid JSON array, no markdown, no explanation:`,
+    `[{"id":"product_id","x":0.25,"y":0.62,"scale":0.95,"rotationY":15,"flipped":false}]`,
+  ].join('\n');
+
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: analysisPrompt },
+            { inline_data: { mime_type: roomInput.mime_type, data: roomInput.data } },
+          ],
+        }],
+        generationConfig: { temperature: 0.3 },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini analysis failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as any;
+    const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Extract JSON array from response
+    const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array in Gemini response');
+
+    const positions = JSON.parse(jsonMatch[0]) as Array<{
+      id?: string; x: number; y: number; scale: number; rotationY: number; flipped: boolean;
+    }>;
+
+    // Map positions back to product IDs
+    return products.map((p, i) => {
+      const pos = positions[i] || positions[0];
+      return {
+        id: p.id,
+        x: Math.max(0.05, Math.min(0.95, pos.x || 0.25)),
+        y: Math.max(0.4, Math.min(0.85, pos.y || 0.62)),
+        scale: Math.max(0.5, Math.min(1.3, pos.scale || 0.95)),
+        rotationY: Math.max(0, Math.min(35, pos.rotationY || 15)),
+        flipped: Boolean(pos.flipped),
+      };
+    });
+  } catch (error) {
+    console.warn('Gemini room analysis failed, using defaults:', error);
+    return products.map((p, i) => {
+      const presets = [
+        { x: 0.25, y: 0.62, scale: 0.95, rotationY: 15, flipped: false },
+        { x: 0.72, y: 0.60, scale: 0.90, rotationY: 18, flipped: true },
+        { x: 0.18, y: 0.55, scale: 1.0, rotationY: 22, flipped: false },
+        { x: 0.80, y: 0.58, scale: 0.85, rotationY: 20, flipped: true },
+      ];
+      const pos = presets[i % presets.length];
+      return { id: p.id, ...pos };
+    });
+  }
+}
+
 export async function generateInterior(payload: GeneratePayload): Promise<GenerateResult> {
   validatePayload(payload);
 
@@ -98,6 +198,28 @@ export async function generateInterior(payload: GeneratePayload): Promise<Genera
 
   if (pipeline === 'composite') {
     return generateWithFreeAi(payload, true);
+  }
+
+  // Auto-place mode: AI re-renders the product naturally into the scene
+  if (pipeline === 'auto-place') {
+    const provider = getConfiguredProvider();
+
+    // Try Gemini first (full AI placement)
+    if (provider === 'gemini' && env.GEMINI_API_KEY) {
+      try {
+        return await generateWithGeminiAutoPlace(payload);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : 'Unknown Gemini error';
+        console.warn(`Gemini auto-place failed: ${reason}. Falling back to Stability.`);
+      }
+    }
+
+    // Stability img2img: re-render the composite so the product looks natural
+    if (env.STABILITY_API_KEY) {
+      return await generateAutoPlaceStability(payload);
+    }
+
+    throw new AppError(400, 'NO_AI_PROVIDER', 'Auto-Place requires either a Gemini or Stability API key.');
   }
 
   // Generative mode: use configured provider
@@ -554,6 +676,221 @@ async function generateWithGemini(payload: GeneratePayload): Promise<GenerateRes
       `Prompt: ${prompt}`,
     ],
   };
+}
+
+async function generateWithGeminiAutoPlace(payload: GeneratePayload): Promise<GenerateResult> {
+  if (!env.GEMINI_API_KEY) {
+    throw new AppError(500, 'GEMINI_CONFIG_ERROR', 'Missing GEMINI_API_KEY');
+  }
+
+  const model = env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
+  const userStyle = payload.prompt || payload.style || 'modern realistic interior design';
+  const productNames = payload.products.map((p) => p.name).filter(Boolean).join(', ');
+
+  // Build auto-place prompt: AI decides position, size, angle
+  const autoPlacePrompt = [
+    `You are a world-class interior designer and architectural photographer.`,
+    `I am giving you a photo of a room and reference images of furniture products: ${productNames}.`,
+    `YOUR TASK: Place the given product(s) into the room so it looks like a professional interior design magazine photo.`,
+    `PLACEMENT RULES (CRITICAL):`,
+    `- ALWAYS place furniture in a CORNER or AGAINST A WALL. Never in the center of an empty floor.`,
+    `- Ideal positions: a corner between two walls, next to a window, beside a fireplace, against the back wall.`,
+    `- If placing a sofa, put it in the corner or against the longest wall, angled to face a focal point (window/fireplace/TV).`,
+    `- Group furniture logically: coffee table in front of sofa, side tables next to seating.`,
+    `- Respect room proportions: furniture should be sized correctly relative to the room's floor area and ceiling height.`,
+    `- Adjust the product's viewing angle and perspective to perfectly match the room's camera angle.`,
+    `- Products must look grounded on the floor — solid, heavy, three-dimensional, physically present.`,
+    `LIGHTING RULES:`,
+    `- Match the room's existing lighting exactly: same color temperature, same direction from windows/lamps.`,
+    `- Add subtle natural reflections on glossy surfaces.`,
+    `- Do NOT add ANY dark shadows, shadow blobs, black patches, or ambient occlusion under or around the product. The floor must remain CLEAN and exactly as the original photo.`,
+    `- No artificial vignettes, halos, or darkened areas around the furniture.`,
+    `IDENTITY RULES:`,
+    `- Keep each product's EXACT identity: same shape, same color, same material, same fabric texture, same design.`,
+    `- Do NOT replace, redesign, simplify, or alter the product in any way.`,
+    `STAGING RULES:`,
+    `- You MAY add small complementary decor (a rug, plant, cushion, throw blanket, books) to make the scene feel complete.`,
+    `- Keep the room structure (walls, windows, floor, ceiling) 100% unchanged from the original photo.`,
+    `OUTPUT:`,
+    `- Same image dimensions and aspect ratio as the input room photo.`,
+    `- The final result must look like ONE unified professional interior photograph — not a composite or collage.`,
+    `- No cutout edges, no halos, no gray borders, no floating objects, no dark shadow patches on the floor.`,
+    `Style: ${userStyle}.`,
+  ].join(' ');
+
+  // Prepare room image input
+  const roomInput = dataUrlToGeminiImageInput(payload.roomImage);
+
+  // Prepare product reference images
+  const referenceInputs = (
+    await Promise.all(
+      payload.products.slice(0, 10).map(async (product) => {
+        if (!product.imageUrl) return null;
+        try {
+          return blobToGeminiImageInput(await fetchRemoteImageAsBlob(product.imageUrl));
+        } catch (error) {
+          console.warn(`Auto-place: failed to fetch product image for ${product.name}`);
+          return null;
+        }
+      }),
+    )
+  ).filter((item): item is { type: string; mime_type: string; data: string } => Boolean(item));
+
+  if (referenceInputs.length === 0) {
+    throw new AppError(400, 'NO_PRODUCT_IMAGES', 'Auto-place requires at least one product with an image URL');
+  }
+
+  // Use standard Gemini generateContent API with responseModalities: ["IMAGE", "TEXT"]
+  // gemini-2.5-flash-image ("Nano Banana") is the image generation model
+  const geminiModel = env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${env.GEMINI_API_KEY}`;
+
+  // Build parts array: text prompt + room image + product reference images
+  const parts: Array<Record<string, unknown>> = [
+    { text: autoPlacePrompt },
+    {
+      inline_data: {
+        mime_type: roomInput.mime_type,
+        data: roomInput.data,
+      },
+    },
+    ...referenceInputs.map((ref) => ({
+      inline_data: {
+        mime_type: ref.mime_type,
+        data: ref.data,
+      },
+    })),
+  ];
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: {
+        responseModalities: ['IMAGE', 'TEXT'],
+        temperature: 1,
+        topP: 0.95,
+        topK: 40,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new AppError(502, 'GEMINI_ERROR', `Gemini auto-place failed: ${response.status} ${text}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+
+  // Extract image from Gemini generateContent response format:
+  // data.candidates[0].content.parts[i].inlineData.mimeType / .data
+  let imageBlock: { mimeType: string; data: string } | null = null;
+
+  const candidates = (data as any)?.candidates;
+  if (Array.isArray(candidates)) {
+    for (const candidate of candidates) {
+      const contentParts = candidate?.content?.parts;
+      if (Array.isArray(contentParts)) {
+        for (const part of contentParts) {
+          if (part?.inlineData?.data && part?.inlineData?.mimeType?.startsWith('image/')) {
+            imageBlock = { mimeType: part.inlineData.mimeType, data: part.inlineData.data };
+            break;
+          }
+        }
+      }
+      if (imageBlock) break;
+    }
+  }
+
+  // Fallback: try the generic finder
+  if (!imageBlock) {
+    imageBlock = findGeminiImageBlock(data);
+  }
+
+  if (!imageBlock) {
+    console.error('[Gemini Auto-Place] No image in response. Full response keys:', Object.keys(data));
+    throw new AppError(502, 'GEMINI_NO_IMAGE', 'Gemini did not return an image in the auto-place response');
+  }
+
+  return {
+    mode: 'ai-generated',
+    provider: 'gemini',
+    providerLabel: 'Gemini Auto-Place',
+    realAiEnabled: true,
+    imageDataUrl: `data:${imageBlock.mimeType};base64,${imageBlock.data}`,
+    prompt: autoPlacePrompt,
+    message: 'AI automatically placed your products into the room!',
+    notes: [
+      'Gemini chose the optimal position, size, and perspective for each product.',
+      'The room structure is preserved — only furniture was added.',
+      `Products: ${productNames}`,
+    ],
+  };
+}
+
+async function generateAutoPlaceStability(payload: GeneratePayload): Promise<GenerateResult> {
+  if (!env.STABILITY_API_KEY) {
+    throw new AppError(500, 'STABILITY_CONFIG_ERROR', 'Missing STABILITY_API_KEY');
+  }
+
+  const productNames = payload.products.map((p) => p.name).filter(Boolean).join(', ');
+  const userStyle = payload.prompt || payload.style || 'modern realistic interior design';
+
+  // Use INPAINT if mask is available — preserves product center (black area in mask)
+  // Mask: white = area AI can modify (edges/floor around product), black = protected (product itself)
+  if (payload.maskImage) {
+    const autoPlacePrompt = [
+      'CRITICAL: The existing furniture in the CENTER of the image must NOT be replaced, removed, or redesigned. Keep the EXACT same product — same shape, same color, same material, same style.',
+      'Inside the masked area (thin edge fringe + floor): blend the product edges seamlessly into the room environment.',
+      'Match room lighting direction and color temperature on the product surface.',
+      'Add natural soft contact shadow where the product meets the floor.',
+      'You may add small decorative items (a rug, plant, cushion, book, lamp) near the product to enhance realism and staging.',
+      'Do NOT add dark shadows, shadow blobs, dark rings, glowing edges, or any border/halo/vignette effect.',
+      'Do NOT replace the product with different furniture.',
+      userStyle,
+    ].join(' ');
+
+    const form = new FormData();
+    form.append('image', dataUrlToBlob(payload.roomImage), 'room-composite.png');
+    form.append('mask', dataUrlToBlob(payload.maskImage), 'placement-mask.png');
+    form.append('prompt', autoPlacePrompt);
+    form.append('output_format', 'png');
+
+    const response = await fetch('https://api.stability.ai/v2beta/stable-image/edit/inpaint', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.STABILITY_API_KEY}`,
+        Accept: 'image/*',
+      },
+      body: form,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new AppError(502, 'STABILITY_ERROR', `Stability auto-place inpaint failed: ${response.status} ${text}`);
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/png';
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    return {
+      mode: 'ai-generated',
+      provider: 'stability',
+      providerLabel: 'Stability Auto-Place (Inpaint)',
+      realAiEnabled: true,
+      imageDataUrl: `data:${contentType};base64,${buffer.toString('base64')}`,
+      prompt: autoPlacePrompt,
+      message: 'Product blended into room with AI!',
+      notes: [
+        'Stability inpaint blended the product edges while preserving the exact product.',
+        `Products: ${productNames}`,
+      ],
+    };
+  }
+
+  // Fallback: img2img if no mask
+  return await generateWithStabilityImg2Img(payload);
 }
 
 async function generateWithStability(payload: GeneratePayload): Promise<GenerateResult> {
