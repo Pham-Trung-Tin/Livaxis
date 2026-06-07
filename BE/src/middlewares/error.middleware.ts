@@ -17,7 +17,7 @@ const mapError = (error: unknown): { statusCode: number; code: string; message: 
     return {
       statusCode: 400,
       code: 'VALIDATION_ERROR',
-      message: 'Request validation failed',
+      message: 'Dữ liệu yêu cầu không hợp lệ',
       details: error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
@@ -30,7 +30,7 @@ const mapError = (error: unknown): { statusCode: number; code: string; message: 
       return {
         statusCode: 413,
         code: 'FILE_TOO_LARGE',
-        message: 'File size exceeds the allowed limit',
+        message: 'Kích thước tệp vượt quá giới hạn cho phép',
       };
     }
 
@@ -45,14 +45,14 @@ const mapError = (error: unknown): { statusCode: number; code: string; message: 
     return {
       statusCode: 409,
       code: 'DUPLICATE_RESOURCE',
-      message: 'Resource already exists',
+      message: 'Tài nguyên đã tồn tại',
     };
   }
 
   return {
     statusCode: 500,
     code: 'INTERNAL_SERVER_ERROR',
-    message: 'Something went wrong',
+    message: 'Đã xảy ra lỗi hệ thống',
   };
 };
 

@@ -139,7 +139,7 @@ export const createProductController = asyncHandler(async (req: Request, res: Re
 
   res.status(201).json({
     success: true,
-    message: 'Product created successfully',
+    message: 'Tạo sản phẩm thành công',
     data: {
       product,
     },
@@ -151,7 +151,7 @@ export const updateProductController = asyncHandler(async (req: Request, res: Re
 
   res.status(200).json({
     success: true,
-    message: 'Product updated successfully',
+    message: 'Cập nhật sản phẩm thành công',
     data: {
       product,
     },
@@ -163,7 +163,7 @@ export const deleteProductController = asyncHandler(async (req: Request, res: Re
 
   res.status(200).json({
     success: true,
-    message: 'Product deleted successfully',
+    message: 'Xóa sản phẩm thành công',
   });
 });
 

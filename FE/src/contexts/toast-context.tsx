@@ -6,12 +6,6 @@ export interface ToastItem {
   id: string
   title: string
   description?: string
-  product?: {
-    name: string
-    imageUrl: string
-    price: number
-    quantity: number
-  }
   duration?: number
 }
 
@@ -46,7 +40,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               id={toast.id}
               title={toast.title}
               description={toast.description}
-              product={toast.product}
               duration={toast.duration}
               onClose={() => dismissToast(toast.id)}
             />

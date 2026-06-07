@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { forgotPassword } from '../services/authApi'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [emailFocused, setEmailFocused] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -26,7 +28,7 @@ export default function ForgotPasswordPage() {
       }
       setSuccess(true)
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Cannot process request')
+      setError(submitError instanceof Error ? submitError.message : t('common.errorOccurred'))
     } finally {
       setLoading(false)
     }
@@ -41,7 +43,7 @@ export default function ForgotPasswordPage() {
         setDevToken(response.data.resetToken)
       }
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Cannot process request')
+      setError(submitError instanceof Error ? submitError.message : t('common.errorOccurred'))
     } finally {
       setLoading(false)
     }
@@ -70,7 +72,7 @@ export default function ForgotPasswordPage() {
               Livaxis
             </h2>
             <p className="text-white/90 text-[14px] max-w-md leading-relaxed" style={{ fontWeight: 300 }}>
-              Curated luxury furniture for timeless living spaces
+              {t('homepage.redefiningLuxury')}
             </p>
           </motion.div>
         </div>
@@ -92,10 +94,10 @@ export default function ForgotPasswordPage() {
                     className="text-[36px] text-black mb-3 tracking-tight"
                     style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
                   >
-                    Reset Your Password
+                    {t('auth.resetPasswordTitle')}
                   </h1>
                   <p className="text-[14px] text-neutral-500 leading-relaxed" style={{ fontWeight: 300 }}>
-                    Enter the email address associated with your account and we will send you a recovery link.
+                    {t('auth.resetPasswordDesc')}
                   </p>
                 </div>
 
@@ -110,7 +112,7 @@ export default function ForgotPasswordPage() {
                       }`}
                       style={{ fontWeight: emailFocused || email ? 500 : 300 }}
                     >
-                      Email Address
+                      {t('auth.emailAddress')}
                     </label>
                     <input
                       id="email"
@@ -144,12 +146,12 @@ export default function ForgotPasswordPage() {
                             <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
                           <span className="text-[12px] tracking-[0.15em] uppercase" style={{ fontWeight: 500 }}>
-                            Sending
+                            {t('common.loading')}
                           </span>
                         </span>
                       ) : (
                         <span className="text-[12px] tracking-[0.15em] uppercase" style={{ fontWeight: 500 }}>
-                          Send Reset Link
+                          {t('auth.sendResetLink')}
                         </span>
                       )}
                     </button>
@@ -163,7 +165,7 @@ export default function ForgotPasswordPage() {
                     style={{ fontWeight: 400 }}
                   >
                     <ArrowLeft size={14} strokeWidth={2} />
-                    Back to Sign In
+                    {t('auth.backToSignIn')}
                   </button>
                 </div>
               </motion.div>
@@ -191,14 +193,13 @@ export default function ForgotPasswordPage() {
                     className="text-[36px] text-black mb-3 tracking-tight"
                     style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
                   >
-                    Check Your Email
+                    {t('auth.checkEmail')}
                   </h1>
                   <p className="text-[14px] text-neutral-500 leading-relaxed" style={{ fontWeight: 300 }}>
-                    A reset link has been sent to <span className="text-black" style={{ fontWeight: 500 }}>{email}</span>.
-                    Please check your inbox and follow instructions to reset your password.
+                    {t('auth.resetLinkSent').replace('{email}', email)}
                   </p>
                   {devToken ? (
-                    <p className="mt-4 rounded-md bg-neutral-100 px-3 py-2 text-[12px] text-neutral-700">Dev reset token: {devToken}</p>
+                    <p className="mt-4 rounded-md bg-neutral-100 px-3 py-2 text-[12px] text-neutral-700">{t('auth.devResetToken')} {devToken}</p>
                   ) : null}
                 </div>
 
@@ -209,20 +210,20 @@ export default function ForgotPasswordPage() {
                     className="w-full py-4 rounded-lg bg-[#1a1a1a] text-white hover:bg-black transition-all duration-300"
                   >
                     <span className="text-[12px] tracking-[0.15em] uppercase" style={{ fontWeight: 500 }}>
-                      Open Email App
+                      {t('auth.openEmailApp')}
                     </span>
                   </button>
 
                   <div className="text-center pt-2">
                     <p className="text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                      Did not receive it?{' '}
+                      {t('auth.didNotReceiveEmail')}{' '}
                       <button
                         onClick={handleResend}
                         disabled={loading}
                         className="text-black hover:text-neutral-600 transition-colors duration-200 underline underline-offset-2 disabled:opacity-50"
                         style={{ fontWeight: 400 }}
                       >
-                        Resend
+                        {t('auth.resend')}
                       </button>
                     </p>
                   </div>
@@ -235,7 +236,7 @@ export default function ForgotPasswordPage() {
                     style={{ fontWeight: 400 }}
                   >
                     <ArrowLeft size={14} strokeWidth={2} />
-                    Back to Sign In
+                    {t('auth.backToSignIn')}
                   </button>
                 </div>
               </motion.div>

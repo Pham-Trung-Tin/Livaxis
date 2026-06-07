@@ -135,30 +135,3 @@ export const getProductById = async (id: string): Promise<ProductDetail> => {
 
   return data?.data?.product ?? null
 }
-
-export const getProductsByIds = async (ids: string[]): Promise<ProductsByIdsResponse> => {
-  if (ids.length === 0) {
-    return {
-      items: [],
-      missingIds: [],
-    }
-  }
-
-  const query = new URLSearchParams()
-  query.set('ids', ids.join(','))
-
-  const response = await fetch(`${API_BASE}/batch?${query.toString()}`, {
-    credentials: 'include',
-  })
-  const data = await response.json().catch(() => ({}))
-
-  if (!response.ok) {
-    const errorMessage = data?.error?.message || 'Failed to load cart items'
-    throw new Error(errorMessage)
-  }
-
-  return {
-    items: data?.data?.items ?? [],
-    missingIds: data?.data?.missingIds ?? [],
-  }
-}

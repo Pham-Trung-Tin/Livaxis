@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getAdminUsers, updateUserStatus, type AdminUser } from '../../services/adminApi'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { translations } from '../../contexts/translations'
 
-const PLAN_CONFIG = {
-  premium: { label: '89k', bg: '#ede9fe', color: '#7c3aed', star: true },
-  standard: { label: '49k', bg: '#fef3c7', color: '#d97706', star: false },
-  starter: { label: '19k', bg: '#f3f4f6', color: '#6b7280', star: false },
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-}
+// Removed globals to localize dynamically inside component
 
 function AiUsageBar({ used, max }: { used: number; max: number }) {
   const pct = max > 0 ? Math.min(100, (used / max) * 100) : 0
@@ -26,12 +19,30 @@ function AiUsageBar({ used, max }: { used: number; max: number }) {
 }
 
 export default function UserManagement() {
+  const { language } = useLanguage()
+  const adminTrans = translations[language].admin
+
   const [users, setUsers] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
   const [newThisMonth, setNewThisMonth] = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  const planConfig = {
+    premium: { label: '89k', bg: '#ede9fe', color: '#7c3aed', star: true },
+    standard: { label: '49k', bg: '#fef3c7', color: '#d97706', star: false },
+    starter: { label: '19k', bg: '#f3f4f6', color: '#6b7280', star: false },
+  }
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr)
+    if (language === 'vi') {
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+    } else {
+      return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
+    }
+  }
 
   const load = async (q?: string) => {
     setLoading(true)
@@ -74,15 +85,15 @@ export default function UserManagement() {
   }
 
   const handleExportCSV = () => {
-    const headers = ['ID', 'Name', 'Email', 'Plan', 'AI Turns Used', 'Registration Date', 'Status']
+    const headers = adminTrans.tableHeaders.userHeaders
     const rows = users.map((u, i) => [
       `USR-${String(i + 1).padStart(3, '0')}`,
       u.name,
       u.email,
-      u.subscriptionPlan ?? 'none',
+      u.subscriptionPlan ? (planConfig[u.subscriptionPlan as keyof typeof planConfig]?.label || u.subscriptionPlan) : 'none',
       u.aiTurnsUsed,
       formatDate(u.createdAt),
-      u.isActive ? 'Active' : 'Suspended',
+      u.isActive ? adminTrans.userStatus.active : adminTrans.userStatus.suspended,
     ])
     const csv = [headers, ...rows].map((r) => r.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -100,22 +111,24 @@ export default function UserManagement() {
         {/* Header */}
         <div className="adm-um-header">
           <div>
-            <h2 className="adm-um-title">User Management</h2>
+            <h2 className="adm-um-title">{adminTrans.usersTitle}</h2>
             <p className="adm-um-meta">
-              {total} người dùng · {newThisMonth} mới tháng này
+              {language === 'vi'
+                ? `${total} người dùng · ${newThisMonth} mới tháng này`
+                : `${total} users · ${newThisMonth} new this month`}
             </p>
           </div>
           <div className="adm-um-actions">
             <form onSubmit={handleSearch} className="adm-um-search-form">
               <input
                 className="adm-um-search"
-                placeholder="Tìm người dùng..."
+                placeholder={language === 'vi' ? 'Tìm người dùng...' : 'Search users...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </form>
             <button className="adm-btn-export" onClick={handleExportCSV}>
-              Export CSV
+              {adminTrans.buttons.exportCsv}
             </button>
           </div>
         </div>
@@ -129,18 +142,14 @@ export default function UserManagement() {
           <table className="adm-um-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>TÊN</th>
-                <th>EMAIL</th>
-                <th>PLAN</th>
-                <th>AI TURNS USED</th>
-                <th>NGÀY ĐĂNG KÝ</th>
-                <th>TRẠNG THÁI</th>
+                {adminTrans.tableHeaders.userHeaders.map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {users.map((user, i) => {
-                const planCfg = user.subscriptionPlan ? PLAN_CONFIG[user.subscriptionPlan] : null
+                const planCfg = user.subscriptionPlan ? planConfig[user.subscriptionPlan as keyof typeof planConfig] : null
                 const initials = user.name.split(' ').map((n) => n[0]).slice(-2).join('').toUpperCase()
                 const avatarColors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
                 const avatarBg = avatarColors[i % avatarColors.length]
@@ -185,9 +194,9 @@ export default function UserManagement() {
                         className={`adm-status-chip ${user.isActive ? 'adm-status-chip--active' : 'adm-status-chip--suspended'}`}
                         onClick={() => handleToggleStatus(user)}
                         disabled={togglingId === user.id}
-                        title="Click to toggle status"
+                        title={adminTrans.userStatus.toggleTooltip}
                       >
-                        ● {user.isActive ? 'Active' : 'Suspended'}
+                        ● {user.isActive ? adminTrans.userStatus.active : adminTrans.userStatus.suspended}
                       </button>
                     </td>
                   </tr>

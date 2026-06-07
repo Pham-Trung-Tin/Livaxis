@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { getSubscriptionStats, type SubscriptionStatsResponse } from '../../services/adminApi'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { translations } from '../../contexts/translations'
 
 const MOCK_STATS: SubscriptionStatsResponse = {
   plans: [
@@ -13,54 +15,57 @@ const MOCK_STATS: SubscriptionStatsResponse = {
   arpu: 39289,
 }
 
-const PLAN_META = {
-  starter: {
-    name: 'Starter',
-    aiLabel: '10 lượt AI / tháng',
-    progressColor: '#9ca3af',
-    progressBg: '#f3f4f6',
-    trendColor: '#16a34a',
-    trend: '+12%',
-    badgeColor: '#6b7280',
-    badgeBg: '#f3f4f6',
-    best: false,
-  },
-  standard: {
-    name: 'Standard',
-    aiLabel: '30 lượt AI / tháng',
-    progressColor: '#f59e0b',
-    progressBg: '#fef3c7',
-    trendColor: '#16a34a',
-    trend: '+28%',
-    badgeColor: '#d97706',
-    badgeBg: '#fef3c7',
-    best: false,
-  },
-  premium: {
-    name: 'Premium',
-    aiLabel: '70 lượt AI / tháng',
-    progressColor: '#7c3aed',
-    progressBg: '#ede9fe',
-    trendColor: '#16a34a',
-    trend: '+41%',
-    badgeColor: '#7c3aed',
-    badgeBg: '#ede9fe',
-    best: true,
-  },
-}
-
-function formatPrice(n: number) {
-  return n.toLocaleString('vi-VN') + 'đ'
-}
-
 export default function SubscriptionPlans() {
+  const { language } = useLanguage()
+  const adminTrans = translations[language].admin
+
   const [stats, setStats] = useState<SubscriptionStatsResponse>(MOCK_STATS)
+
+  const planMeta = {
+    starter: {
+      name: adminTrans.subPlans.starter,
+      aiLabel: language === 'vi' ? '10 lượt AI / tháng' : '10 AI turns / month',
+      progressColor: '#9ca3af',
+      progressBg: '#f3f4f6',
+      trendColor: '#16a34a',
+      trend: '+12%',
+      badgeColor: '#6b7280',
+      badgeBg: '#f3f4f6',
+      best: false,
+    },
+    standard: {
+      name: adminTrans.subPlans.standard,
+      aiLabel: language === 'vi' ? '30 lượt AI / tháng' : '30 AI turns / month',
+      progressColor: '#f59e0b',
+      progressBg: '#fef3c7',
+      trendColor: '#16a34a',
+      trend: '+28%',
+      badgeColor: '#d97706',
+      badgeBg: '#fef3c7',
+      best: false,
+    },
+    premium: {
+      name: adminTrans.subPlans.premium,
+      aiLabel: language === 'vi' ? '70 lượt AI / tháng' : '70 AI turns / month',
+      progressColor: '#7c3aed',
+      progressBg: '#ede9fe',
+      trendColor: '#16a34a',
+      trend: '+41%',
+      badgeColor: '#7c3aed',
+      badgeBg: '#ede9fe',
+      best: true,
+    },
+  }
 
   useEffect(() => {
     getSubscriptionStats()
       .then(setStats)
       .catch(() => setStats(MOCK_STATS))
   }, [])
+
+  const formatPrice = (n: number) => {
+    return n.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') + (language === 'vi' ? 'đ' : ' ₫')
+  }
 
   const totalUsers = stats.plans.reduce((s, p) => s + p.userCount, 0)
 
@@ -69,12 +74,12 @@ export default function SubscriptionPlans() {
       {/* Plan cards */}
       <div className="adm-sub-grid">
         {stats.plans.map((planStat) => {
-          const meta = PLAN_META[planStat.plan]
+          const meta = planMeta[planStat.plan as keyof typeof planMeta] || planMeta.starter
           const pct = totalUsers > 0 ? Math.round((planStat.userCount / totalUsers) * 100) : 0
 
           return (
             <div key={planStat.plan} className="adm-sub-card">
-              {meta.best && <span className="adm-sub-best-badge">Best</span>}
+              {meta.best && <span className="adm-sub-best-badge">{adminTrans.subPlans.bestBadge}</span>}
               <div className="adm-sub-card-header">
                 <h3 className="adm-sub-plan-name">
                   {meta.name} – {Math.round(planStat.price / 1000)}k
@@ -83,15 +88,15 @@ export default function SubscriptionPlans() {
               </div>
 
               <div className="adm-sub-row">
-                <span className="adm-sub-row-label">Người dùng</span>
+                <span className="adm-sub-row-label">{language === 'vi' ? 'Người dùng' : 'Users'}</span>
                 <span className="adm-sub-row-value">{planStat.userCount}</span>
               </div>
               <div className="adm-sub-row">
-                <span className="adm-sub-row-label">Doanh thu</span>
+                <span className="adm-sub-row-label">{language === 'vi' ? 'Doanh thu' : 'Revenue'}</span>
                 <span className="adm-sub-row-value">{formatPrice(planStat.revenue)}</span>
               </div>
               <div className="adm-sub-row">
-                <span className="adm-sub-row-label">Tăng trưởng</span>
+                <span className="adm-sub-row-label">{language === 'vi' ? 'Tăng trưởng' : 'Growth'}</span>
                 <span className="adm-sub-trend">
                   <TrendingUp size={11} />
                   {meta.trend}
@@ -104,7 +109,9 @@ export default function SubscriptionPlans() {
                   style={{ width: `${pct}%`, background: meta.progressColor }}
                 />
               </div>
-              <p className="adm-sub-bar-label">{pct}% tổng người dùng</p>
+              <p className="adm-sub-bar-label">
+                {language === 'vi' ? `${pct}% tổng người dùng` : `${pct}% of total users`}
+              </p>
             </div>
           )
         })}
@@ -112,10 +119,10 @@ export default function SubscriptionPlans() {
 
       {/* Revenue overview */}
       <div className="adm-card">
-        <h3 className="adm-rev-title">Tổng quan doanh thu</h3>
+        <h3 className="adm-rev-title">{language === 'vi' ? 'Tổng quan doanh thu' : 'Revenue Overview'}</h3>
         <div className="adm-rev-grid">
           <div className="adm-rev-item">
-            <p className="adm-rev-item-label">Tổng người dùng trả phí</p>
+            <p className="adm-rev-item-label">{language === 'vi' ? 'Tổng người dùng trả phí' : 'Total Paid Users'}</p>
             <p className="adm-rev-item-value">{stats.totalUsers.toLocaleString()}</p>
           </div>
           <div className="adm-rev-divider" />

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getAdminProducts, type AdminProduct } from '../../services/adminApi'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { translations } from '../../contexts/translations'
 
 type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock'
 
@@ -8,24 +10,6 @@ function getStockStatus(stock: number): StockStatus {
   if (stock === 0) return 'out_of_stock'
   if (stock <= 5) return 'low_stock'
   return 'in_stock'
-}
-
-const STOCK_STATUS_CONFIG = {
-  in_stock: { label: 'In Stock', bg: 'rgba(22,163,74,0.08)', color: '#16a34a' },
-  low_stock: { label: 'Low Stock', bg: 'rgba(234,179,8,0.1)', color: '#b45309' },
-  out_of_stock: { label: 'Out of Stock', bg: 'rgba(220,38,38,0.08)', color: '#dc2626' },
-}
-
-const CATEGORY_MAP: Record<string, string> = {
-  'Lounge Chair': 'Phòng khách',
-  'Seating': 'Chỗ ngồi',
-  'Dining': 'Phòng ăn',
-  'Lighting': 'Ánh sáng',
-  'Accent': 'Phụ kiện',
-  'Storage': 'Phòng làm việc',
-  'Sofas': 'Sofa',
-  'Tables': 'Bàn',
-  'Chairs': 'Ghế',
 }
 
 const MOCK_PRODUCTS: AdminProduct[] = [
@@ -38,15 +22,42 @@ const MOCK_PRODUCTS: AdminProduct[] = [
   { id: '7', sku: 'PRD-007', name: 'Tủ quần áo Zenith', category: 'Chairs', stock: 11, price: 38000000, createdAt: '2026-01-07T00:00:00Z' },
 ]
 
-function formatPrice(n: number) {
-  return n.toLocaleString('vi-VN') + 'đ'
-}
-
 export default function ProductInventory() {
+  const { language } = useLanguage()
+  const adminTrans = translations[language].admin
+
   const [products, setProducts] = useState<AdminProduct[]>(MOCK_PRODUCTS)
   const [alertCount, setAlertCount] = useState(2)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<StockStatus | ''>('')
+
+  const stockStatusConfig = {
+    in_stock: { label: adminTrans.stockStatus.in_stock, bg: 'rgba(22,163,74,0.08)', color: '#16a34a' },
+    low_stock: { label: adminTrans.stockStatus.low_stock, bg: 'rgba(234,179,8,0.1)', color: '#b45309' },
+    out_of_stock: { label: adminTrans.stockStatus.out_of_stock, bg: 'rgba(220,38,38,0.08)', color: '#dc2626' },
+  }
+
+  const categoryMap: Record<string, string> = language === 'vi' ? {
+    'Lounge Chair': 'Phòng khách',
+    'Seating': 'Chỗ ngồi',
+    'Dining': 'Phòng ăn',
+    'Lighting': 'Ánh sáng',
+    'Accent': 'Phụ kiện',
+    'Storage': 'Phòng làm việc',
+    'Sofas': 'Sofa',
+    'Tables': 'Bàn',
+    'Chairs': 'Ghế',
+  } : {
+    'Lounge Chair': 'Lounge Chair',
+    'Seating': 'Seating',
+    'Dining': 'Dining',
+    'Lighting': 'Lighting',
+    'Accent': 'Accent',
+    'Storage': 'Storage',
+    'Sofas': 'Sofas',
+    'Tables': 'Tables',
+    'Chairs': 'Chairs',
+  }
 
   useEffect(() => {
     getAdminProducts()
@@ -61,6 +72,10 @@ export default function ProductInventory() {
       .finally(() => setLoading(false))
   }, [])
 
+  const formatPrice = (n: number) => {
+    return n.toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') + (language === 'vi' ? 'đ' : ' ₫')
+  }
+
   const filtered = filter
     ? products.filter((p) => getStockStatus(p.stock) === filter)
     : products
@@ -71,9 +86,11 @@ export default function ProductInventory() {
         {/* Header */}
         <div className="adm-pi-header">
           <div>
-            <h2 className="adm-pi-title">Product Inventory</h2>
+            <h2 className="adm-pi-title">{adminTrans.inventoryTitle}</h2>
             <p className="adm-pi-meta">
-              {products.length} sản phẩm · {alertCount} cần chú ý
+              {language === 'vi'
+                ? `${products.length} sản phẩm · ${alertCount} cần chú ý`
+                : `${products.length} products · ${alertCount} attention required`}
             </p>
           </div>
           <div className="adm-pi-actions">
@@ -82,23 +99,23 @@ export default function ProductInventory() {
                 className={`adm-filter-btn ${filter === '' ? 'adm-filter-btn--active' : ''}`}
                 onClick={() => setFilter('')}
               >
-                Tất cả
+                {language === 'vi' ? 'Tất cả' : 'All'}
               </button>
               <button
                 className={`adm-filter-btn ${filter === 'low_stock' ? 'adm-filter-btn--active adm-filter-btn--warn' : ''}`}
                 onClick={() => setFilter((v) => (v === 'low_stock' ? '' : 'low_stock'))}
               >
-                Low Stock
+                {adminTrans.stockStatus.low_stock}
               </button>
               <button
                 className={`adm-filter-btn ${filter === 'out_of_stock' ? 'adm-filter-btn--active adm-filter-btn--danger' : ''}`}
                 onClick={() => setFilter((v) => (v === 'out_of_stock' ? '' : 'out_of_stock'))}
               >
-                Out of Stock
+                {adminTrans.stockStatus.out_of_stock}
               </button>
             </div>
             <Link to="/manager/products/new" className="adm-btn-add">
-              + Thêm sản phẩm
+              + {language === 'vi' ? 'Thêm sản phẩm' : 'Add Product'}
             </Link>
           </div>
         </div>
@@ -113,20 +130,20 @@ export default function ProductInventory() {
             <thead>
               <tr>
                 <th>SKU</th>
-                <th>TÊN SẢN PHẨM</th>
-                <th>DANH MỤC</th>
-                <th>TỒN KHO</th>
-                <th>GIÁ</th>
-                <th>TRẠNG THÁI</th>
-                <th>THAO TÁC</th>
+                <th>{language === 'vi' ? 'TÊN SẢN PHẨM' : 'PRODUCT NAME'}</th>
+                <th>{language === 'vi' ? 'DANH MỤC' : 'CATEGORY'}</th>
+                <th>{language === 'vi' ? 'TỒN KHO' : 'STOCK'}</th>
+                <th>{language === 'vi' ? 'GIÁ' : 'PRICE'}</th>
+                <th>{language === 'vi' ? 'TRẠNG THÁI' : 'STATUS'}</th>
+                <th>{language === 'vi' ? 'THAO TÁC' : 'ACTION'}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((product, i) => {
                 const status = getStockStatus(product.stock)
-                const cfg = STOCK_STATUS_CONFIG[status]
+                const cfg = stockStatusConfig[status]
                 const sku = product.sku ?? `PRD-${String(i + 1).padStart(3, '0')}`
-                const categoryLabel = CATEGORY_MAP[product.category] ?? product.category
+                const categoryLabel = categoryMap[product.category] ?? product.category
 
                 return (
                   <tr key={product.id}>
@@ -157,7 +174,7 @@ export default function ProductInventory() {
                         <Link
                           to={`/manager/products/${product.id}`}
                           className="adm-action-btn"
-                          title="Chỉnh sửa"
+                          title={language === 'vi' ? 'Chỉnh sửa' : 'Edit'}
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -172,7 +189,7 @@ export default function ProductInventory() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} className="adm-td-empty">
-                    Không có sản phẩm nào
+                    {language === 'vi' ? 'Không có sản phẩm nào' : 'No products found'}
                   </td>
                 </tr>
               )}

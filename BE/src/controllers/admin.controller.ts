@@ -31,7 +31,7 @@ export const updateUserStatusController = asyncHandler(async (req: Request, res:
       success: false,
       error: {
         code: 'MISSING_USER_ID',
-        message: 'Missing user id',
+        message: 'Thiếu ID người dùng',
       },
     });
     return;
@@ -41,7 +41,7 @@ export const updateUserStatusController = asyncHandler(async (req: Request, res:
 
   res.status(200).json({
     success: true,
-    message: `User ${isActive ? 'activated' : 'suspended'} successfully`,
+    message: `Cập nhật trạng thái người dùng thành ${isActive ? 'hoạt động' : 'bị khóa'} thành công`,
   });
 });
 

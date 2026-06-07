@@ -33,7 +33,7 @@ const ProductSchema: Schema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'Product name is required'],
+      required: [true, 'Tên sản phẩm là bắt buộc'],
       trim: true,
     },
     subtitle: {
@@ -54,16 +54,16 @@ const ProductSchema: Schema = new Schema(
     },
     category: {
       type: String,
-      required: [true, 'Category is required'],
+      required: [true, 'Danh mục là bắt buộc'],
       enum: ['Lounge Chair', 'Seating', 'Dining', 'Lighting', 'Accent', 'Storage', 'Sofas', 'Tables', 'Chairs'],
     },
     price: {
       type: Number,
-      required: [true, 'Price is required'],
+      required: [true, 'Giá sản phẩm là bắt buộc'],
     },
     imageUrl: {
       type: String,
-      required: [true, 'Product image is required'],
+      required: [true, 'Hình ảnh sản phẩm là bắt buộc'],
     },
     images: {
       type: [String],
@@ -92,11 +92,11 @@ const ProductSchema: Schema = new Schema(
     colorHex: {
       type: String,
       trim: true,
-      match: [/^#([0-9a-fA-F]{6})$/, 'Invalid hex color'],
+      match: [/^#([0-9a-fA-F]{6})$/, 'Mã màu hex không hợp lệ'],
     },
     affiliateUrl: {
       type: String,
-      required: [true, 'Affiliate URL is required'],
+      required: [true, 'Đường dẫn liên kết tiếp thị là bắt buộc'],
       trim: true,
     },
   },

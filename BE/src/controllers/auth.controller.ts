@@ -23,7 +23,7 @@ export const signUpController = asyncHandler(async (req: Request, res: Response)
 
   res.status(201).json({
     success: true,
-    message: 'Sign up successful',
+    message: 'Đăng ký thành công',
     data: {
       user: result.user,
       verificationToken: result.verificationToken,
@@ -37,7 +37,7 @@ export const signInController = asyncHandler(async (req: Request, res: Response)
 
   res.status(200).json({
     success: true,
-    message: 'Sign in successful',
+    message: 'Đăng nhập thành công',
     data: {
       user: result.user,
     },
@@ -48,7 +48,7 @@ export const signOutController = asyncHandler(async (_req: Request, res: Respons
   clearAuthCookies(res);
   res.status(200).json({
     success: true,
-    message: 'Signed out successfully',
+    message: 'Đăng xuất thành công',
   });
 });
 
@@ -56,7 +56,7 @@ export const getMeController = asyncHandler(async (req: Request, res: Response) 
   const authUser = req.user as { id: string; role: 'user' | 'manager' } | undefined;
 
   if (!authUser?.id) {
-    throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');
+    throw new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng');
   }
 
   const user = await getCurrentUser(authUser.id);
@@ -71,7 +71,7 @@ export const getMeController = asyncHandler(async (req: Request, res: Response) 
 export const refreshController = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
-    throw new AppError(401, 'UNAUTHORIZED', 'Missing refresh token');
+    throw new AppError(401, 'UNAUTHORIZED', 'Thiếu mã làm mới (refresh token)');
   }
 
   const result = await refreshAuth(refreshToken);
@@ -79,7 +79,7 @@ export const refreshController = asyncHandler(async (req: Request, res: Response
 
   res.status(200).json({
     success: true,
-    message: 'Token refreshed',
+    message: 'Mã xác thực đã được làm mới',
     data: {
       user: result.user,
     },
@@ -91,7 +91,7 @@ export const forgotPasswordController = asyncHandler(async (req: Request, res: R
 
   res.status(200).json({
     success: true,
-    message: 'If the email exists, a reset link has been generated',
+    message: 'Nếu email tồn tại trên hệ thống, một liên kết khôi phục mật khẩu đã được gửi',
     data: result,
   });
 });
@@ -100,7 +100,7 @@ export const resetPasswordController = asyncHandler(async (req: Request, res: Re
   await resetPassword(req.body.token, req.body.password);
   res.status(200).json({
     success: true,
-    message: 'Password reset successfully',
+    message: 'Đặt lại mật khẩu thành công',
   });
 });
 
@@ -110,18 +110,18 @@ export const verifyEmailController = asyncHandler(async (req: Request, res: Resp
 
   res.status(200).json({
     success: true,
-    message: 'Email verified successfully',
+    message: 'Xác thực email thành công',
   });
 });
 
 export const googleAuthCallbackController = asyncHandler(async (req: Request, res: Response) => {
   if (!googleOAuthEnabled) {
-    throw new AppError(503, 'GOOGLE_AUTH_NOT_CONFIGURED', 'Google authentication is not configured');
+    throw new AppError(503, 'GOOGLE_AUTH_NOT_CONFIGURED', 'Đăng nhập bằng Google chưa được cấu hình');
   }
 
   const googleUser = req.user as GoogleAuthUser | undefined;
   if (!googleUser?.id) {
-    throw new AppError(401, 'UNAUTHORIZED', 'Google authentication failed');
+    throw new AppError(401, 'UNAUTHORIZED', 'Đăng nhập bằng Google thất bại');
   }
 
   const result = await loginWithUserId(googleUser.id);
@@ -139,7 +139,7 @@ export const googleAuthNotConfiguredController = asyncHandler(async (_req: Reque
     success: false,
     error: {
       code: 'GOOGLE_AUTH_NOT_CONFIGURED',
-      message: 'Google authentication is not configured on the server',
+      message: 'Tính năng đăng nhập bằng Google chưa được cấu hình trên máy chủ',
     },
   });
 });
@@ -148,18 +148,18 @@ export const uploadAvatarController = asyncHandler(async (req: Request, res: Res
   const authUser = req.user as { id: string; role: 'user' | 'manager' } | undefined;
 
   if (!authUser?.id) {
-    throw new AppError(401, 'UNAUTHORIZED', 'Missing user context');
+    throw new AppError(401, 'UNAUTHORIZED', 'Thiếu thông tin người dùng');
   }
 
   if (!req.file) {
-    throw new AppError(400, 'AVATAR_REQUIRED', 'Avatar image file is required');
+    throw new AppError(400, 'AVATAR_REQUIRED', 'Vui lòng tải lên tệp ảnh đại diện');
   }
 
   const user = await updateUserAvatar(authUser.id, req.file);
 
   res.status(200).json({
     success: true,
-    message: 'Avatar updated successfully',
+    message: 'Cập nhật ảnh đại diện thành công',
     data: {
       user,
     },

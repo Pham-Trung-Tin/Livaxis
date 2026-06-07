@@ -10,7 +10,7 @@ export const avatarUpload = multer({
   },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
-      cb(new AppError(400, 'INVALID_FILE_TYPE', 'Only image files are allowed'));
+      cb(new AppError(400, 'INVALID_FILE_TYPE', 'Chỉ cho phép tải lên các tệp hình ảnh'));
       return;
     }
 

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { translations } from '../../contexts/translations'
 import {
   LayoutGrid,
   Package,
@@ -13,35 +15,38 @@ import {
   Bell,
 } from 'lucide-react'
 
-const navItems = [
-  { label: 'Dashboard Overview', href: '/admin', icon: LayoutGrid, end: true },
-  { label: 'Product Inventory', href: '/admin/products', icon: Package, end: false, badge: null as number | null },
-  { label: 'User Management', href: '/admin/users', icon: Users, end: false },
-  { label: 'Subscription Plans', href: '/admin/subscriptions', icon: CreditCard, end: false },
-  { label: 'AI Analytics', href: '/admin/ai-analytics', icon: Zap, end: false },
-]
-
-const pageTitleMap: Record<string, { title: string; subtitle: string }> = {
-  '/admin': { title: 'Dashboard Overview', subtitle: 'Chào buổi sáng, Admin — đây là tổng quan hôm nay.' },
-  '/admin/products': { title: 'Product Inventory', subtitle: 'Quản lý danh mục sản phẩm Livaxis' },
-  '/admin/users': { title: 'User Management', subtitle: 'Danh sách người dùng đã đăng ký' },
-  '/admin/subscriptions': { title: 'Subscription Plans', subtitle: 'Theo dõi các gói và doanh thu' },
-  '/admin/ai-analytics': { title: 'AI Analytics', subtitle: 'Thống kê AI của hệ thống' },
-}
-
 export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { language } = useLanguage()
+  const adminTrans = translations[language].admin
+
   const [collapsed, setCollapsed] = useState(false)
   const [productAlertCount] = useState(2)
+
+  const navItems = [
+    { label: adminTrans.dashboardTitle, href: '/admin', icon: LayoutGrid, end: true },
+    { label: adminTrans.inventoryTitle, href: '/admin/products', icon: Package, end: false },
+    { label: adminTrans.usersTitle, href: '/admin/users', icon: Users, end: false },
+    { label: adminTrans.subscriptionsTitle, href: '/admin/subscriptions', icon: CreditCard, end: false },
+    { label: adminTrans.aiAnalyticsTitle, href: '/admin/ai-analytics', icon: Zap, end: false },
+  ]
+
+  const pageTitleMap: Record<string, { title: string; subtitle: string }> = {
+    '/admin': { title: adminTrans.dashboardTitle, subtitle: adminTrans.dashboardSub },
+    '/admin/products': { title: adminTrans.inventoryTitle, subtitle: adminTrans.inventorySub },
+    '/admin/users': { title: adminTrans.usersTitle, subtitle: adminTrans.usersSub },
+    '/admin/subscriptions': { title: adminTrans.subscriptionsTitle, subtitle: adminTrans.subscriptionsSub },
+    '/admin/ai-analytics': { title: adminTrans.aiAnalyticsTitle, subtitle: adminTrans.aiAnalyticsSub },
+  }
 
   const handleLogout = async () => {
     await logout()
     navigate('/sign-in')
   }
 
-  const currentPage = pageTitleMap[location.pathname] ?? { title: 'Admin', subtitle: '' }
+  const currentPage = pageTitleMap[location.pathname] ?? { title: language === 'vi' ? 'Quản trị viên' : 'Admin', subtitle: '' }
   const avatarLetter = (user?.name ?? user?.email ?? 'A').charAt(0).toUpperCase()
 
   const sidebarWidth = collapsed ? 64 : 240
@@ -56,7 +61,7 @@ export default function AdminLayout() {
             {!collapsed && (
               <>
                 <span className="adm-logo-text">LIVAXIS</span>
-                <span className="adm-logo-badge">ADMIN</span>
+                <span className="adm-logo-badge">{adminTrans.adminBadge}</span>
               </>
             )}
             {collapsed && <span className="adm-logo-text" style={{ fontSize: 14 }}>L</span>}
@@ -77,10 +82,10 @@ export default function AdminLayout() {
             >
               <item.icon size={16} strokeWidth={1.5} className="adm-nav-icon" />
               {!collapsed && <span className="adm-nav-label">{item.label}</span>}
-              {!collapsed && item.label === 'Product Inventory' && productAlertCount > 0 && (
+              {!collapsed && item.href === '/admin/products' && productAlertCount > 0 && (
                 <span className="adm-nav-badge">{productAlertCount}</span>
               )}
-              {collapsed && item.label === 'Product Inventory' && productAlertCount > 0 && (
+              {collapsed && item.href === '/admin/products' && productAlertCount > 0 && (
                 <span className="adm-nav-badge adm-nav-badge--dot" />
               )}
             </NavLink>
@@ -91,28 +96,28 @@ export default function AdminLayout() {
         <div className="adm-sidebar-bottom">
           <NavLink
             to="/admin/settings"
-            title={collapsed ? 'Settings' : undefined}
+            title={collapsed ? adminTrans.settingsLabel : undefined}
             className={({ isActive }) =>
               `adm-nav-item ${isActive ? 'adm-nav-item--active' : ''} ${collapsed ? 'adm-nav-item--collapsed' : ''}`
             }
           >
             <Settings size={16} strokeWidth={1.5} className="adm-nav-icon" />
-            {!collapsed && <span className="adm-nav-label">Settings</span>}
+            {!collapsed && <span className="adm-nav-label">{adminTrans.settingsLabel}</span>}
           </NavLink>
 
           <button
             onClick={handleLogout}
-            title={collapsed ? 'Sign Out' : undefined}
+            title={collapsed ? adminTrans.signOutLabel : undefined}
             className={`adm-nav-item adm-signout-btn ${collapsed ? 'adm-nav-item--collapsed' : ''}`}
           >
             <LogOut size={16} strokeWidth={1.5} className="adm-nav-icon" />
-            {!collapsed && <span className="adm-nav-label">Sign Out</span>}
+            {!collapsed && <span className="adm-nav-label">{adminTrans.signOutLabel}</span>}
           </button>
 
           <button
             onClick={() => setCollapsed((v) => !v)}
             className={`adm-nav-item adm-collapse-btn ${collapsed ? 'adm-nav-item--collapsed' : ''}`}
-            title={collapsed ? 'Expand' : 'Collapse'}
+            title={collapsed ? adminTrans.expandLabel : adminTrans.collapseLabel}
           >
             <ChevronLeft
               size={16}
@@ -120,7 +125,7 @@ export default function AdminLayout() {
               className="adm-nav-icon"
               style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }}
             />
-            {!collapsed && <span className="adm-nav-label">Collapse</span>}
+            {!collapsed && <span className="adm-nav-label">{adminTrans.collapseLabel}</span>}
           </button>
         </div>
       </aside>
@@ -136,7 +141,7 @@ export default function AdminLayout() {
             )}
           </div>
           <div className="adm-header-right">
-            <button className="adm-notif-btn" title="Notifications">
+            <button className="adm-notif-btn" title={language === 'vi' ? 'Thông báo' : 'Notifications'}>
               <Bell size={18} strokeWidth={1.5} />
             </button>
             <div className="adm-user-chip">

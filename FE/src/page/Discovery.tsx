@@ -9,10 +9,10 @@ import {
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import * as Slider from '@radix-ui/react-slider'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
 import { Footer, Header } from './Hompage'
+import { useLanguage } from '../contexts/LanguageContext'
 
 function categoryToColor(cat: string) {
   const map: Record<string, string> = {
@@ -26,10 +26,27 @@ function categoryToColor(cat: string) {
   return map[cat] ?? '#f3e8d0'
 }
 
-// Products are fetched from the backend. See `getFeaturedProducts` below.
-
 const CATEGORIES = ['All', 'Sofas', 'Tables', 'Chairs', 'Beds', 'Lighting', 'Storage', 'Decor']
+
+const CATEGORY_KEYS: Record<string, string> = {
+  All: 'discovery.allProducts',
+  Sofas: 'discovery.sofas',
+  Tables: 'discovery.tables',
+  Chairs: 'discovery.chairs',
+  Beds: 'discovery.beds',
+  Lighting: 'discovery.lighting',
+  Storage: 'discovery.storage',
+  Decor: 'discovery.decor',
+}
+
 const SORT_OPTIONS = ['Featured', 'A – Z', 'Z – A', 'Newest First']
+
+const SORT_KEYS: Record<string, string> = {
+  Featured: 'discovery.sortFeatured',
+  'A – Z': 'discovery.sortAZ',
+  'Z – A': 'discovery.sortZA',
+  'Newest First': 'discovery.sortNewest',
+}
 
 function ImageWithFallback({
   src,
@@ -41,11 +58,12 @@ function ImageWithFallback({
   className?: string
 }) {
   const [failed, setFailed] = useState(false)
+  const { t } = useLanguage()
 
   if (failed) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[#f7f5f2] text-center text-sm text-[#8f7b5f]">
-        Image unavailable
+        {t('common.imageUnavailable')}
       </div>
     )
   }
@@ -62,6 +80,7 @@ function AITryOnOverlay({
   onClose: () => void
   productName?: string
 }) {
+  const { t } = useLanguage()
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -82,14 +101,13 @@ function AITryOnOverlay({
             <div className="bg-[linear-gradient(135deg,#f8f5ef_0%,#eee6d8_100%)] px-7 py-6">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#8a7456]">
                 <Sparkles size={12} />
-                AI Try-On
+                {t('common.aiTryOn')}
               </div>
               <h3 className="text-3xl text-[#1d1814]" style={{ fontFamily: 'Playfair Display, serif' }}>
-                {productName || 'Selected item'}
+                {productName || t('discovery.selectedItem')}
               </h3>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-[#74685a]">
-                Day la ban UI preview cho tinh nang AI Try-On. O buoc tiep theo, minh co the ket noi upload
-                anh phong va API render de cho ket qua truc tiep.
+                {t('discovery.tryOnPreviewText')}
               </p>
             </div>
             <div className="flex items-center justify-between gap-4 px-7 py-5">
@@ -97,14 +115,14 @@ function AITryOnOverlay({
                 onClick={onClose}
                 className="rounded-full border border-black/15 px-5 py-2 text-[11px] uppercase tracking-[0.16em] text-neutral-600 transition-colors hover:border-black/35"
               >
-                Close
+                {t('common.close')}
               </button>
               <button
                 onClick={onClose}
                 className="inline-flex items-center gap-2 rounded-full bg-[#171412] px-5 py-2 text-[11px] uppercase tracking-[0.16em] text-white"
               >
                 <Sparkles size={12} />
-                Continue
+                {t('common.continue')}
               </button>
             </div>
           </motion.div>
@@ -161,6 +179,7 @@ const ProductCard = forwardRef<HTMLElement, {
 }>(function ProductCard({ product, index, onTryOn }, ref) {
   const navigate = useNavigate()
   const [hovered, setHovered] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <motion.article
@@ -204,7 +223,7 @@ const ProductCard = forwardRef<HTMLElement, {
               color: '#1a1a1a',
             }}
           >
-            {product.category}
+            {t(CATEGORY_KEYS[product.category] || 'discovery.allProducts')}
           </span>
         </div>
 
@@ -217,7 +236,7 @@ const ProductCard = forwardRef<HTMLElement, {
             className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-black backdrop-blur-sm"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
           >
-            View Details
+            {t('discovery.viewDetails')}
           </span>
         </div>
       </div>
@@ -250,7 +269,7 @@ const ProductCard = forwardRef<HTMLElement, {
             className="text-[10px] uppercase tracking-[0.12em] text-neutral-300"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
           >
-            Shop on Shopee
+            {t('discovery.shopOnShopee')}
           </span>
         </div>
 
@@ -269,7 +288,7 @@ const ProductCard = forwardRef<HTMLElement, {
               className="text-[10px] uppercase tracking-[0.15em] text-[#ee4d2d]/80"
               style={{ fontWeight: 500 }}
             >
-              Buy on Shopee
+              {t('discovery.shopOnShopee')}
             </span>
           </a>
 
@@ -291,7 +310,7 @@ const ProductCard = forwardRef<HTMLElement, {
               className="relative z-10 text-[10px] uppercase tracking-[0.15em] text-white"
               style={{ fontWeight: 600 }}
             >
-              AI Try-On
+              {t('common.aiTryOn')}
             </span>
           </button>
         </div>
@@ -303,6 +322,7 @@ ProductCard.displayName = 'ProductCard'
 
 export function DiscoveryPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState('Featured')
   const [showSortMenu, setShowSortMenu] = useState(false)
@@ -321,7 +341,7 @@ export function DiscoveryPage() {
       })
       .catch((err) => {
         if (!mounted) return
-        setProductsError(err.message || 'Failed to load products')
+        setProductsError(err.message || t('discovery.loadProductsFailed'))
       })
       .finally(() => {
         if (!mounted) return
@@ -331,7 +351,7 @@ export function DiscoveryPage() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [t])
 
   const activeFiltersCount = selectedCategory !== 'All' ? 1 : 0
 
@@ -346,8 +366,6 @@ export function DiscoveryPage() {
       result.sort((a, b) => a.name.localeCompare(b.name))
     } else if (sortBy === 'Z – A') {
       result.sort((a, b) => b.name.localeCompare(a.name))
-    } else if (sortBy === 'Newest First') {
-      // newest = already sorted by createdAt desc from API, keep order
     }
 
     return result
@@ -364,11 +382,11 @@ export function DiscoveryPage() {
           style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
         >
           <X size={11} />
-          Clear all ({activeFiltersCount})
+          {t('discovery.clearAll').replace('{count}', String(activeFiltersCount))}
         </button>
       ) : null}
 
-      <FilterSection title="Product Category">
+      <FilterSection title={t('discovery.categoryFilterTitle')}>
         <div className="flex flex-col gap-2.5">
           {CATEGORIES.map((category) => (
             <button
@@ -384,7 +402,7 @@ export function DiscoveryPage() {
                 fontWeight: selectedCategory === category ? 500 : 400,
               }}
             >
-              <span className="text-[13px]">{category}</span>
+              <span className="text-[13px]">{t(CATEGORY_KEYS[category] || 'discovery.allProducts')}</span>
             </button>
           ))}
         </div>
@@ -415,7 +433,7 @@ export function DiscoveryPage() {
                 className="mb-5 block text-[11px] uppercase tracking-[0.28em] text-[#a08c6a]"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
-                See It In Your Space
+                {t('homepage.heroTitle')}
               </motion.span>
 
               <motion.h1
@@ -425,7 +443,7 @@ export function DiscoveryPage() {
                 className="mb-6 text-[clamp(2.2rem,6vw,4rem)] leading-[1.1] text-black"
                 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
-                Discovery
+                {t('common.discovery')}
               </motion.h1>
 
               <motion.p
@@ -435,7 +453,7 @@ export function DiscoveryPage() {
                 className="max-w-lg text-[15px] leading-relaxed text-neutral-400"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
-                Explore our entire curated collection of modern luxury furniture. Discover pieces designed to transform your space.
+                {t('discovery.exploreSubtitle')}
               </motion.p>
 
               <motion.div
@@ -450,11 +468,11 @@ export function DiscoveryPage() {
                     className="text-[11px] uppercase tracking-[0.15em] text-[#8a7456]"
                     style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                   >
-                    AI Try-On Enabled
+                    {t('discovery.aiTryOnEnabled')}
                   </span>
                 </div>
                 <span className="text-[12px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                  Showing all items
+                  {t('discovery.showingAll')}
                 </span>
               </motion.div>
             </div>
@@ -474,7 +492,7 @@ export function DiscoveryPage() {
                   className="text-[11px] uppercase tracking-[0.2em] text-neutral-400"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                 >
-                  Refine
+                  {t('discovery.refine')}
                 </span>
                 {activeFiltersCount > 0 ? (
                   <span
@@ -499,12 +517,12 @@ export function DiscoveryPage() {
                 >
                   <SlidersHorizontal size={13} className="text-neutral-500" />
                   <span className="text-[11px] uppercase tracking-[0.12em] text-neutral-600" style={{ fontWeight: 500 }}>
-                    Filters{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}
+                    {t('discovery.refine')}{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}
                   </span>
                 </button>
 
                 <span className="text-[13px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                  {filtered.length} {filtered.length === 1 ? 'piece' : 'pieces'}
+                  {t('collections.piecesLabel').replace('{count}', String(filtered.length))}
                 </span>
               </div>
 
@@ -516,7 +534,7 @@ export function DiscoveryPage() {
                 >
                   <ArrowUpDown size={12} className="text-neutral-400" />
                   <span className="text-[11px] tracking-[0.1em] text-neutral-600" style={{ fontWeight: 500 }}>
-                    {sortBy}
+                    {t(SORT_KEYS[sortBy] || sortBy)}
                   </span>
                   <ChevronDown size={12} className={`text-neutral-400 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
                 </button>
@@ -547,7 +565,7 @@ export function DiscoveryPage() {
                             fontWeight: sortBy === option ? 500 : 400,
                           }}
                         >
-                          {option}
+                          {t(SORT_KEYS[option] || option)}
                         </button>
                       ))}
                     </motion.div>
@@ -569,7 +587,7 @@ export function DiscoveryPage() {
                       className="flex items-center gap-2 rounded-full bg-[#f7f5f1] px-3 py-1.5 text-[11px] text-neutral-600"
                       style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
                     >
-                      {selectedCategory}
+                      {t(CATEGORY_KEYS[selectedCategory] || selectedCategory)}
                       <button
                         onClick={() => setSelectedCategory('All')}
                         className="text-neutral-400 transition-colors hover:text-black"
@@ -592,10 +610,10 @@ export function DiscoveryPage() {
                   className="mb-3 text-[22px] text-neutral-200"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
-                  No pieces match your filters
+                  {t('discovery.noPiecesMatch')}
                 </p>
                 <p className="mb-8 text-[13px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                  Try adjusting your selection
+                  {t('discovery.tryAdjusting')}
                 </p>
                 <button
                   onClick={() => {
@@ -604,7 +622,7 @@ export function DiscoveryPage() {
                   className="rounded-full border border-black/12 px-6 py-2.5 text-[11px] uppercase tracking-[0.15em] text-neutral-600 transition-colors hover:border-black/30"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                 >
-                  Clear filters
+                  {t('discovery.clearFilters')}
                 </button>
               </motion.div>
             ) : (
@@ -647,7 +665,7 @@ export function DiscoveryPage() {
                   className="text-[11px] uppercase tracking-[0.2em] text-black"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
                 >
-                  Refine
+                  {t('discovery.refine')}
                 </span>
                 <button onClick={() => setMobileFiltersOpen(false)} className="text-neutral-400 transition-colors hover:text-black">
                   <X size={18} />
@@ -662,7 +680,7 @@ export function DiscoveryPage() {
                   className="w-full rounded-xl bg-black py-3 text-[11px] uppercase tracking-[0.15em] text-white"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
                 >
-                  Show {filtered.length} Results
+                  {t('discovery.showingResultsCount').replace('{count}', String(filtered.length))}
                 </button>
               </div>
             </motion.aside>
@@ -677,27 +695,27 @@ export function DiscoveryPage() {
             className="mb-5 block text-[11px] uppercase tracking-[0.24em] text-[#a08c6a]"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
           >
-            The Livaxis Promise
+            {t('discovery.promiseTitle')}
           </span>
           <h2
             className="mx-auto mb-5 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] leading-snug text-black"
             style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
           >
-            Every piece, previewed in your room before you decide.
+            {t('discovery.promiseSubtitle')}
           </h2>
           <p
             className="mx-auto max-w-xl text-[14px] leading-relaxed text-neutral-400"
             style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
           >
-            Powered by Gemini AI, our Try-On feature places any piece from our collection into a photo of your space, complete with lighting simulation and scale accuracy.
+            {t('discovery.promiseDesc')}
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-10">
             {[
-              { stat: '99.4%', label: 'Placement accuracy' },
-              { stat: '< 8s', label: 'AI render time' },
-              { stat: '3M+', label: 'Try-ons completed' },
+              { stat: '99.4%', label: t('discovery.accuracyLabel') },
+              { stat: '< 8s', label: t('discovery.renderTimeLabel') },
+              { stat: '3M+', label: t('discovery.tryonsCompletedLabel') },
             ].map((item) => (
-              <div key={item.stat} className="text-center">
+              <div key={item.label} className="text-center">
                 <p
                   className="mb-1 text-[2rem] text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}

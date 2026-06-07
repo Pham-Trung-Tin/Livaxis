@@ -108,3 +108,36 @@ export const getSubscriptionStats = async (): Promise<SubscriptionStatsResponse>
   const data = await request<{ data: SubscriptionStatsResponse }>('/subscriptions')
   return data.data
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SePay Revenue — gọi /api/payment/subscription-revenue (không dùng /api/admin)
+// ──────────────────────────────────────────────────────────────────────────────
+export type RevenueRecentOrder = {
+  id: string
+  sePayId: string
+  amount: number
+  date: string
+  content: string
+  status: string
+}
+
+export type RevenueData = {
+  totalRevenue: number
+  thisMonthRevenue: number
+  lastMonthRevenue: number
+  trendPercent: string | null
+  monthLabel: string
+  transactionCount: number
+  recentOrders: RevenueRecentOrder[]
+}
+
+export const getSubscriptionRevenue = async (): Promise<RevenueData> => {
+  const response = await fetch('/api/payment/subscription-revenue', {
+    credentials: 'include',
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(data?.message || 'Không thể lấy dữ liệu doanh thu')
+  }
+  return data as RevenueData
+}

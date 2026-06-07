@@ -1,27 +1,33 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Crown, Menu, Package, Shield, ShoppingBag, User, X, Mail, Phone, Camera, Check, AlertCircle } from 'lucide-react'
+import { Crown, Menu, Package, Shield, ShoppingBag, User, X, Mail, Phone, Camera, Check, AlertCircle, Globe } from 'lucide-react'
 import { useEffect, useMemo, useState, useRef, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { uploadAvatar } from '../services/authApi'
+import { useLanguage } from '../contexts/LanguageContext'
+import { useToast } from '../contexts/toast-context'
 
-type TabType = 'personal' | 'designs' | 'orders' | 'subscription' | 'security'
+type TabType = 'personal' | 'designs' | 'orders' | 'subscription' | 'security' | 'language'
 
 type ProfilePageProps = {
   defaultTab?: TabType
 }
 
 const navItems = [
-  { id: 'personal' as TabType, label: 'Personal Info', icon: User },
-  { id: 'designs' as TabType, label: 'My Designs', icon: Package },
-  { id: 'orders' as TabType, label: 'Orders', icon: ShoppingBag },
-  { id: 'subscription' as TabType, label: 'Subscription Plan', icon: Crown },
-  { id: 'security' as TabType, label: 'Security', icon: Shield },
+  { id: 'personal' as TabType, labelKey: 'profile.personalInfo', icon: User },
+  { id: 'designs' as TabType, labelKey: 'profile.myDesigns', icon: Package },
+  { id: 'orders' as TabType, labelKey: 'profile.orders', icon: ShoppingBag },
+  { id: 'subscription' as TabType, labelKey: 'profile.subscriptionPlan', icon: Crown },
+  { id: 'security' as TabType, labelKey: 'profile.security', icon: Shield },
+  { id: 'language' as TabType, labelKey: 'profile.language', icon: Globe },
 ]
 
 export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePageProps) {
   const navigate = useNavigate()
   const { user, loading, setUser } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
+  const { showToast } = useToast()
+  
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -88,7 +94,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
     if (!file) return
 
     if (file.size > 2 * 1024 * 1024) {
-      setAvatarError('File is too large. Max 2MB allowed.')
+      setAvatarError(t('profile.avatarSizeError'))
       setAvatarSuccess(null)
       return
     }
@@ -104,12 +110,12 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
       const response = await uploadAvatar(formData)
       if (response?.data?.user) {
         setUser(response.data.user)
-        setAvatarSuccess('Avatar updated successfully!')
+        setAvatarSuccess(t('profile.avatarSuccess'))
       } else {
-        throw new Error('Invalid response from server')
+        throw new Error(t('auth.invalidResponse'))
       }
     } catch (err: any) {
-      setAvatarError(err.message || 'Failed to upload avatar')
+      setAvatarError(err.message || t('profile.avatarError'))
     } finally {
       setAvatarUploading(false)
       if (event.target) {
@@ -129,7 +135,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8f5f0] px-6 text-center text-neutral-500">
-        Loading profile...
+        {t('profile.loadingProfile')}
       </div>
     )
   }
@@ -144,11 +150,11 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                 LIVAXIS
               </h1>
             </button>
-
+ 
             <div className="hidden items-center gap-3 md:flex">
               <div className="text-right">
                 <p className="text-[11px] uppercase tracking-wide text-neutral-500" style={{ fontWeight: 400 }}>
-                  Welcome Back,
+                  {t('profile.welcomeBack')}
                 </p>
                 <p className="text-[13px] text-black" style={{ fontWeight: 500 }}>
                   {user.email}
@@ -162,26 +168,26 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                 )}
               </div>
             </div>
-
+ 
             <button onClick={() => setMobileMenuOpen((value) => !value)} className="flex h-10 w-10 items-center justify-center md:hidden">
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
       </header>
-
+ 
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-12">
         <div className="flex flex-col gap-8 lg:flex-row">
           <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-6 rounded-2xl bg-white p-6">
               <h2 className="mb-6 text-[18px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                Account Settings
+                {t('profile.accountSettings')}
               </h2>
               <nav className="space-y-1">
                 {navItems.map((item) => {
                   const Icon = item.icon
                   const isActive = activeTab === item.id
-
+ 
                   return (
                     <button
                       key={item.id}
@@ -190,7 +196,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                     >
                       <Icon size={18} strokeWidth={1.5} />
                       <span className="text-[13px]" style={{ fontWeight: isActive ? 500 : 400 }}>
-                        {item.label}
+                        {t(item.labelKey)}
                       </span>
                     </button>
                   )
@@ -198,7 +204,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
               </nav>
             </div>
           </aside>
-
+ 
           <AnimatePresence>
             {mobileMenuOpen && (
               <motion.div
@@ -211,7 +217,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = activeTab === item.id
-
+ 
                     return (
                       <button
                         key={item.id}
@@ -223,7 +229,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                       >
                         <Icon size={18} strokeWidth={1.5} />
                         <span className="text-[13px]" style={{ fontWeight: isActive ? 500 : 400 }}>
-                          {item.label}
+                          {t(item.labelKey)}
                         </span>
                       </button>
                     )
@@ -245,10 +251,10 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   className="rounded-2xl bg-white p-8 lg:p-10"
                 >
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    Personal Information
+                    {t('profile.personalInfo')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    Update your personal details and contact information
+                    {t('profile.personalInfoSub')}
                   </p>
 
                   <div className="mb-8 overflow-hidden rounded-2xl border border-neutral-100 bg-[#faf9f6]">
@@ -271,7 +277,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                           {isEditing && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                               <Camera size={18} className="text-white mb-0.5" />
-                              <span className="text-[9px] font-medium text-white uppercase tracking-wider">Update</span>
+                              <span className="text-[9px] font-medium text-white uppercase tracking-wider">{t('profile.updateBtn')}</span>
                             </div>
                           )}
                         </div>
@@ -283,7 +289,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                             </h3>
                             <span className="inline-flex items-center gap-1 rounded-full bg-[#c8b898]/15 px-2.5 py-0.5 text-[10px] font-medium tracking-wide text-[#8a7456] shrink-0">
                               <Crown size={10} />
-                              Standard Member
+                              {t('profile.standardMember')}
                             </span>
                           </div>
                           <p className="text-[13px] text-neutral-400 mt-0.5 truncate" style={{ fontWeight: 300 }}>
@@ -325,7 +331,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                       {/* Full Name */}
                       <div className="space-y-2">
                         <label htmlFor="fullName" className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                          Full Name
+                          {t('profile.fullName')}
                         </label>
                         <div className="relative flex items-center">
                           <User size={16} className={`absolute left-4 transition-colors duration-200 ${nameFocused ? 'text-[#a08c6a]' : 'text-neutral-300'}`} strokeWidth={1.5} />
@@ -352,7 +358,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                       {/* Phone Number */}
                       <div className="space-y-2">
                         <label htmlFor="phone" className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                          Phone Number
+                          {t('profile.phoneNumber')}
                         </label>
                         <div className="relative flex items-center">
                           <Phone size={16} className={`absolute left-4 transition-colors duration-200 ${phoneFocused ? 'text-[#a08c6a]' : 'text-neutral-300'}`} strokeWidth={1.5} />
@@ -379,11 +385,11 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                       <div className="space-y-2 md:col-span-2">
                         <div className="flex justify-between items-center">
                           <label htmlFor="email" className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                            Email Address
+                            {t('profile.emailAddress')}
                           </label>
                           {user.emailVerified && (
                             <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-1">
-                              <Check size={12} strokeWidth={2.5} /> Verified
+                              <Check size={12} strokeWidth={2.5} /> {t('profile.verified')}
                             </span>
                           )}
                         </div>
@@ -418,7 +424,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                           className="flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-8 py-3.5 text-black transition-all duration-300 hover:bg-neutral-50 cursor-pointer"
                         >
                           <span className="text-[12px] uppercase tracking-wider font-semibold">
-                            Edit Profile
+                            {t('profile.editProfile')}
                           </span>
                         </button>
                       ) : (
@@ -429,7 +435,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                             className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-6 py-3.5 text-neutral-500 transition-all duration-300 hover:bg-neutral-50 cursor-pointer"
                           >
                             <span className="text-[12px] uppercase tracking-wider font-semibold">
-                              Cancel
+                              {t('common.cancel')}
                             </span>
                           </button>
                           <button 
@@ -438,7 +444,7 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                             className="group flex items-center justify-center gap-2 rounded-xl bg-[#1a1a1a] px-8 py-3.5 text-white transition-all duration-300 hover:bg-black hover:shadow-lg hover:shadow-black/5 disabled:opacity-50 cursor-pointer"
                           >
                             <span className="text-[12px] uppercase tracking-wider font-semibold">
-                              {saving ? 'Saving...' : 'Save Changes'}
+                              {saving ? t('common.saving') : t('common.save')}
                             </span>
                           </button>
                         </>
@@ -458,10 +464,10 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   className="rounded-2xl bg-white p-8 lg:p-10"
                 >
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    Subscription Plan
+                    {t('profile.subscriptionPlan')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    Manage your subscription and billing information
+                    {t('profile.subscriptionPlanSub')}
                   </p>
 
                   <div className="mb-8 rounded-2xl border border-white/10 p-8" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
@@ -470,27 +476,27 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                         <div className="mb-2 flex items-center gap-2">
                           <Crown size={20} className="text-[#c8b898]" strokeWidth={1.5} />
                           <h3 className="text-[20px] tracking-tight text-white" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                            Standard Plan
+                            {t('profile.standardPlan')}
                           </h3>
                         </div>
                         <p className="text-[13px] text-white/70" style={{ fontWeight: 300 }}>
-                          49,000 VND per month
+                          {t('profile.standardPlanPrice')}
                         </p>
                       </div>
                       <div className="rounded-full px-3 py-1.5 text-[10px] uppercase tracking-wider" style={{ backgroundColor: 'rgba(200,184,152,0.2)', color: '#c8b898', fontWeight: 500 }}>
-                        Active
+                        {t('profile.active')}
                       </div>
                     </div>
 
                     <div className="mb-6 space-y-3">
                       <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        5 AI Room Try-On generations per month
+                        {t('profile.features.0')}
                       </p>
                       <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        Save up to 10 room designs
+                        {t('profile.features.1')}
                       </p>
                       <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        Priority customer support
+                        {t('profile.features.2')}
                       </p>
                     </div>
 
@@ -498,15 +504,15 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="mb-1 text-[11px] uppercase tracking-wide text-white/60" style={{ fontWeight: 400 }}>
-                            Next Billing Date
+                            {t('profile.nextBillingDate')}
                           </p>
                           <p className="text-[14px] text-white" style={{ fontWeight: 500 }}>
-                            May 14, 2026
+                            {t('profile.billingDateValue')}
                           </p>
                         </div>
                         <div>
                           <p className="mb-1 text-[11px] uppercase tracking-wide text-white/60" style={{ fontWeight: 400 }}>
-                            Amount
+                            {t('profile.amount')}
                           </p>
                           <p className="text-[14px] text-white" style={{ fontWeight: 500 }}>
                             49,000 VND
@@ -520,15 +526,15 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                       <div>
                         <h4 className="mb-1 text-[16px] text-black" style={{ fontWeight: 600 }}>
-                          Need more AI generations?
+                          {t('profile.needMoreTurns')}
                         </h4>
                         <p className="text-[13px] text-neutral-600" style={{ fontWeight: 300 }}>
-                          Upgrade to Premium for unlimited AI Try-Ons and exclusive benefits
+                          {t('profile.upgradeDesc')}
                         </p>
                       </div>
                       <button onClick={handleUpgrade} className="shrink-0 rounded-lg bg-[#1a1a1a] px-8 py-3 text-white transition-all duration-300 hover:bg-black">
                         <span className="text-[12px] uppercase tracking-[0.15em]" style={{ fontWeight: 500 }}>
-                          Upgrade Plan
+                          {t('profile.upgradePlan')}
                         </span>
                       </button>
                     </div>
@@ -539,13 +545,13 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
               {activeTab === 'designs' && (
                 <motion.div key="designs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="rounded-2xl bg-white p-8 lg:p-10">
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    My Designs
+                    {t('profile.myDesigns')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    Your saved AI Room Planner designs and visualizations
+                    {t('profile.myDesignsSub')}
                   </p>
                   <div className="py-12 text-center text-neutral-400">
-                    No saved designs yet. Start creating with AI Room Planner.
+                    {t('profile.noSavedDesigns')}
                   </div>
                 </motion.div>
               )}
@@ -553,13 +559,13 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
               {activeTab === 'orders' && (
                 <motion.div key="orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="rounded-2xl bg-white p-8 lg:p-10">
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    Order History
+                    {t('profile.orders')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    View and track your furniture orders
+                    {t('profile.orderHistorySub')}
                   </p>
                   <div className="py-12 text-center text-neutral-400">
-                    No orders yet. Browse our collections to get started.
+                    {t('profile.noOrders')}
                   </div>
                 </motion.div>
               )}
@@ -567,38 +573,118 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
               {activeTab === 'security' && (
                 <motion.div key="security" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="rounded-2xl bg-white p-8 lg:p-10">
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    Security Settings
+                    {t('profile.security')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    Manage your password and security preferences
+                    {t('profile.securitySub')}
                   </p>
 
                   <div className="space-y-6">
                     <div className="flex items-center justify-between border-b border-neutral-200 py-4">
                       <div>
                         <h4 className="mb-1 text-[14px] text-black" style={{ fontWeight: 500 }}>
-                          Password
+                          {t('profile.password')}
                         </h4>
                         <p className="text-[12px] text-neutral-500" style={{ fontWeight: 300 }}>
-                          Last changed 3 months ago
+                          {t('profile.lastChangedPassword')}
                         </p>
                       </div>
                       <button onClick={() => navigate('/forgot-password')} className="rounded-lg border border-neutral-300 px-5 py-2.5 text-[12px] transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50">
-                        <span style={{ fontWeight: 500 }}>Change Password</span>
+                        <span style={{ fontWeight: 500 }}>{t('profile.changePassword')}</span>
                       </button>
                     </div>
 
                     <div className="flex items-center justify-between border-b border-neutral-200 py-4">
                       <div>
                         <h4 className="mb-1 text-[14px] text-black" style={{ fontWeight: 500 }}>
-                          Two-Factor Authentication
+                          {t('profile.twoFactorAuth')}
                         </h4>
                         <p className="text-[12px] text-neutral-500" style={{ fontWeight: 300 }}>
-                          Add an extra layer of security to your account
+                          {t('profile.twoFactorDesc')}
                         </p>
                       </div>
                       <button className="rounded-lg border border-neutral-300 px-5 py-2.5 text-[12px] transition-all duration-200 hover:border-neutral-400 hover:bg-neutral-50">
-                        <span style={{ fontWeight: 500 }}>Enable</span>
+                        <span style={{ fontWeight: 500 }}>{t('profile.enable')}</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'language' && (
+                <motion.div
+                  key="language"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-2xl bg-white p-8 lg:p-10"
+                >
+                  <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
+                    {t('profile.language')}
+                  </h2>
+                  <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
+                    {t('profile.languageSub')}
+                  </p>
+
+                  <div className="space-y-6">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 block">
+                      {t('profile.languageSelectLabel')}
+                    </label>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Vietnamese option */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguage('vi')
+                          showToast({ title: 'Đã đổi ngôn ngữ hiển thị!', description: 'Ngôn ngữ hiện tại là Tiếng Việt.' })
+                        }}
+                        className={`flex items-center justify-between rounded-xl border p-5 text-left transition-all duration-300 ${
+                          language === 'vi'
+                            ? 'border-black bg-neutral-50/50 shadow-sm'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-[20px]">🇻🇳</span>
+                          <div>
+                            <p className="text-[14px] font-semibold text-black">Tiếng Việt</p>
+                            <p className="text-[12px] text-neutral-400">Vietnamese</p>
+                          </div>
+                        </div>
+                        {language === 'vi' && (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-black">
+                            <Check size={12} className="text-white" strokeWidth={2.5} />
+                          </div>
+                        )}
+                      </button>
+
+                      {/* English option */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguage('en')
+                          showToast({ title: 'Language changed successfully!', description: 'Current display language is English.' })
+                        }}
+                        className={`flex items-center justify-between rounded-xl border p-5 text-left transition-all duration-300 ${
+                          language === 'en'
+                            ? 'border-black bg-neutral-50/50 shadow-sm'
+                            : 'border-neutral-200 bg-white hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-[20px]">🇬🇧</span>
+                          <div>
+                            <p className="text-[14px] font-semibold text-black">English</p>
+                            <p className="text-[12px] text-[#888]">Tiếng Anh</p>
+                          </div>
+                        </div>
+                        {language === 'en' && (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-black">
+                            <Check size={12} className="text-white" strokeWidth={2.5} />
+                          </div>
+                        )}
                       </button>
                     </div>
                   </div>

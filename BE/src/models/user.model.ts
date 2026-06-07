@@ -22,6 +22,7 @@ export interface IUser extends Document {
   emailVerificationExpiresAt?: Date;
   aiTurns: number;
   aiTurnsUsed: number;
+  aiTurnsResetAt: Date;
   subscriptionPlan: 'starter' | 'standard' | 'premium' | null;
   createdAt: Date;
   updatedAt: Date;
@@ -31,28 +32,28 @@ const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Họ và tên là bắt buộc'],
       trim: true,
-      minlength: [2, 'Name must be at least 2 characters'],
-      maxlength: [50, 'Name cannot exceed 50 characters'],
+      minlength: [2, 'Họ và tên phải có ít nhất 2 ký tự'],
+      maxlength: [50, 'Họ và tên không được vượt quá 50 ký tự'],
     },
     username: {
       type: String,
-      required: [true, 'Username is required'],
+      required: [true, 'Tên đăng nhập là bắt buộc'],
       trim: true,
       unique: true,
       index: true,
-      minlength: [3, 'Username must be at least 3 characters'],
-      maxlength: [30, 'Username cannot exceed 30 characters'],
+      minlength: [3, 'Tên đăng nhập phải có ít nhất 3 ký tự'],
+      maxlength: [30, 'Tên đăng nhập không được vượt quá 30 ký tự'],
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, 'Email là bắt buộc'],
       trim: true,
       lowercase: true,
       unique: true,
       index: true,
-      match: [/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/, 'Please enter a valid email address'],
+      match: [/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/, 'Vui lòng nhập địa chỉ email hợp lệ'],
     },
     phone: {
       type: String,
@@ -60,7 +61,7 @@ const userSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: [true, 'Password hash is required'],
+      required: [true, 'Mã băm mật khẩu là bắt buộc'],
       select: false,
     },
     avatarUrl: {
@@ -97,6 +98,10 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 0,
     },
+    aiTurnsResetAt: {
+      type: Date,
+      default: () => new Date(),
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -123,7 +128,7 @@ const userSchema = new Schema<IUser>(
     },
     aiTurns: {
       type: Number,
-      default: 5,
+      default: 3,
     },
   },
   {

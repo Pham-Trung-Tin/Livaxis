@@ -21,6 +21,7 @@ const productOne = {
   colorHex: '#0f5132',
   isNew: true,
   stock: 4,
+  affiliateUrl: 'https://example.com/affiliate-sofa',
 };
 
 const productTwo = {
@@ -36,6 +37,7 @@ const productTwo = {
   colorHex: '#f7f7f5',
   isNew: false,
   stock: 2,
+  affiliateUrl: 'https://example.com/affiliate-table',
 };
 
 describe('Products API', () => {

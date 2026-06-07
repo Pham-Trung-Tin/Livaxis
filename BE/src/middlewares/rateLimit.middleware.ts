@@ -9,7 +9,7 @@ export const loginLimiter = rateLimit({
     success: false,
     error: {
       code: 'TOO_MANY_REQUESTS',
-      message: 'Too many login attempts. Please try again later.',
+      message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau.',
     },
   },
 });

@@ -1,13 +1,16 @@
 import { Eye, EyeOff, Check, User, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { FormEvent, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { signIn } from '../services/authApi'
+import { useLanguage } from '../contexts/LanguageContext'
 
 function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setUser, refreshUser } = useAuth()
+  const { t } = useLanguage()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [usernameFocused, setUsernameFocused] = useState(false)
@@ -28,14 +31,15 @@ function SignIn() {
       const response = await signIn({ username, password })
       const userData = response?.data?.user ?? null
       setUser(userData)
-      setSuccessMessage('Sign in successful. Redirecting...')
+      setSuccessMessage(t('auth.signInSuccess'))
       setStep('success')
-      const destination = userData?.role === 'admin' ? '/admin' : '/'
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname
+      const destination = userData?.role === 'admin' ? '/admin' : (from || '/')
       window.setTimeout(() => {
-        navigate(destination)
+        navigate(destination, { replace: true })
       }, 2000)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign in failed'
+      const message = error instanceof Error ? error.message : t('common.errorOccurred')
       setErrorMessage(message)
     } finally {
       setLoading(false)
@@ -53,7 +57,7 @@ function SignIn() {
 
     if (status === 'success') {
       setErrorMessage('')
-      setSuccessMessage('Google sign in successful. Redirecting...')
+      setSuccessMessage(t('auth.googleSignInSuccess'))
       setStep('success')
       void refreshUser().then((freshUser) => {
         // refreshUser updates context; read from context via the auth hook after refresh
@@ -66,9 +70,9 @@ function SignIn() {
 
     if (status === 'failed') {
       setSuccessMessage('')
-      setErrorMessage('Google sign in failed. Please try again.')
+      setErrorMessage(t('auth.googleSignInFailed'))
     }
-  }, [navigate, refreshUser])
+  }, [navigate, refreshUser, t])
 
   const handleGoogleLogin = () => {
     window.location.href = '/api/auth/google'
@@ -97,7 +101,7 @@ function SignIn() {
               Livaxis
             </h2>
             <p className="max-w-md text-[14px] leading-relaxed text-white/90" style={{ fontWeight: 300 }}>
-              Curated luxury furniture for timeless living spaces
+              {t('homepage.redefiningLuxury')}
             </p>
           </motion.div>
         </div>
@@ -126,10 +130,10 @@ function SignIn() {
                   className="mb-3 text-[32px] text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
-                  Welcome to Livaxis
+                  {t('auth.welcome')}
                 </h2>
                 <p className="text-[13px] text-neutral-400" style={{ fontWeight: 300 }}>
-                  Signed in successfully. Redirecting you home...
+                  {t('auth.signInSuccess')}
                 </p>
                 <motion.div
                   className="mt-8 h-px bg-[#c8b898]"
@@ -150,10 +154,10 @@ function SignIn() {
                     className="mb-3 text-[36px] tracking-tight text-black"
                     style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
                   >
-                    Welcome Back
+                    {t('auth.welcomeBack')}
                   </h1>
                   <p className="text-[14px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    Sign in to continue to your account
+                    {t('auth.signInTitle')}
                   </p>
                 </motion.div>
 
@@ -186,7 +190,7 @@ function SignIn() {
                           }`}
                           style={{ fontWeight: usernameFocused || username ? 500 : 300 }}
                         >
-                          Username or Email
+                          {t('auth.usernameOrEmail')}
                         </label>
                         <input
                           id="username"
@@ -228,7 +232,7 @@ function SignIn() {
                           }`}
                           style={{ fontWeight: passwordFocused || password ? 500 : 300 }}
                         >
-                          Password
+                          {t('auth.password')}
                         </label>
                         <input
                           id="password"
@@ -249,7 +253,7 @@ function SignIn() {
                           onClick={() => setShowPassword((value) => !value)}
                           className="absolute right-0 top-1/2 -translate-y-1/2 text-neutral-400 transition-colors duration-200 hover:text-neutral-700"
                           tabIndex={-1}
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          aria-label={showPassword ? (t('auth.hidePassword') || 'Ẩn mật khẩu') : (t('auth.showPassword') || 'Hiện mật khẩu')}
                         >
                           {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                         </button>
@@ -263,7 +267,7 @@ function SignIn() {
                         className="text-[12px] text-neutral-500 transition-colors duration-200 hover:text-black"
                         style={{ fontWeight: 400 }}
                       >
-                        Forgot Password?
+                        {t('auth.forgotPassword')}
                       </button>
                     </div>
 
@@ -286,12 +290,12 @@ function SignIn() {
                               <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                             <span className="text-[12px] uppercase tracking-[0.15em]" style={{ fontWeight: 500 }}>
-                              Signing In
+                              {t('auth.signingIn')}
                             </span>
                           </span>
                         ) : (
                           <span className="text-[12px] uppercase tracking-[0.15em]" style={{ fontWeight: 500 }}>
-                            Sign In
+                            {t('auth.signIn')}
                           </span>
                         )}
                       </button>
@@ -304,7 +308,7 @@ function SignIn() {
                     </div>
                     <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
                       <span className="bg-white px-4 text-neutral-400" style={{ fontWeight: 400 }}>
-                        Or continue with
+                        {t('auth.orContinueWith')}
                       </span>
                     </div>
                   </div>
@@ -334,20 +338,20 @@ function SignIn() {
                         />
                       </svg>
                       <span className="text-[13px] text-neutral-700" style={{ fontWeight: 400 }}>
-                        Continue with Google
+                        {t('auth.continueWithGoogle')}
                       </span>
                     </button>
                   </div>
 
                   <div className="text-center">
                     <p className="text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                      Don&apos;t have an account?{' '}
+                      {t('auth.dontHaveAccount')}{' '}
                       <button
                         onClick={() => navigate('/sign-up')}
                         className="text-black underline underline-offset-2 transition-colors duration-200 hover:text-neutral-600"
                         style={{ fontWeight: 400 }}
                       >
-                        Create one
+                        {t('auth.createOne')}
                       </button>
                     </p>
                   </div>
