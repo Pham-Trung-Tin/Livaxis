@@ -3,7 +3,7 @@ import User from '../models/user.model';
 import { AppError } from '../utils/appError';
 
 /** Number of free AI turns granted to users without an active subscription, per day */
-const FREE_DAILY_TURNS = 3;
+const FREE_DAILY_TURNS = 100;
 
 /** Returns true if the reset timestamp is from a previous calendar day (UTC) */
 function isNewDay(resetAt: Date): boolean {

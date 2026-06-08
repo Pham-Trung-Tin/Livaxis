@@ -13,9 +13,9 @@ describe('AI Room Planner Service', () => {
     };
 
     const result = await generateInterior(payload);
-    expect(result.prompt).toContain('This is an interior room photograph with furniture already placed.');
-    expect(result.prompt).toContain('Make MINIMAL changes to the image.');
-    expect(result.prompt).toContain('Do NOT add, remove, replace, move, or redesign ANY furniture or object in the scene.');
-    expect(result.prompt).toContain('Style direction for lighting ONLY: scandinavian design.');
+    expect(result.prompt).toContain('You are a world-class interior designer');
+    expect(result.prompt).toContain('Re-render and blend the placed product(s)');
+    expect(result.prompt).toContain('PRODUCT BLENDING RULES (CRITICAL):');
+    expect(result.prompt).toContain('Style: scandinavian design.');
   });
 });
