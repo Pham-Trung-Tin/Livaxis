@@ -91,19 +91,88 @@ export function getAiStatus() {
   };
 }
 
+/** Use Gemini to detect the floor line (y-coordinate where floor meets wall) in a room image */
+export async function detectFloorLine(roomImage: string): Promise<{ floorY: number; confidence: number }> {
+  if (!env.GEMINI_API_KEY) {
+    // Fallback: return default floor position
+    return { floorY: 0.72, confidence: 0 };
+  }
+
+  const roomInput = dataUrlToGeminiImageInput(roomImage);
+
+  const prompt = [
+    `Analyze this room photo and find the FLOOR LINE — the y-coordinate where the floor plane meets the back wall.`,
+    ``,
+    `COORDINATE SYSTEM:`,
+    `- y=0 is the TOP edge of the image (ceiling)`,
+    `- y=1 is the BOTTOM edge of the image (closest to camera)`,
+    ``,
+    `TASK:`,
+    `- Find the horizontal line where the vertical wall meets the horizontal floor.`,
+    `- This is typically where furniture legs would touch the ground at the back of the room.`,
+    `- Look for the floor-wall junction, baseboard line, or where floor texture begins.`,
+    ``,
+    `Respond with ONLY a JSON object, no markdown:`,
+    `{"floorY": 0.55, "confidence": 0.9}`,
+    ``,
+    `floorY should be between 0.35 and 0.85. confidence is 0-1 (how certain you are).`,
+  ].join('\n');
+
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: roomInput.mime_type, data: roomInput.data } },
+          ],
+        }],
+        generationConfig: { temperature: 0.1 },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gemini floor detection failed: ${response.status}`);
+    }
+
+    const data = (await response.json()) as any;
+    const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Extract JSON from response
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in Gemini response');
+
+    const result = JSON.parse(jsonMatch[0]) as { floorY: number; confidence: number };
+    return {
+      floorY: Math.max(0.35, Math.min(0.85, result.floorY || 0.72)),
+      confidence: Math.max(0, Math.min(1, result.confidence || 0.5)),
+    };
+  } catch (error) {
+    console.warn('Gemini floor detection failed, using default:', error);
+    return { floorY: 0.72, confidence: 0 };
+  }
+}
+
 /** Use Gemini text model to analyze room image and suggest optimal product positions */
 export async function getAutoPositions(
   roomImage: string,
   products: Array<{ id: string; name: string; category?: string }>,
 ): Promise<Array<{ id: string; x: number; y: number; scale: number; rotationY: number; flipped: boolean }>> {
   if (!env.GEMINI_API_KEY) {
-    // Fallback: return smart default positions without AI
+    // Fallback: return center-safe positions without AI — all items in the middle zone (x: 0.38-0.62)
+    // This avoids placing products on edges where stairs, doors, and walls typically are
     return products.map((p, i) => {
       const presets = [
-        { x: 0.25, y: 0.62, scale: 0.95, rotationY: 15, flipped: false },
-        { x: 0.72, y: 0.60, scale: 0.90, rotationY: 18, flipped: true },
-        { x: 0.18, y: 0.55, scale: 1.0, rotationY: 22, flipped: false },
-        { x: 0.80, y: 0.58, scale: 0.85, rotationY: 20, flipped: true },
+        { x: 0.50, y: 0.65, scale: 0.95, rotationY: 0, flipped: false },
+        { x: 0.62, y: 0.67, scale: 0.90, rotationY: 0, flipped: false },
+        { x: 0.38, y: 0.63, scale: 0.92, rotationY: 0, flipped: false },
+        { x: 0.55, y: 0.66, scale: 0.85, rotationY: 0, flipped: false },
+        { x: 0.45, y: 0.64, scale: 0.88, rotationY: 0, flipped: false },
+        { x: 0.58, y: 0.65, scale: 0.90, rotationY: 0, flipped: false },
       ];
       const pos = presets[i % presets.length];
       return { id: p.id, ...pos };
@@ -114,22 +183,41 @@ export async function getAutoPositions(
   const productList = products.map((p) => `"${p.name}" (${p.category || 'furniture'})`).join(', ');
 
   const analysisPrompt = [
-    `You are an expert interior designer. Analyze this room photo and determine the BEST position for each furniture product.`,
+    `You are an expert interior designer and scene compositor. Analyze this room photo carefully and determine the BEST position for each furniture product.`,
     `Products to place: ${productList}`,
-    `The image coordinate system: x=0 is LEFT edge, x=1 is RIGHT edge, y=0 is TOP edge, y=1 is BOTTOM edge.`,
-    `The floor is typically between y=0.45 and y=0.85.`,
-    `RULES:`,
-    `- SPREAD products across DIFFERENT areas of the room. Do NOT cluster them all in one corner.`,
-    `- First product: left side (x: 0.15-0.35). Second product: right side (x: 0.65-0.85). Third product: center-back (x: 0.40-0.60, y: 0.45-0.55). Alternate sides for additional products.`,
-    `- Place furniture against walls or near corners when possible — but DISTRIBUTE them evenly.`,
-    `- Consider the room's perspective: items further back (higher in image, smaller y) should be smaller (scale < 1), items closer (lower, larger y) should be larger.`,
-    `- rotationY (0-35 degrees): slight 3D rotation to match the room's camera angle.`,
-    `- flipped: true if the product should face left (typically when placed on the right side of the room).`,
-    `- Scale range: 0.6 to 1.2 (1.0 = normal size).`,
-    `- Avoid placing products where they would overlap with existing room features (fireplace, stairs, doors, windows).`,
-    `- Each product MUST be at a DIFFERENT position — minimum 0.25 distance apart in x or y.`,
+    ``,
+    `COORDINATE SYSTEM:`,
+    `- x=0 is LEFT edge, x=1 is RIGHT edge.`,
+    `- y=0 is TOP edge (ceiling), y=1 is BOTTOM edge (closest to camera).`,
+    `- Products are anchored at their BASE (bottom). The y value is where their feet/base touch the floor.`,
+    ``,
+    `STEP 1 — DETECT THE FLOOR PLANE:`,
+    `- Look at the photo and identify where the floor starts and ends in y-coordinates.`,
+    `- Find the floor-wall boundary line (where vertical walls meet the horizontal floor).`,
+    `- All products MUST have y >= the floor-wall boundary y value. Never place products above the floor line (that makes them float in the air).`,
+    `- Typical floor range is y=0.50 to y=0.85, but ADAPT to this specific photo.`,
+    ``,
+    `STEP 2 — DETECT EXISTING OBJECTS:`,
+    `- Identify any existing furniture, rugs, fireplaces, stairs, doors, windows, pillars in the room.`,
+    `- Do NOT place new products on top of or overlapping with existing objects.`,
+    `- Leave clearance around walkways and doors.`,
+    ``,
+    `STEP 3 — PLACE PRODUCTS:`,
+    `- SPREAD products across DIFFERENT areas of the room floor. Do NOT cluster them together.`,
+    `- Place products in the CENTER SAFE ZONE (x: 0.38-0.62) to avoid edges where stairs, doors, walls, and windows typically are.`,
+    `- Distribute products within the middle zone: first product center-left (x: 0.38-0.45), second center-right (x: 0.55-0.62), third center (x: 0.48-0.52), etc.`,
+    `- Products further back (smaller y, closer to back wall) should be SMALLER (scale 0.6-0.85). Products closer to camera (larger y) should be LARGER (scale 0.9-1.2).`,
+    `- Each product MUST be at a DIFFERENT position — minimum 0.10 distance apart in x or y.`,
+    ``,
+    `PARAMETERS:`,
+    `- x: horizontal position (0.38-0.62) — stay in the center safe zone`,
+    `- y: vertical floor position — MUST be on the visible floor, never above the floor-wall line`,
+    `- scale: size relative to room (0.6-1.2, where 1.0 = normal)`,
+    `- rotationY: 0 (no rotation) — products should appear at their natural front-facing angle`,
+    `- flipped: false (no flip) — products should face forward`,
+    ``,
     `Respond with ONLY a valid JSON array, no markdown, no explanation:`,
-    `[{"id":"product_id","x":0.25,"y":0.62,"scale":0.95,"rotationY":15,"flipped":false}]`,
+    `[{"id":"product_id","x":0.50,"y":0.65,"scale":0.95,"rotationY":0,"flipped":false}]`,
   ].join('\n');
 
   try {
@@ -170,7 +258,7 @@ export async function getAutoPositions(
       return {
         id: p.id,
         x: Math.max(0.05, Math.min(0.95, pos.x || 0.25)),
-        y: Math.max(0.4, Math.min(0.85, pos.y || 0.62)),
+        y: Math.max(0.50, Math.min(0.85, pos.y || 0.65)),
         scale: Math.max(0.5, Math.min(1.3, pos.scale || 0.95)),
         rotationY: Math.max(0, Math.min(35, pos.rotationY || 15)),
         flipped: Boolean(pos.flipped),
@@ -180,10 +268,10 @@ export async function getAutoPositions(
     console.warn('Gemini room analysis failed, using defaults:', error);
     return products.map((p, i) => {
       const presets = [
-        { x: 0.25, y: 0.62, scale: 0.95, rotationY: 15, flipped: false },
-        { x: 0.72, y: 0.60, scale: 0.90, rotationY: 18, flipped: true },
-        { x: 0.18, y: 0.55, scale: 1.0, rotationY: 22, flipped: false },
-        { x: 0.80, y: 0.58, scale: 0.85, rotationY: 20, flipped: true },
+        { x: 0.25, y: 0.65, scale: 0.95, rotationY: 15, flipped: false },
+        { x: 0.72, y: 0.67, scale: 0.90, rotationY: 18, flipped: true },
+        { x: 0.18, y: 0.63, scale: 0.92, rotationY: 22, flipped: false },
+        { x: 0.80, y: 0.66, scale: 0.85, rotationY: 20, flipped: true },
       ];
       const pos = presets[i % presets.length];
       return { id: p.id, ...pos };
@@ -520,25 +608,43 @@ function buildPrompt(payload: GeneratePayload): string {
   const productNames = payload.products.map((p) => p.name).filter(Boolean).join(', ');
 
   return [
-    `Photorealistic interior design photograph. Products: ${productNames}.`,
-    'GOAL: Make the placed product(s) look like they BELONG in this room — as if photographed here originally. The product must appear three-dimensional, solid, and physically present in the space.',
-    'PRODUCT RULES:',
-    '- Keep each product\'s core identity: same shape, color, material, and design language.',
-    '- You MAY make small enhancements to help the product look more realistic: add a decorative cushion on a sofa, a small book on a table, or adjust the viewing angle slightly to match room perspective.',
-    '- Do NOT replace, remove, or dramatically redesign any product.',
-    'BLENDING RULES:',
-    '- Blend product edges seamlessly into the room environment — no hard cutout edges visible.',
-    '- Match room lighting: color temperature, light direction from windows, natural highlights and reflections on the product surface.',
-    '- Do NOT add dark shadows, ambient occlusion patches, or shadow blobs on the floor. Keep the floor clean and natural.',
-    'DECORATION RULES:',
-    '- You SHOULD add tasteful complementary items to make the scene feel lived-in: a stylish rug, potted plants, a vase with flowers, books, a throw blanket, decorative cushions, a floor lamp, or wall art.',
-    '- These additions should enhance realism and make the main product look grounded and three-dimensional.',
-    'OUTPUT:',
-    '- Same canvas size, same crop, same camera angle as input.',
-    '- Final result must look like one unified professional interior photography — not a composite.',
-    '- No gray halos, rectangular borders, or UI artifacts.',
+    `You are a world-class interior designer and architectural photographer.`,
+    `I am giving you a composite photo of a room with furniture products (${productNames}) placed on it, along with reference images of those products.`,
+    `YOUR TASK: Re-render and blend the placed product(s) into the room so it looks like a professional interior design magazine photo.`,
+    ``,
+    `BACKGROUND ANALYSIS (DO THIS FIRST):`,
+    `- Carefully analyze the room photo: identify the floor plane, walls, ceiling, windows, doors, and any existing furniture.`,
+    `- Note the camera angle (eye level, high angle, low angle) and vanishing points of the room.`,
+    ``,
+    `PRODUCT BLENDING RULES (CRITICAL):`,
+    `- Keep the products in the EXACT positions where they have been placed in the composite image. Do NOT move them to different areas.`,
+    `- Render the products with full 3D volume — they must have realistic depth, weight, and substance, not flat or cutout-looking.`,
+    `- Adjust each product's viewing angle and perspective to perfectly match the room's camera angle and vanishing points at their specific coordinate.`,
+    `- Add realistic material textures: fabric weave on sofas, wood grain on tables, metal reflections on legs.`,
+    `- Products MUST look grounded on the floor — their base/legs must touch the floor surface naturally. NEVER let products float in the air.`,
+    ``,
+    `LIGHTING RULES:`,
+    `- Match the room's existing lighting exactly: same color temperature, same direction from windows/lamps.`,
+    `- Add only very subtle, natural contact shadows where furniture legs meet the floor — like real furniture would have.`,
+    `- Do NOT add dark shadow blobs, black patches, heavy ambient occlusion, or exaggerated shadows under products.`,
+    `- The floor between and around products must remain CLEAN — matching the original floor exactly.`,
+    `- No artificial vignettes, halos, or darkened areas around the furniture.`,
+    ``,
+    `IDENTITY RULES:`,
+    `- Keep each product's EXACT identity: same shape, same color, same material, same fabric texture, same design.`,
+    `- Do NOT replace, redesign, simplify, or alter the product in any way.`,
+    ``,
+    `STAGING & DECORATION RULES:`,
+    `- You MAY add small complementary decor (a rug, plant, cushion, throw blanket, books) to make the scene feel complete and enhance realism.`,
+    `- Keep the room structure (walls, windows, floor, ceiling) 100% unchanged from the original photo.`,
+    ``,
+    `OUTPUT:`,
+    `- Same image dimensions and aspect ratio as the input room photo.`,
+    `- The final result must look like ONE unified professional interior photograph taken by a real camera — not a composite or collage.`,
+    `- No cutout edges, no halos, no gray borders, no floating objects, no dark shadow patches on the floor.`,
+    ``,
     `Style: ${userStyle}.`,
-  ].join(' ');
+  ].join('\n');
 }
 
 function generateWithFreeAi(
@@ -692,18 +798,25 @@ async function generateWithGeminiAutoPlace(payload: GeneratePayload): Promise<Ge
     `You are a world-class interior designer and architectural photographer.`,
     `I am giving you a photo of a room and reference images of furniture products: ${productNames}.`,
     `YOUR TASK: Place the given product(s) into the room so it looks like a professional interior design magazine photo.`,
+    `BACKGROUND ANALYSIS (DO THIS FIRST):`,
+    `- Carefully analyze the room photo: identify the floor plane, walls, ceiling, windows, doors, and any existing furniture.`,
+    `- Determine where the floor-wall boundary is. Products can ONLY be placed ON the visible floor area.`,
+    `- Identify empty floor zones suitable for furniture placement.`,
+    `- Note the camera angle (eye level, high angle, low angle) and vanishing points.`,
     `PLACEMENT RULES (CRITICAL):`,
     `- ALWAYS place furniture in a CORNER or AGAINST A WALL. Never in the center of an empty floor.`,
     `- Ideal positions: a corner between two walls, next to a window, beside a fireplace, against the back wall.`,
     `- If placing a sofa, put it in the corner or against the longest wall, angled to face a focal point (window/fireplace/TV).`,
     `- Group furniture logically: coffee table in front of sofa, side tables next to seating.`,
     `- Respect room proportions: furniture should be sized correctly relative to the room's floor area and ceiling height.`,
-    `- Adjust the product's viewing angle and perspective to perfectly match the room's camera angle.`,
-    `- Products must look grounded on the floor — solid, heavy, three-dimensional, physically present.`,
+    `- Adjust the product's viewing angle and perspective to perfectly match the room's camera angle and vanishing points.`,
+    `- Products MUST look grounded on the floor — their base/legs must touch the floor surface naturally. NEVER float in the air.`,
+    `- When multiple products are placed, ensure they do NOT overlap or crowd the same area. Spread them across different zones.`,
     `LIGHTING RULES:`,
     `- Match the room's existing lighting exactly: same color temperature, same direction from windows/lamps.`,
-    `- Add subtle natural reflections on glossy surfaces.`,
-    `- Do NOT add ANY dark shadows, shadow blobs, black patches, or ambient occlusion under or around the product. The floor must remain CLEAN and exactly as the original photo.`,
+    `- Add only very subtle, natural contact shadows where furniture legs meet the floor — like real furniture would have.`,
+    `- Do NOT add dark shadow blobs, black patches, heavy ambient occlusion, or exaggerated shadows under products.`,
+    `- The floor between and around products must remain CLEAN — matching the original floor exactly.`,
     `- No artificial vignettes, halos, or darkened areas around the furniture.`,
     `IDENTITY RULES:`,
     `- Keep each product's EXACT identity: same shape, same color, same material, same fabric texture, same design.`,
@@ -842,11 +955,11 @@ async function generateAutoPlaceStability(payload: GeneratePayload): Promise<Gen
   if (payload.maskImage) {
     const autoPlacePrompt = [
       'CRITICAL: The existing furniture in the CENTER of the image must NOT be replaced, removed, or redesigned. Keep the EXACT same product — same shape, same color, same material, same style.',
-      'Inside the masked area (thin edge fringe + floor): blend the product edges seamlessly into the room environment.',
+      'Inside the masked area (thin edge fringe): blend the product edges seamlessly into the room environment.',
       'Match room lighting direction and color temperature on the product surface.',
-      'Add natural soft contact shadow where the product meets the floor.',
-      'You may add small decorative items (a rug, plant, cushion, book, lamp) near the product to enhance realism and staging.',
-      'Do NOT add dark shadows, shadow blobs, dark rings, glowing edges, or any border/halo/vignette effect.',
+      'The floor around and beneath the product must remain EXACTLY as the original room photo — same color, same brightness, same texture. Do NOT darken, shade, or add ANY shadow to the floor.',
+      'ABSOLUTELY NO shadows, NO dark patches, NO dark blobs, NO ambient occlusion, NO darkened areas on the floor near the product base.',
+      'Do NOT add dark rings, glowing edges, halos, vignettes, or any border effect.',
       'Do NOT replace the product with different furniture.',
       userStyle,
     ].join(' ');
@@ -964,7 +1077,7 @@ async function generateWithStabilityImg2Img(payload: GeneratePayload): Promise<G
 
   form.append('image', dataUrlToBlob(payload.roomImage), 'room-composite.png');
   form.append('prompt', prompt);
-  form.append('negative_prompt', 'flat cutout, pasted image, 2D sticker, floating object, no shadow, no depth, paper doll, collage, photoshop overlay, unrealistic lighting, gray halo, white border, blurry edges');
+  form.append('negative_prompt', 'flat cutout, pasted image, 2D sticker, floating object, paper doll, collage, photoshop overlay, unrealistic lighting, gray halo, dark floor shadow, dark blob on floor, ambient occlusion patch, white border, blurry edges, dark area under furniture');
   form.append('mode', 'image-to-image');
   form.append('model', 'sd3.5-large');
   form.append('strength', '0.30');

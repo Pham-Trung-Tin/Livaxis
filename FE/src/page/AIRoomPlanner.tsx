@@ -1150,9 +1150,11 @@ export default function AIRoomPlanner() {
   const [toastShow, setToastShow] = useState(false);
   const [sharpOverlay, setSharpOverlay] = useState(false);
   const [turnsInfo, setTurnsInfo] = useState<TurnsInfo | null>(null);
+  const [isDetectingFloor, setIsDetectingFloor] = useState(false);
 
   // Dragging states
   const draggingRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
+  const prevFloorDepthRef = useRef(floorDepth);
 
   const triggerRenderRef = useRef<(() => void) | null>(null);
   const isResultLocked = Boolean(lastGenerationMode || generatedImage);
@@ -1341,6 +1343,15 @@ export default function AIRoomPlanner() {
   }, [stage, globalScale]);
 
   const createPlacementMask = useCallback(() => {
+    // For 'shadow' and 'clean' modes: do NOT send a mask at all.
+    // The mask was causing AI to add gray halos / dark blobs around products.
+    // Without a mask, the AI uses img2img which processes the entire image naturally
+    // and produces much more realistic integration without artifacts.
+    if (floorBlend !== 'rug') {
+      return null;
+    }
+
+    // Only 'rug' mode needs a mask — to indicate the rug area for AI to blend
     const canvas = document.createElement("canvas");
     canvas.width = stage.width;
     canvas.height = stage.height;
@@ -1350,53 +1361,32 @@ export default function AIRoomPlanner() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, stage.width, stage.height);
 
-    // Scale mask ellipses depending on floorBlend mode
-    const maskScale = floorBlend === 'clean' ? 0.3 : floorBlend === 'rug' ? 1.6 : 1;
-
     const selectedProducts = productsList.filter((product) => selected.has(product.id));
 
-    // PASS 1: Draw ALL white areas (outer ring + floor) for all products
     selectedProducts.forEach((product) => {
       const placement = placements.get(product.id);
       if (!placement) return;
       const box = getProductBox(product, placement);
       const rotY = (placement.rotationY || 0) * Math.PI / 180;
       const scaleX = Math.abs(Math.cos(rotY));
-      const pad = Math.max(box.width, box.height) * 0.12;
 
-      // Outer area around product
+      // Rug area below product
       ctx.save();
-      ctx.filter = "blur(20px)";
+      ctx.filter = "blur(10px)";
       ctx.fillStyle = "white";
       ctx.beginPath();
       ctx.ellipse(
         box.cx,
-        box.top + box.height * 0.5,
-        (box.width * 0.5 + pad) * scaleX,
-        box.height * 0.5 + pad,
-        0, 0, Math.PI * 2
-      );
-      ctx.fill();
-      ctx.restore();
-
-      // Floor area below product
-      ctx.save();
-      ctx.filter = "blur(18px)";
-      ctx.fillStyle = "white";
-      ctx.beginPath();
-      ctx.ellipse(
-        box.cx,
-        box.bottom + box.height * 0.1,
-        box.width * 0.55 * maskScale * scaleX,
-        box.height * 0.18 * maskScale,
+        box.bottom + box.height * 0.04,
+        box.width * 0.5 * scaleX,
+        box.height * 0.15,
         0, 0, Math.PI * 2
       );
       ctx.fill();
       ctx.restore();
     });
 
-    // PASS 2: Cut out ALL product centers AFTER all white areas are drawn
-    // This ensures no product's protection gets overwritten by another product's mask
+    // Cut out product centers so AI doesn't modify the products themselves
     selectedProducts.forEach((product) => {
       const placement = placements.get(product.id);
       if (!placement) return;
@@ -1433,43 +1423,46 @@ export default function AIRoomPlanner() {
     ctx.restore();
   }, []);
 
-  const drawFloorShadow = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => {
+  const drawFloorShadow = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, productCount = 1) => {
     ctx.save();
+
+    // Reduce shadow intensity when multiple products are present to avoid dark blob accumulation
+    const intensityScale = productCount <= 1 ? 1 : Math.max(0.4, 1 - (productCount - 1) * 0.2);
     
     // Shift shadow slightly to the left to simulate directional lighting from the right/window
-    const sx = x - w * 0.15;
-    const sy = y + h * 0.08;
+    const sx = x - w * 0.12;
+    const sy = y + h * 0.06;
 
-    // Layer 1: Wide ambient shadow spread — gives the product a "presence" on the floor
-    const ambientGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 1.8, h * 3));
-    ambientGrad.addColorStop(0, "rgba(0, 0, 0, 0.18)");
-    ambientGrad.addColorStop(0.3, "rgba(0, 0, 0, 0.10)");
-    ambientGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.04)");
+    // Layer 1: Wide ambient shadow spread — subtle presence on the floor
+    const ambientGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 1.4, h * 2.2));
+    ambientGrad.addColorStop(0, `rgba(0, 0, 0, ${(0.10 * intensityScale).toFixed(2)})`);
+    ambientGrad.addColorStop(0.4, `rgba(0, 0, 0, ${(0.05 * intensityScale).toFixed(2)})`);
+    ambientGrad.addColorStop(0.7, `rgba(0, 0, 0, ${(0.02 * intensityScale).toFixed(2)})`);
     ambientGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = ambientGrad;
     ctx.beginPath();
-    ctx.ellipse(sx, sy, w * 1.2, h * 2.0, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, w * 0.9, h * 1.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Layer 2: Medium directional cast shadow (slightly offset, shaped like the product base)
-    const castGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 0.9, h * 1.2));
-    castGrad.addColorStop(0, "rgba(0, 0, 0, 0.26)");
-    castGrad.addColorStop(0.5, "rgba(0, 0, 0, 0.10)");
+    // Layer 2: Medium directional cast shadow
+    const castGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(w * 0.7, h * 0.9));
+    castGrad.addColorStop(0, `rgba(0, 0, 0, ${(0.16 * intensityScale).toFixed(2)})`);
+    castGrad.addColorStop(0.5, `rgba(0, 0, 0, ${(0.06 * intensityScale).toFixed(2)})`);
     castGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = castGrad;
     ctx.beginPath();
-    ctx.ellipse(sx, sy, w * 0.7, h * 0.9, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, w * 0.55, h * 0.65, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Layer 3: Tight dark contact shadow — the critical "grounding" layer
-    const contactGrad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w * 0.45, h * 0.5));
-    contactGrad.addColorStop(0, "rgba(0, 0, 0, 0.45)");
-    contactGrad.addColorStop(0.4, "rgba(0, 0, 0, 0.22)");
-    contactGrad.addColorStop(0.7, "rgba(0, 0, 0, 0.08)");
+    // Layer 3: Tight contact shadow — grounding layer
+    const contactGrad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(w * 0.35, h * 0.4));
+    contactGrad.addColorStop(0, `rgba(0, 0, 0, ${(0.28 * intensityScale).toFixed(2)})`);
+    contactGrad.addColorStop(0.4, `rgba(0, 0, 0, ${(0.12 * intensityScale).toFixed(2)})`);
+    contactGrad.addColorStop(0.7, `rgba(0, 0, 0, ${(0.04 * intensityScale).toFixed(2)})`);
     contactGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = contactGrad;
     ctx.beginPath();
-    ctx.ellipse(x, y, w * 0.5, h * 0.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, w * 0.4, h * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -1530,9 +1523,6 @@ export default function AIRoomPlanner() {
 
     // ── DRAW PRODUCT (clean, no effects) ──
     ctx.translate(x, y);
-    // Apply perspective vertical skew (shear Y) based on horizontal position relative to room center
-    const skewY = (placement.x - 0.48) * 0.15;
-    ctx.transform(1, skewY, 0, 1, 0, 0);
 
     if (placement.rotation) {
       ctx.rotate((placement.rotation * Math.PI) / 180);
@@ -1631,7 +1621,7 @@ export default function AIRoomPlanner() {
   const loadSampleRoom = useCallback(() => {
     const img = new Image();
     img.src = "/assets/sample_room.png";
-    img.onload = () => {
+    img.onload = async () => {
       setRoomImage(img);
       
       // Convert sample room image to Base64 Data URL so backend gets a valid image payload
@@ -1639,10 +1629,12 @@ export default function AIRoomPlanner() {
       canvas.width = img.naturalWidth || img.width;
       canvas.height = img.naturalHeight || img.height;
       const ctx = canvas.getContext("2d");
+      let dataUrl = "/assets/sample_room.png";
       if (ctx) {
         ctx.drawImage(img, 0, 0);
         try {
-          setRoomDataUrl(canvas.toDataURL("image/png"));
+          dataUrl = canvas.toDataURL("image/png");
+          setRoomDataUrl(dataUrl);
         } catch (e) {
           console.warn("Failed to convert sample room to DataURL:", e);
           setRoomDataUrl("/assets/sample_room.png");
@@ -1659,7 +1651,28 @@ export default function AIRoomPlanner() {
       setPlacements(new Map());
       setActiveId(null);
       setPreparingProductIds(new Set());
+      setFloorDepth(0.60);
+      prevFloorDepthRef.current = 0.60;
       toast(t('aiRoomPlanner.sampleRoomLoaded'));
+
+      // Auto-detect floor line for this room
+      setIsDetectingFloor(true);
+      try {
+        const response = await fetch("/api/ai-room-planner/detect-floor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomImage: dataUrl }),
+        });
+        const data = await response.json();
+        if (data.success && data.data?.floorY) {
+          setFloorDepth(data.data.floorY);
+          prevFloorDepthRef.current = data.data.floorY;
+        }
+      } catch (e) {
+        // Keep default
+      } finally {
+        setIsDetectingFloor(false);
+      }
     };
   }, [toast, t]);
 
@@ -1668,9 +1681,10 @@ export default function AIRoomPlanner() {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         setRoomImage(img);
-        setRoomDataUrl(reader.result as string);
+        const dataUrl = reader.result as string;
+        setRoomDataUrl(dataUrl);
         setImageName(file.name);
         setSourceType("upload");
         setLastGenerationMode(null);
@@ -1679,7 +1693,30 @@ export default function AIRoomPlanner() {
         setPlacements(new Map());
         setActiveId(null);
         setPreparingProductIds(new Set());
+        
+        // Start with a safe middle-ground default
+        setFloorDepth(0.60);
+        prevFloorDepthRef.current = 0.60;
         toast(t('aiRoomPlanner.roomUploadedToast'));
+
+        // Auto-detect floor line for this room (blocking wait)
+        setIsDetectingFloor(true);
+        try {
+          const response = await fetch("/api/ai-room-planner/detect-floor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomImage: dataUrl }),
+          });
+          const data = await response.json();
+          if (data.success && data.data?.floorY) {
+            setFloorDepth(data.data.floorY);
+            prevFloorDepthRef.current = data.data.floorY;
+          }
+        } catch (e) {
+          // Keep default floorDepth
+        } finally {
+          setIsDetectingFloor(false);
+        }
       };
       img.src = reader.result as string;
     };
@@ -1700,28 +1737,57 @@ export default function AIRoomPlanner() {
     setStage({ width: w, height: h });
   }, [roomImage]);
 
+  // When floorDepth changes, update all product Y positions to match the new floor
+  useEffect(() => {
+    const prevFloorDepth = prevFloorDepthRef.current;
+    if (prevFloorDepth === floorDepth) return;
+    
+    // Calculate the delta (how much the floor moved)
+    const delta = floorDepth - prevFloorDepth;
+    prevFloorDepthRef.current = floorDepth;
+
+    // Update all placements to move products to the new floor level
+    setPlacements((current) => {
+      if (current.size === 0) return current;
+      const next = new Map(current);
+      for (const [id, placement] of next) {
+        // Only adjust if user hasn't manually dragged this product
+        if (!placement.hasManualDrag) {
+          next.set(id, {
+            ...placement,
+            y: Math.max(floorDepth, Math.min(0.95, placement.y + delta)),
+          });
+        }
+      }
+      return next;
+    });
+    triggerRenderRef.current?.();
+  }, [floorDepth]);
+
   // Manage placements helper
   const ensurePlacement = (id: string, currentSelected: Set<string>, currentPlacements: Map<string, any>) => {
     if (currentPlacements.has(id)) return currentPlacements.get(id);
     const index = [...currentSelected].indexOf(id);
+    // Place products in the CENTER SAFE ZONE of the room (x: 0.35-0.65).
+    // Avoid edges (x < 0.30 or x > 0.75) where stairs, doors, walls, and windows typically are.
+    // This ensures products land on open floor area regardless of room layout.
     const pattern = [
-      { x: 0.48, y: floorDepth, scale: 1 },
-      { x: 0.66, y: floorDepth + 0.03, scale: 0.92 },
-      { x: 0.38, y: floorDepth + 0.02, scale: 1.04 },
-      { x: 0.52, y: floorDepth + 0.09, scale: 0.82 },
-      { x: 0.79, y: floorDepth - 0.04, scale: 1.05 },
-      { x: 0.19, y: floorDepth - 0.02, scale: 0.98 },
+      { x: 0.50, y: floorDepth,        scale: 1    },
+      { x: 0.62, y: floorDepth + 0.02, scale: 0.92 },
+      { x: 0.38, y: floorDepth + 0.01, scale: 0.95 },
+      { x: 0.55, y: floorDepth + 0.05, scale: 0.85 },
+      { x: 0.45, y: floorDepth + 0.03, scale: 0.90 },
+      { x: 0.58, y: floorDepth + 0.04, scale: 0.88 },
     ];
     const item = pattern[index === -1 ? 0 : index % pattern.length];
-    // Auto-calculate initial 3D Y-rotation based on X-coordinate perspective
-    const initialRotationY = Math.min(35, Math.round(Math.abs((item.x - 0.48) * 65)));
-    // Auto flip horizontally based on position
-    const initialFlipped = id.toLowerCase().includes("lamp") ? (item.x >= 0.48) : (item.x < 0.48);
+    // Default: no rotation/flip — show product at natural front-facing angle.
+    // The AI will handle perspective correction in the final render.
+    // Users can manually adjust rotationY and flip if needed.
     const p = { 
       ...item, 
       rotation: 0, 
-      rotationY: initialRotationY, 
-      flipped: initialFlipped, 
+      rotationY: 0, 
+      flipped: false, 
       hasManualRotationY: false,
       hasManualFlip: false
     };
@@ -1743,18 +1809,57 @@ export default function AIRoomPlanner() {
 
   const addProductToCanvas = (product: CatalogProduct) => {
     setActiveId(product.id);
-    setSelected((current) => {
-      const next = new Set(current);
-      next.add(product.id);
-      return next;
-    });
+    const newSelected = new Set(selected);
+    newSelected.add(product.id);
+    setSelected(newSelected);
     setPlacements((current) => {
       const next = new Map(current);
-      const selectionForPlacement = new Set(selected);
-      selectionForPlacement.add(product.id);
-      ensurePlacement(product.id, selectionForPlacement, next);
+      ensurePlacement(product.id, newSelected, next);
       return next;
     });
+
+    // Auto-reposition: ask AI to find proper room-aware positions
+    // This runs in background after the product appears at its default position
+    if (backendOnline && roomDataUrl) {
+      const allSelectedProducts = localizedProductsList.filter((p) => newSelected.has(p.id));
+      fetch("/api/ai-room-planner/auto-position", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomImage: roomDataUrl,
+          products: allSelectedProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            category: p.type,
+          })),
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            setPlacements((current) => {
+              const next = new Map(current);
+              for (const pos of data.data) {
+                // Only update if user hasn't manually dragged the product
+                const existing = next.get(pos.id);
+                if (existing && !existing.hasManualDrag) {
+                  next.set(pos.id, {
+                    ...existing,
+                    x: pos.x,
+                    y: pos.y,
+                    scale: pos.scale,
+                  });
+                }
+              }
+              return next;
+            });
+            triggerRenderRef.current?.();
+          }
+        })
+        .catch(() => {
+          // Silently fail — product stays at safe default position
+        });
+    }
   };
 
   // Toggle products from catalog
@@ -1953,17 +2058,7 @@ export default function AIRoomPlanner() {
       p.x = Math.min(0.94, Math.max(0.06, (point.x - draggingRef.current.offsetX) / stage.width));
       p.y = Math.min(0.94, Math.max(0.42, (point.y - draggingRef.current.offsetY) / stage.height));
       p.userMoved = true;
-      
-      // Auto perspective 3D rotation (Y-rotation) based on X position relative to room center
-      if (!p.hasManualRotationY) {
-        const distanceFromCenter = p.x - 0.48; // room vanishing point is around 0.48
-        p.rotationY = Math.min(35, Math.round(Math.abs(distanceFromCenter * 65)));
-      }
-
-      // Auto flip horizontally based on horizontal position relative to center
-      if (!p.hasManualFlip) {
-        p.flipped = draggingRef.current.id.toLowerCase().includes("lamp") ? (p.x >= 0.48) : (p.x < 0.48);
-      }
+      p.hasManualDrag = true;
       
       setPlacements(next);
     }
@@ -2018,8 +2113,8 @@ export default function AIRoomPlanner() {
                 y: pos.y,
                 scale: pos.scale,
                 rotation: 0,
-                rotationY: pos.rotationY,
-                flipped: pos.flipped,
+                rotationY: 0,
+                flipped: false,
                 hasManualRotationY: false,
                 hasManualFlip: false,
               });
