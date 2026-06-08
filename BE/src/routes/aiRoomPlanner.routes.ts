@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   autoPositionController,
+  detectFloorController,
   generateController,
   getStatusController,
   getTurnsController,
@@ -15,6 +16,7 @@ const aiRoomPlannerRouter = Router();
 aiRoomPlannerRouter.get('/status', getStatusController);
 aiRoomPlannerRouter.post('/remove-background', removeBackgroundController);
 aiRoomPlannerRouter.post('/auto-position', autoPositionController);
+aiRoomPlannerRouter.post('/detect-floor', detectFloorController);
 
 // Protected — must be logged in
 aiRoomPlannerRouter.get('/turns', authenticate, getTurnsController);

@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
-import { generateInterior, getAiStatus, getAutoPositions, removeProductBackground } from '../services/aiRoomPlanner.service';
+import { generateInterior, getAiStatus, getAutoPositions, detectFloorLine, removeProductBackground } from '../services/aiRoomPlanner.service';
 import { incrementAiTurnsUsed } from '../middlewares/aiTurns.middleware';
 import User from '../models/user.model';
 
-const FREE_DAILY_TURNS = 3;
+const FREE_DAILY_TURNS = 100;
 
 /** GET /api/ai-room-planner/status — provider status */
 export const getStatusController = asyncHandler(async (_req: Request, res: Response) => {
@@ -98,5 +98,12 @@ export const autoPositionController = asyncHandler(async (req: Request, res: Res
 /** POST /api/ai-room-planner/remove-background */
 export const removeBackgroundController = asyncHandler(async (req: Request, res: Response) => {
   const result = await removeProductBackground(req.body);
+  res.status(200).json({ success: true, data: result });
+});
+
+/** POST /api/ai-room-planner/detect-floor — AI detects floor line in room image */
+export const detectFloorController = asyncHandler(async (req: Request, res: Response) => {
+  const { roomImage } = req.body;
+  const result = await detectFloorLine(roomImage);
   res.status(200).json({ success: true, data: result });
 });
