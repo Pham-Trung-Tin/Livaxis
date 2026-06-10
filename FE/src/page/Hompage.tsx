@@ -9,21 +9,31 @@ import {
   LogOut,
   Search,
   Settings,
-  ShoppingBag,
   Sparkles,
   User,
   Zap,
+  Star,
+  Check,
+  ChevronUp,
+  Cpu,
+  ShoppingBag,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
-import { getFeaturedProducts } from '../services/productApi'
-import type { NewArrivalProduct } from '../services/productApi'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 // test deploy 2
 
+// ---------------------------------------------------------------------------
+// Section type — 8 fullscreen sections total
+// ---------------------------------------------------------------------------
+type SectionId = 'hero' | 'features' | 'stats' | 'testimonials' | 'pricing' | 'process' | 'footer'
+
+// ---------------------------------------------------------------------------
 // Global top navigation with account dropdown actions.
+// ---------------------------------------------------------------------------
 export function Header() {
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -580,7 +590,9 @@ export function Footer() {
   )
 }
 
+// ---------------------------------------------------------------------------
 // Interactive before/after visual slider used in the hero area.
+// ---------------------------------------------------------------------------
 function BeforeAfterShowcase() {
   const [isHovered, setIsHovered] = useState(false)
   const { t } = useLanguage()
@@ -663,12 +675,184 @@ function BeforeAfterShowcase() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// FAQ Accordion — used in FAQ section
+// ---------------------------------------------------------------------------
+function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="border-b border-black/6 last:border-0"
+    >
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-4 py-5 text-left"
+        aria-expanded={open}
+      >
+        <span
+          className="text-[14px] text-black"
+          style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400, lineHeight: 1.5 }}
+        >
+          {question}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          className="shrink-0"
+        >
+          <ChevronDown size={16} className="text-[#a08c6a]" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <p
+              className="pb-5 text-[13px] leading-relaxed text-neutral-500"
+              style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+            >
+              {answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main Homepage component
+// ---------------------------------------------------------------------------
 function Hompage() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
-  const [featuredProducts, setFeaturedProducts] = useState<NewArrivalProduct[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { language, t } = useLanguage()
+  const [activeSection, setActiveSection] = useState<SectionId>('hero')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isScrollingRef = useRef(false)
+  const activeSectionRef = useRef<SectionId>('hero')
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeSectionRef.current = activeSection
+  }, [activeSection])
+
+  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'testimonials', 'pricing', 'stats', 'footer']
+
+  const scrollToSection = (id: SectionId) => {
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+      setActiveSection(id) // Update state immediately for instant animation/indicator response
+    }
+  }
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    // 1. Intersection Observer for visual syncing
+    const observerOptions = {
+      root: container,
+      rootMargin: '0px',
+      threshold: 0.4,
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id as SectionId)
+        }
+      })
+    }, observerOptions)
+
+    sectionsList.forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+
+    // 2. Custom wheel & keyboard scroll snapping
+    const handleWheel = (e: WheelEvent) => {
+      if (window.innerWidth < 768) return
+
+      // Filter out small trackpad drifts
+      if (Math.abs(e.deltaY) < 30) return
+
+      e.preventDefault()
+
+      if (isScrollingRef.current) return
+
+      const currentIndex = sectionsList.indexOf(activeSectionRef.current)
+      let nextIndex = currentIndex
+
+      if (e.deltaY > 0) {
+        if (currentIndex < sectionsList.length - 1) {
+          nextIndex = currentIndex + 1
+        }
+      } else {
+        if (currentIndex > 0) {
+          nextIndex = currentIndex - 1
+        }
+      }
+
+      if (nextIndex !== currentIndex) {
+        isScrollingRef.current = true
+        scrollToSection(sectionsList[nextIndex])
+        setTimeout(() => {
+          isScrollingRef.current = false
+        }, 1000)
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (window.innerWidth < 768) return
+      if (isScrollingRef.current) return
+
+      const currentIndex = sectionsList.indexOf(activeSectionRef.current)
+      let nextIndex = currentIndex
+
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault()
+        if (currentIndex < sectionsList.length - 1) {
+          nextIndex = currentIndex + 1
+        }
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault()
+        if (currentIndex > 0) {
+          nextIndex = currentIndex - 1
+        }
+      }
+
+      if (nextIndex !== currentIndex) {
+        isScrollingRef.current = true
+        scrollToSection(sectionsList[nextIndex])
+        setTimeout(() => {
+          isScrollingRef.current = false
+        }, 1000)
+      }
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      sectionsList.forEach((id) => {
+        const el = document.getElementById(id)
+        if (el) observer.unobserve(el)
+      })
+      container.removeEventListener('wheel', handleWheel)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const steps = [
     {
@@ -676,239 +860,251 @@ function Hompage() {
       number: '01',
       title: t('homepage.step1Title'),
       text: t('homepage.step1Text'),
+      imageUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088956/Section_6_vtmkxe.png',
     },
     {
       icon: Sparkles,
       number: '02',
       title: t('homepage.step2Title'),
       text: t('homepage.step2Text'),
+      imageUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781089224/section5-2_a5xrcl.png',
     },
     {
       icon: ExternalLink,
       number: '03',
       title: t('homepage.step3Title'),
       text: t('homepage.step3Text'),
+      imageUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781089207/section5-3_pmdfqo.png',
     },
   ]
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price)
+  const features = [
+    { icon: Sparkles, titleKey: 'feature1Title', descKey: 'feature1Desc', color: '#c8b898', bgColor: 'rgba(200,184,152,0.12)' },
+    { icon: SlidersHorizontal, titleKey: 'feature2Title', descKey: 'feature2Desc', color: '#a08c6a', bgColor: 'rgba(160,140,106,0.1)' },
+    { icon: ChevronUp, titleKey: 'feature3Title', descKey: 'feature3Desc', color: '#8a7456', bgColor: 'rgba(138,116,86,0.1)' },
+    { icon: ShoppingBag, titleKey: 'feature4Title', descKey: 'feature4Desc', color: '#6f5a41', bgColor: 'rgba(111,90,65,0.1)' },
+  ]
 
-  useEffect(() => {
-    const loadFeaturedProducts = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const products = await getFeaturedProducts(6)
-        setFeaturedProducts(products)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load featured products')
-        console.error('Error loading featured products:', err)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const stats = [
+    { valueKey: 'stat1Value', labelKey: 'stat1Label' },
+    { valueKey: 'stat2Value', labelKey: 'stat2Label' },
+    { valueKey: 'stat3Value', labelKey: 'stat3Label' },
+    { valueKey: 'stat4Value', labelKey: 'stat4Label' },
+  ]
 
-    loadFeaturedProducts()
-  }, [])
+  const testimonials = [
+    {
+      quoteKey: 'testimonial1Quote',
+      authorKey: 'testimonial1Author',
+      roleKey: 'testimonial1Role',
+      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088466/section4-1_jcmstz.png',
+    },
+    {
+      quoteKey: 'testimonial2Quote',
+      authorKey: 'testimonial2Author',
+      roleKey: 'testimonial2Role',
+      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088467/section4-2_cvbdpe.png',
+    },
+    {
+      quoteKey: 'testimonial3Quote',
+      authorKey: 'testimonial3Author',
+      roleKey: 'testimonial3Role',
+      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088576/section4-3_gp2fun.png',
+    },
+  ]
+
+  const pricingPlans = [
+    {
+      nameKey: 'pricingFreeName',
+      priceKey: 'pricingFreePrice',
+      descKey: 'pricingFreeDesc',
+      highlight: false,
+      imageUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088637/section5_jxnt0i.png',
+    },
+    { nameKey: 'pricingStarterName', priceKey: 'pricingStarterPrice', descKey: 'pricingStarterDesc', highlight: false },
+    { nameKey: 'pricingStandardName', priceKey: 'pricingStandardPrice', descKey: 'pricingStandardDesc', highlight: true },
+    { nameKey: 'pricingPremiumName', priceKey: 'pricingPremiumPrice', descKey: 'pricingPremiumDesc', highlight: false },
+  ]
+
+  const faqs = [
+    { qKey: 'faq1Q', aKey: 'faq1A' },
+    { qKey: 'faq2Q', aKey: 'faq2A' },
+    { qKey: 'faq3Q', aKey: 'faq3A' },
+    { qKey: 'faq4Q', aKey: 'faq4A' },
+    { qKey: 'faq5Q', aKey: 'faq5A' },
+  ]
+
+  const dotNavItems = [
+    { id: 'hero' as SectionId, label: t('homepage.roomVisualiser') },
+    { id: 'process' as SectionId, label: t('homepage.howItWorks') },
+    { id: 'features' as SectionId, label: t('homepage.featuresLabel') },
+    { id: 'testimonials' as SectionId, label: t('homepage.testimonialsLabel') },
+    { id: 'pricing' as SectionId, label: t('homepage.pricingLabel') },
+    { id: 'stats' as SectionId, label: t('homepage.statsLabel') },
+    { id: 'footer' as SectionId, label: language === 'vi' ? 'Thông tin liên hệ' : 'Contact & Info' },
+  ]
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#fffdf9_0%,#fbf7f1_52%,#f4efe6_100%)] text-[#141311]">
+    <div className="relative h-screen w-screen overflow-hidden bg-[linear-gradient(180deg,#fffdf9_0%,#fbf7f1_52%,#f4efe6_100%)] text-[#141311]">
       <Header />
 
-      <main className="pt-[72px]">
-        {/* Hero section with headline, CTA, and before/after demo */}
-        <section className="relative overflow-hidden px-6 pb-16 pt-16 sm:px-10 lg:px-16 lg:pb-24 lg:pt-20">
+      {/* Main Snap Scroll Container */}
+      <main
+        ref={containerRef}
+        className="h-full w-full overflow-y-auto scrollbar-hide relative"
+      >
+        {/* ═══════════════════════════════════════════════════
+            Section 1: Hero / AI Room Planner Visualization
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="hero"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center relative pt-[72px] px-6 pb-8 overflow-hidden"
+        >
           <div className="absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(circle_at_top,rgba(200,184,152,0.22),transparent_50%)]" />
-          <div className="mx-auto max-w-7xl text-center">
+          <div className="mx-auto max-w-7xl text-center flex flex-col items-center justify-center">
             <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="text-[11px] uppercase tracking-[0.36em] text-[#a08c6a]"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               {t('homepage.roomVisualiser')}
             </motion.p>
             <motion.h1
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
-              className="mt-5 text-5xl leading-[0.95] tracking-[-0.04em] text-[#1d1814] sm:text-6xl lg:text-[5.25rem]"
+              initial={{ opacity: 0, y: 25 }}
+              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-5 text-4xl leading-[1.05] tracking-[-0.04em] text-[#1d1814] sm:text-5xl lg:text-[4.5rem]"
               style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
             >
               {t('homepage.heroTitle')}
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12 }}
-              className="mx-auto mt-5 max-w-2xl text-sm text-[#7b7368] sm:text-base"
+              initial={{ opacity: 0, y: 20 }}
+              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="mx-auto mt-4 max-w-2xl text-xs sm:text-sm text-[#7b7368]"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               {t('homepage.heroDesc')}
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.18 }}
-              className="mx-auto mt-10 max-w-5xl"
+              initial={{ opacity: 0, y: 30 }}
+              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="mx-auto mt-8 w-full max-w-4xl"
             >
               <BeforeAfterShowcase />
             </motion.div>
 
-            <div className="mt-8 flex justify-center">
-              <button className="group inline-flex items-center gap-2 rounded-full bg-[#161311] px-6 py-3 text-[11px] uppercase tracking-[0.24em] text-white shadow-[0_18px_40px_rgba(20,17,14,0.18)] transition-transform duration-300 hover:-translate-y-0.5" onClick={() => navigate('/ai-room-planner')}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 flex justify-center"
+            >
+              <button
+                className="group inline-flex items-center gap-2 rounded-full bg-[#161311] px-5 py-2.5 text-[10px] uppercase tracking-[0.24em] text-white shadow-[0_18px_40px_rgba(20,17,14,0.18)] transition-transform duration-300 hover:-translate-y-0.5"
+                onClick={() => navigate('/ai-room-planner')}
+              >
                 {t('homepage.startScan')}
-                <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                <ChevronRight size={13} className="transition-transform duration-300 group-hover:translate-x-0.5" />
               </button>
-            </div>
+            </motion.div>
           </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('process')}
+          >
+            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
         </section>
 
-        {/* Product teaser cards section */}
-        <section className="bg-white py-24 md:py-32">
-          <div className="mx-auto max-w-[1440px] px-8 md:px-16">
-            <div className="mb-16 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                {t('homepage.curatedTitle')}
-              </p>
-              <h2 className="mt-4 text-[clamp(1.5rem,3.5vw,2.5rem)] tracking-[-0.02em] text-[#1d1814]" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                {t('homepage.curatedSubtitle')}
-              </h2>
-              <p className="mx-auto mt-3 max-w-md text-[14px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                {t('homepage.curatedDesc')}
-              </p>
-            </div>
-
-            {isLoading ? (
-              <div className="mt-10 flex justify-center">
-                <div className="inline-flex items-center gap-2 text-[#a08c6a]">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#a08c6a]/30 border-t-[#a08c6a]" />
-                  <span className="text-sm">{t('homepage.loadingFeatured')}</span>
-                </div>
-              </div>
-            ) : error ? (
-              <div className="mt-10 rounded-[24px] border border-red-200 bg-red-50 p-6 text-center">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-                {featuredProducts.map((product, index) => (
-                  <motion.article
-                    key={product.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: index * 0.08 }}
-                    className="group"
-                  >
-                    <div className="relative mb-5 overflow-hidden rounded-xl bg-neutral-50">
-                      <div className="aspect-[4/5] overflow-hidden">
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.src = heroAfterImage
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] uppercase tracking-[0.15em] text-neutral-500 backdrop-blur-sm"
-                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-                      >
-                        {product.category}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="mb-0.5 text-[16px] text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}>
-                          {product.name}
-                        </h3>
-                        <span className="text-[14px] text-neutral-500" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                          {formatPrice(product.price)}
-                        </span>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          className="flex flex-1 items-center justify-center gap-2.5 rounded-lg border border-[#c8b898]/40 py-3 transition-all duration-300 hover:border-[#c8b898] hover:bg-[#c8b898]/5"
-                          style={{ backgroundColor: 'rgba(200, 184, 152, 0.06)' }}
-                          onClick={() => navigate('/ai-room-planner')}
-                        >
-                          <Camera size={15} className="text-[#a08c6a]" strokeWidth={1.5} />
-                          <span className="text-[11px] uppercase tracking-[0.15em] text-[#8a7456]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            {t('common.aiTryOn')}
-                          </span>
-                        </button>
-
-                        <button
-                          className="flex items-center justify-center gap-2 rounded-lg bg-black px-5 py-3 text-white transition-all duration-300 hover:bg-neutral-800"
-                          onClick={() => navigate('/discovery')}
-                        >
-                          <ShoppingBag size={14} strokeWidth={1.5} />
-                          <span className="text-[11px] uppercase tracking-[0.12em]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                            {t('homepage.add')}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </motion.article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Process explanation section */}
-        <section className="bg-[#faf9f7] px-6 py-24 sm:px-10 md:py-32 lg:px-16">
-          <div className="mx-auto max-w-[1440px]">
-            <div className="mb-20 text-center">
-              <p
-                className="mb-4 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
+        {/* ═══════════════════════════════════════════════════
+            Section 2: How it works / Process Explanation
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="process"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-[#faf9f7] px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+        >
+          <div className="mx-auto max-w-[1440px] w-full flex flex-col items-center justify-center">
+            <div className="mb-14 text-center">
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
                 {t('homepage.howItWorks')}
-              </p>
-              <h2
-                className="mb-4 text-[clamp(1.5rem,3.5vw,2.5rem)] text-black"
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-3 text-[clamp(1.5rem,3vw,2.25rem)] text-black"
                 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
                 {t('homepage.howItWorksTitle')}
-              </h2>
-              <p
-                className="mx-auto max-w-md text-[14px] text-neutral-400"
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="mx-auto max-w-md text-[13px] text-neutral-400"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
                 {t('homepage.howItWorksDesc')}
-              </p>
+              </motion.p>
             </div>
 
-            <div className="relative mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3 md:gap-16">
-              <div className="absolute left-[20%] right-[20%] top-16 hidden h-px bg-gradient-to-r from-transparent via-[#c8b898]/30 to-transparent md:block" />
+            <motion.div
+              initial="hidden"
+              animate={activeSection === 'process' ? 'visible' : 'hidden'}
+              variants={{
+                hidden: {},
+                visible: {
+                  transition: {
+                    staggerChildren: 0.15
+                  }
+                }
+              }}
+              className="relative mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3 md:gap-16 w-full"
+            >
+              <div className="absolute left-[20%] right-[20%] top-[256px] hidden h-px bg-gradient-to-r from-transparent via-[#c8b898]/30 to-transparent md:block" />
 
-              {steps.map((step, index) => (
+              {steps.map((step) => (
                 <motion.div
                   key={step.number}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.15 }}
-                  className="relative text-center"
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                  }}
+                  className="relative flex flex-col items-center text-center"
                 >
-                  <div className="relative mb-8 inline-flex">
-                    <div className="flex h-[80px] w-[80px] items-center justify-center rounded-2xl border border-[#c8b898]/20 bg-white shadow-sm">
-                      <step.icon size={28} className="text-[#a08c6a]" strokeWidth={1.3} />
+                  {/* Step Image */}
+                  {step.imageUrl && (
+                    <div className="relative mb-6 w-full max-w-[280px] aspect-[4/3] overflow-hidden rounded-[20px] border border-black/5 shadow-[0_10px_30px_rgba(200,184,152,0.08)] bg-neutral-50 group">
+                      <img
+                        src={step.imageUrl}
+                        alt={step.title}
+                        className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  <div className="relative mb-5 inline-flex z-10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#c8b898]/20 bg-white shadow-sm transition-transform duration-300 hover:scale-105">
+                      <step.icon size={18} className="text-[#a08c6a]" strokeWidth={1.3} />
                     </div>
                     <span
-                      className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black text-[10px] text-white"
+                      className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-black text-[9px] text-white"
                       style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                     >
                       {step.number}
@@ -916,25 +1112,570 @@ function Hompage() {
                   </div>
 
                   <h3
-                    className="mb-3 text-[18px] text-black"
+                    className="mb-2 text-[17px] text-black"
                     style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
                   >
                     {step.title}
                   </h3>
                   <p
-                    className="mx-auto max-w-[260px] text-[13px] leading-relaxed text-neutral-400"
+                    className="mx-auto max-w-[250px] text-[12px] leading-relaxed text-neutral-400"
                     style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                   >
                     {step.text}
                   </p>
                 </motion.div>
               ))}
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('features')}
+          >
+            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            Section 2: Features & Benefits
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="features"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-white px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+        >
+          {/* Subtle decorative gradient */}
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(200,184,152,0.10) 0%, transparent 60%)' }} />
+          <div className="mx-auto max-w-[1440px] w-full px-4 md:px-8">
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
+              
+              {/* Left Column: Text & Feature Cards */}
+              <div className="lg:col-span-5 flex flex-col justify-center text-left">
+                <motion.p
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                >
+                  {t('homepage.featuresLabel')}
+                </motion.p>
+                <motion.h2
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-4 text-[clamp(1.5rem,3vw,2.25rem)] leading-tight text-black"
+                  style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                >
+                  {t('homepage.featuresTitle')}
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-8 max-w-lg text-[13px] text-neutral-400"
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                >
+                  {t('homepage.featuresDesc')}
+                </motion.p>
+
+                {/* 2x2 Grid for smaller feature cards */}
+                <motion.div
+                  initial="hidden"
+                  animate={activeSection === 'features' ? 'visible' : 'hidden'}
+                  variants={{
+                    hidden: {},
+                    visible: { transition: { staggerChildren: 0.1 } }
+                  }}
+                  className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                >
+                  {features.map((feat, i) => {
+                    const Icon = feat.icon
+                    return (
+                      <motion.div
+                        key={i}
+                        variants={{
+                          hidden: { opacity: 0, y: 20 },
+                          visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+                        }}
+                        className="group relative flex flex-col rounded-[16px] border border-black/5 bg-[#fdfcfb] p-5 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(200,184,152,0.1)] hover:-translate-y-0.5"
+                      >
+                        {/* Icon */}
+                        <div
+                          className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
+                          style={{ background: feat.bgColor }}
+                        >
+                          <Icon size={18} style={{ color: feat.color }} strokeWidth={1.5} />
+                        </div>
+                        <h3
+                          className="mb-1.5 text-[14px] font-medium text-black"
+                          style={{ fontFamily: 'Playfair Display, serif' }}
+                        >
+                          {t(`homepage.${feat.titleKey}` as Parameters<typeof t>[0])}
+                        </h3>
+                        <p
+                          className="text-[11px] leading-relaxed text-neutral-400"
+                          style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                        >
+                          {t(`homepage.${feat.descKey}` as Parameters<typeof t>[0])}
+                        </p>
+                      </motion.div>
+                    )
+                  })}
+                </motion.div>
+              </div>
+
+              {/* Right Column: High-Res Image Showcase */}
+              <div className="lg:col-span-7 flex items-center justify-center">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96, x: 20 }}
+                  animate={activeSection === 'features' ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.96, x: 20 }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative w-full overflow-hidden rounded-[24px] border border-black/5 bg-neutral-100 shadow-[0_20px_50px_rgba(200,184,152,0.15)] aspect-[4/3] max-w-[680px]"
+                >
+                  <img
+                    src="https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088228/section3_kxaym5.png"
+                    alt="Livaxis AI Features Mockup"
+                    className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
+                </motion.div>
+              </div>
+
             </div>
+          </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('testimonials')}
+          >
+            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            Section 4: Testimonials
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="testimonials"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-[#faf9f7] px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+        >
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(200,184,152,0.08) 0%, transparent 70%)' }} />
+          <div className="relative mx-auto max-w-[1440px] w-full">
+            <div className="mb-14 text-center">
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                animate={activeSection === 'testimonials' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+              >
+                {t('homepage.testimonialsLabel')}
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'testimonials' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="text-[clamp(1.5rem,3vw,2.25rem)] text-black"
+                style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+              >
+                {t('homepage.testimonialsTitle')}
+              </motion.h2>
+            </div>
+
+            <motion.div
+              initial="hidden"
+              animate={activeSection === 'testimonials' ? 'visible' : 'hidden'}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.15 } }
+              }}
+              className="grid grid-cols-1 gap-6 md:grid-cols-3 px-4"
+            >
+              {testimonials.map((t_item, i) => (
+                <motion.div
+                  key={i}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } }
+                  }}
+                  className="relative flex flex-col rounded-[20px] border border-[#c8b898]/20 p-8"
+                  style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fdf9f4 100%)' }}
+                >
+                  {/* Stars */}
+                  <div className="mb-5 flex gap-1">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <Star key={s} size={13} className="fill-[#c8b898] text-[#c8b898]" />
+                    ))}
+                  </div>
+                  {/* Large decorative quote mark */}
+                  <span
+                    className="absolute right-8 top-6 text-[64px] leading-none text-[#c8b898]/15 select-none"
+                    style={{ fontFamily: 'Playfair Display, serif' }}
+                  >"</span>
+                  {/* Quote */}
+                  <p
+                    className="mb-8 flex-1 text-[14px] italic leading-relaxed text-neutral-600"
+                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                  >
+                    "{t(`homepage.${t_item.quoteKey}` as Parameters<typeof t>[0])}"
+                  </p>
+                  {/* Author */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(200,184,152,0.20)] overflow-hidden">
+                      {t_item.avatarUrl ? (
+                        <img
+                          src={t_item.avatarUrl}
+                          alt={t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0]) as string}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span
+                          className="text-[13px] text-[#8a7456]"
+                          style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
+                        >
+                          {(t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0]) as string)[0]}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p
+                        className="text-[13px] text-black"
+                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                      >
+                        {t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0])}
+                      </p>
+                      <p
+                        className="text-[11px] text-neutral-400"
+                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                      >
+                        {t(`homepage.${t_item.roleKey}` as Parameters<typeof t>[0])}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('pricing')}
+          >
+            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            Section 5: Pricing Preview
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="pricing"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-white px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[400px]" style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 0%, rgba(200,184,152,0.10) 0%, transparent 70%)' }} />
+          <div className="relative mx-auto max-w-[1440px] w-full">
+            <div className="mb-14 text-center">
+              <motion.p
+                initial={{ opacity: 0, y: 15 }}
+                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+              >
+                {t('homepage.pricingLabel')}
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="mb-3 text-[clamp(1.5rem,3vw,2.25rem)] text-black"
+                style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+              >
+                {t('homepage.pricingTitle')}
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="mx-auto max-w-lg text-[13px] text-neutral-400"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+              >
+                {t('homepage.pricingDesc')}
+              </motion.p>
+            </div>
+
+            <motion.div
+              initial="hidden"
+              animate={activeSection === 'pricing' ? 'visible' : 'hidden'}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.12 } }
+              }}
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 px-4 mb-10"
+            >
+              {pricingPlans.map((plan, i) => (
+                <motion.div
+                  key={i}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                  }}
+                  className={`relative flex flex-col rounded-[20px] border p-7 transition-all duration-500 hover:-translate-y-1 ${plan.highlight
+                    ? 'border-[#c8b898]/40 shadow-[0_8px_40px_rgba(200,184,152,0.18)]'
+                    : 'border-black/6 hover:border-[#c8b898]/30 hover:shadow-[0_4px_20px_rgba(200,184,152,0.10)]'
+                    }`}
+                  style={{
+                    background: plan.highlight
+                      ? 'linear-gradient(135deg, #1a1714 0%, #252118 100%)'
+                      : 'linear-gradient(135deg, #fdfcfb 0%, #faf8f5 100%)',
+                  }}
+                >
+                  {plan.highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#c8b898] px-3 py-1">
+                      <span className="text-[9px] uppercase tracking-[0.18em] text-white" style={{ fontWeight: 600 }}>
+                        {language === 'vi' ? 'Phổ biến' : 'Popular'}
+                      </span>
+                    </div>
+                  )}
+                  {plan.imageUrl && (
+                    <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+                      <img
+                        src={plan.imageUrl}
+                        alt={t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0]) as string}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+                  <p
+                    className={`mb-2 text-[12px] uppercase tracking-[0.12em] ${plan.highlight ? 'text-[#c8b898]/80' : 'text-[#a08c6a]'}`}
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                  >
+                    {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                  </p>
+                  <p
+                    className={`mb-1 text-[28px] leading-none ${plan.highlight ? 'text-white' : 'text-black'}`}
+                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                  >
+                    {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                  </p>
+                  <p
+                    className={`mb-6 text-[11px] ${plan.highlight ? 'text-white/50' : 'text-neutral-400'}`}
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                  >
+                    {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                  </p>
+                  <div className={`mt-auto h-px mb-4 ${plan.highlight ? 'bg-white/10' : 'bg-black/5'}`} />
+                  <div className={`flex items-center gap-2 text-[11px] ${plan.highlight ? 'text-[#c8b898]' : 'text-[#a08c6a]'}`}>
+                    <Check size={12} strokeWidth={2.5} />
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
+                      {language === 'vi' ? 'Không cần thẻ tín dụng' : 'No credit card needed'}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+              transition={{ duration: 0.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="flex justify-center"
+            >
+              <button
+                onClick={() => navigate('/subscription')}
+                className="group flex items-center gap-2.5 rounded-xl bg-[#1a1a1a] px-8 py-3.5 text-[11px] uppercase tracking-[0.18em] text-white transition-all duration-300 hover:bg-black"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
+              >
+                {t('homepage.pricingCta')}
+                <ChevronRight size={13} className="opacity-60 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
+              </button>
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('stats')}
+          >
+            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            Section 7: Stats / Social Proof
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="stats"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center relative overflow-hidden pt-[72px]"
+          style={{ background: 'linear-gradient(135deg, #1a1714 0%, #1c1815 100%)' }}
+        >
+          {/* Background image overlay */}
+          <div className="pointer-events-none absolute inset-0 z-0">
+            <img
+              src="https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088227/section_2_uurhnf.png"
+              alt="Stats Background"
+              className="h-full w-full object-cover opacity-15 mix-blend-overlay"
+              loading="lazy"
+            />
+            {/* Dark overlay gradient to ensure high text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1a1714]/60 via-[#1a1714]/30 to-[#1a1714]/80" />
+          </div>
+
+          {/* Grid texture overlay */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04] z-0"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(200,184,152,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(200,184,152,0.3) 1px, transparent 1px)',
+              backgroundSize: '64px 64px',
+            }}
+          />
+          {/* Radial glow */}
+          <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(200,184,152,0.06) 0%, transparent 70%)' }} />
+
+          <div className="relative mx-auto max-w-[1440px] w-full px-6 text-center z-10">
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="mb-3 text-[11px] uppercase tracking-[0.26em] text-[#c8b898]/70"
+              style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+            >
+              {t('homepage.statsLabel')}
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="mb-16 text-[clamp(1.5rem,3vw,2.5rem)] text-white"
+              style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+            >
+              {t('homepage.statsTitle')}
+            </motion.h2>
+
+            <motion.div
+              initial="hidden"
+              animate={activeSection === 'stats' ? 'visible' : 'hidden'}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.15 } }
+              }}
+              className="grid grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-16"
+            >
+              {stats.map((stat, i) => (
+                <motion.div
+                  key={i}
+                  variants={{
+                    hidden: { opacity: 0, y: 40, scale: 0.9 },
+                    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } }
+                  }}
+                  className="flex flex-col items-center gap-3"
+                >
+                  {/* Gold decorative top line */}
+                  <div className="mb-2 h-px w-10" style={{ background: 'linear-gradient(90deg, transparent, #c8b898, transparent)' }} />
+                  <span
+                    className="text-[clamp(2.2rem,5vw,3.8rem)] leading-none text-white"
+                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                  >
+                    {t(`homepage.${stat.valueKey}` as Parameters<typeof t>[0])}
+                  </span>
+                  <span
+                    className="text-[11px] uppercase tracking-[0.18em] text-[#c8b898]/60"
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}
+                  >
+                    {t(`homepage.${stat.labelKey}` as Parameters<typeof t>[0])}
+                  </span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* CTA below stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-16 flex justify-center"
+            >
+              <button
+                onClick={() => navigate('/ai-room-planner')}
+                className="group flex items-center gap-2.5 rounded-xl border px-8 py-3.5 text-[11px] uppercase tracking-[0.18em] text-white/70 transition-all duration-300 hover:border-[#c8b898]/40 hover:text-white"
+                style={{ border: '1px solid rgba(200,184,152,0.2)' }}
+              >
+                <Sparkles size={13} className="text-[#c8b898]" />
+                {t('homepage.startScan')}
+                <ChevronRight size={12} className="opacity-40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
+              </button>
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            onClick={() => scrollToSection('footer')}
+          >
+            <ChevronDown size={28} className="text-[#c8b898]/60 opacity-80 hover:opacity-100 transition-opacity" />
+          </motion.div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            Section 8: Footer
+        ═══════════════════════════════════════════════════ */}
+        <section
+          id="footer"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-end bg-white relative overflow-hidden pt-[72px]"
+        >
+          <div className="flex-grow flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={activeSection === 'footer' ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full"
+            >
+              <Footer />
+            </motion.div>
           </div>
         </section>
       </main>
 
-      <Footer />
+      {/* ═══════════════════════════════════════════════════
+          Side Dot Navigation (desktop only)
+      ═══════════════════════════════════════════════════ */}
+      <div className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3.5 md:flex">
+        {dotNavItems.map((sec) => {
+          const isActive = activeSection === sec.id
+          return (
+            <button
+              key={sec.id}
+              onClick={() => scrollToSection(sec.id)}
+              className="group relative flex items-center justify-end"
+              aria-label={`Scroll to ${sec.label}`}
+            >
+              <span
+                className="absolute right-8 scale-95 rounded-lg bg-black/90 px-3 py-1.5 text-[10px] tracking-wider text-white opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 group-hover:scale-100 group-hover:opacity-100"
+                style={{ fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}
+              >
+                {sec.label}
+              </span>
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${isActive
+                  ? 'w-5 bg-[#a08c6a]'
+                  : 'w-2 bg-neutral-300 hover:bg-neutral-500'
+                  }`}
+              />
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
