@@ -29,7 +29,7 @@ import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 // ---------------------------------------------------------------------------
 // Section type — 8 fullscreen sections total
 // ---------------------------------------------------------------------------
-type SectionId = 'hero' | 'features' | 'stats' | 'testimonials' | 'pricing' | 'process' | 'footer'
+type SectionId = 'hero' | 'features' | 'stats' | 'discovery' | 'pricing' | 'process' | 'footer'
 
 // ---------------------------------------------------------------------------
 // Global top navigation with account dropdown actions.
@@ -739,19 +739,22 @@ function Hompage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const isScrollingRef = useRef(false)
   const activeSectionRef = useRef<SectionId>('hero')
-
   // Keep ref in sync with state
   useEffect(() => {
     activeSectionRef.current = activeSection
   }, [activeSection])
 
-  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'testimonials', 'pricing', 'stats', 'footer']
+  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'discovery', 'pricing', 'stats', 'footer']
 
   const scrollToSection = (id: SectionId) => {
     const el = document.getElementById(id)
     if (el) {
+      isScrollingRef.current = true
       el.scrollIntoView({ behavior: 'smooth' })
-      setActiveSection(id) // Update state immediately for instant animation/indicator response
+      setActiveSection(id)
+      setTimeout(() => {
+        isScrollingRef.current = false
+      }, 1000)
     }
   }
 
@@ -763,10 +766,13 @@ function Hompage() {
     const observerOptions = {
       root: container,
       rootMargin: '0px',
-      threshold: 0.4,
+      threshold: 0.25,
     }
 
     const observer = new IntersectionObserver((entries) => {
+      // Ignore intersection updates during programmatic smooth scrolls
+      if (isScrollingRef.current) return
+
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           setActiveSection(entry.target.id as SectionId)
@@ -804,11 +810,7 @@ function Hompage() {
       }
 
       if (nextIndex !== currentIndex) {
-        isScrollingRef.current = true
         scrollToSection(sectionsList[nextIndex])
-        setTimeout(() => {
-          isScrollingRef.current = false
-        }, 1000)
       }
     }
 
@@ -832,11 +834,7 @@ function Hompage() {
       }
 
       if (nextIndex !== currentIndex) {
-        isScrollingRef.current = true
         scrollToSection(sectionsList[nextIndex])
-        setTimeout(() => {
-          isScrollingRef.current = false
-        }, 1000)
       }
     }
 
@@ -892,24 +890,62 @@ function Hompage() {
     { valueKey: 'stat4Value', labelKey: 'stat4Label' },
   ]
 
-  const testimonials = [
+  const discoveryProducts = [
     {
-      quoteKey: 'testimonial1Quote',
-      authorKey: 'testimonial1Author',
-      roleKey: 'testimonial1Role',
-      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088466/section4-1_jcmstz.png',
+      id: '1',
+      name: language === 'vi' ? 'Sofa vải lanh Serene' : 'Serene Linen Sofa',
+      category: language === 'vi' ? 'Sofa' : 'Sofas',
+      price: language === 'vi' ? '110.000.000 ₫' : '$4,890',
+      imageUrl: 'https://images.unsplash.com/photo-1759722668767-3f9cb7468b7b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     },
     {
-      quoteKey: 'testimonial2Quote',
-      authorKey: 'testimonial2Author',
-      roleKey: 'testimonial2Role',
-      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088467/section4-2_cvbdpe.png',
+      id: '2',
+      name: language === 'vi' ? 'Bàn bên Carrara' : 'Carrara Side Table',
+      category: language === 'vi' ? 'Bàn' : 'Tables',
+      price: language === 'vi' ? '51.000.000 ₫' : '$2,290',
+      imageUrl: 'https://images.unsplash.com/photo-1765766638341-0beb9eb9926c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     },
     {
-      quoteKey: 'testimonial3Quote',
-      authorKey: 'testimonial3Author',
-      roleKey: 'testimonial3Role',
-      avatarUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088576/section4-3_gp2fun.png',
+      id: '3',
+      name: language === 'vi' ? 'Ghế thư giãn gỗ óc chó' : 'Walnut Lounge Chair',
+      category: language === 'vi' ? 'Ghế' : 'Chairs',
+      price: language === 'vi' ? '70.000.000 ₫' : '$3,140',
+      imageUrl: 'https://images.unsplash.com/photo-1762803841091-c5327f7aed37?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    },
+    {
+      id: '4',
+      name: language === 'vi' ? 'Đèn thả đồng thau Atelier' : 'Atelier Brass Pendant',
+      category: language === 'vi' ? 'Đèn chiếu sáng' : 'Lighting',
+      price: language === 'vi' ? '33.000.000 ₫' : '$1,480',
+      imageUrl: 'https://images.unsplash.com/photo-1767979066193-83dffc4a4f3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    },
+    {
+      id: '5',
+      name: language === 'vi' ? 'Bàn ăn gỗ sồi Nordic' : 'Nordic Oak Dining Table',
+      category: language === 'vi' ? 'Bàn' : 'Tables',
+      price: language === 'vi' ? '127.000.000 ₫' : '$5,640',
+      imageUrl: 'https://images.unsplash.com/photo-1772442363851-738a548f6c5c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    },
+    {
+      id: '6',
+      name: language === 'vi' ? 'Ghế accent Boucle' : 'Boucle Accent Chair',
+      category: language === 'vi' ? 'Ghế' : 'Chairs',
+      price: language === 'vi' ? '66.000.000 ₫' : '$2,950',
+      imageUrl: 'https://images.unsplash.com/photo-1768946131690-247c5319f0d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    },
+    {
+      id: '7',
+      name: language === 'vi' ? 'Hệ kệ mây Rattan' : 'Rattan Shelf System',
+      category: language === 'vi' ? 'Tủ lưu trữ' : 'Storage',
+      price: language === 'vi' ? '42.000.000 ₫' : '$1,890',
+      imageUrl: 'https://images.unsplash.com/photo-1734120113877-ef06ed3a10f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
+    },
+    {
+      id: '8',
+      name: language === 'vi' ? 'Bàn trà Travertine' : 'Travertine Coffee Table',
+      category: language === 'vi' ? 'Bàn' : 'Tables',
+      price: language === 'vi' ? '85.000.000 ₫' : '$3,780',
+      imageUrl: 'https://images.unsplash.com/photo-1755770355297-1526e33a3c82?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     },
   ]
 
@@ -938,7 +974,7 @@ function Hompage() {
     { id: 'hero' as SectionId, label: t('homepage.roomVisualiser') },
     { id: 'process' as SectionId, label: t('homepage.howItWorks') },
     { id: 'features' as SectionId, label: t('homepage.featuresLabel') },
-    { id: 'testimonials' as SectionId, label: t('homepage.testimonialsLabel') },
+    { id: 'discovery' as SectionId, label: t('homepage.discoveryLabel') },
     { id: 'pricing' as SectionId, label: t('homepage.pricingLabel') },
     { id: 'stats' as SectionId, label: t('homepage.statsLabel') },
     { id: 'footer' as SectionId, label: language === 'vi' ? 'Thông tin liên hệ' : 'Contact & Info' },
@@ -1251,7 +1287,7 @@ function Hompage() {
             className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
             animate={{ y: [0, 8, 0] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            onClick={() => scrollToSection('testimonials')}
+            onClick={() => scrollToSection('discovery')}
           >
             <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
           </motion.div>
@@ -1260,107 +1296,152 @@ function Hompage() {
         {/* ═══════════════════════════════════════════════════
             Section 4: Testimonials
         ═══════════════════════════════════════════════════ */}
+        {/* ═══════════════════════════════════════════════════
+            Section 4: Discovery
+        ═══════════════════════════════════════════════════ */}
         <section
-          id="testimonials"
+          id="discovery"
           className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-[#faf9f7] px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
         >
-          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(200,184,152,0.08) 0%, transparent 70%)' }} />
-          <div className="relative mx-auto max-w-[1440px] w-full">
-            <div className="mb-14 text-center">
-              <motion.p
-                initial={{ opacity: 0, y: 15 }}
-                animate={activeSection === 'testimonials' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
-                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
-              >
-                {t('homepage.testimonialsLabel')}
-              </motion.p>
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'testimonials' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="text-[clamp(1.5rem,3vw,2.25rem)] text-black"
-                style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
-              >
-                {t('homepage.testimonialsTitle')}
-              </motion.h2>
-            </div>
+          <style>{`
+            @keyframes marquee-up {
+              0% { transform: translateY(0); }
+              100% { transform: translateY(-50%); }
+            }
+            @keyframes marquee-down {
+              0% { transform: translateY(-50%); }
+              100% { transform: translateY(0); }
+            }
+            .animate-marquee-up {
+              animation: marquee-up 28s linear infinite;
+            }
+            .animate-marquee-down {
+              animation: marquee-down 28s linear infinite;
+            }
+          `}</style>
 
-            <motion.div
-              initial="hidden"
-              animate={activeSection === 'testimonials' ? 'visible' : 'hidden'}
-              variants={{
-                hidden: {},
-                visible: { transition: { staggerChildren: 0.15 } }
-              }}
-              className="grid grid-cols-1 gap-6 md:grid-cols-3 px-4"
-            >
-              {testimonials.map((t_item, i) => (
-                <motion.div
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } }
-                  }}
-                  className="relative flex flex-col rounded-[20px] border border-[#c8b898]/20 p-8"
-                  style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fdf9f4 100%)' }}
-                >
-                  {/* Stars */}
-                  <div className="mb-5 flex gap-1">
-                    {Array.from({ length: 5 }).map((_, s) => (
-                      <Star key={s} size={13} className="fill-[#c8b898] text-[#c8b898]" />
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(200,184,152,0.08) 0%, transparent 70%)' }} />
+          
+          <div className="relative mx-auto max-w-[1440px] w-full px-4 md:px-8">
+            <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+              
+              {/* Left Column: Vertical Marquees */}
+              <div className="lg:col-span-7 h-[420px] md:h-[500px] overflow-hidden grid grid-cols-2 gap-6 relative select-none rounded-[24px]">
+                {/* Fade overlays for elevation depth */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#faf9f7] to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-[#faf9f7] to-transparent" />
+
+                {/* Column 1: Upwards */}
+                <div className="overflow-hidden relative h-full">
+                  <div className="flex flex-col gap-5 animate-marquee-up hover:[animation-play-state:paused]">
+                    {[...discoveryProducts.slice(0, 4), ...discoveryProducts.slice(0, 4)].map((product, i) => (
+                      <div
+                        key={`up-${i}`}
+                        onClick={() => navigate(`/product/${product.id}`)}
+                        className="group flex flex-col rounded-2xl border border-black/5 bg-white p-4 transition-all duration-300 hover:shadow-[0_12px_24px_rgba(200,184,152,0.15)] hover:border-[#c8b898]/40 hover:-translate-y-0.5 cursor-pointer"
+                      >
+                        <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 mb-3.5 relative">
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          <div className="absolute top-2 left-2 rounded-full bg-white/80 backdrop-blur-md px-2 py-0.5 text-[8px] uppercase tracking-wider text-[#a08c6a] border border-[#c8b898]/20">
+                            {product.category}
+                          </div>
+                        </div>
+                        <h4 className="text-[12px] font-medium text-black line-clamp-1 group-hover:text-[#a08c6a] transition-colors" style={{ fontFamily: 'Playfair Display, serif' }}>
+                          {product.name}
+                        </h4>
+                        <p className="text-[11px] text-[#8a7456] mt-1 font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          {product.price}
+                        </p>
+                      </div>
                     ))}
                   </div>
-                  {/* Large decorative quote mark */}
-                  <span
-                    className="absolute right-8 top-6 text-[64px] leading-none text-[#c8b898]/15 select-none"
-                    style={{ fontFamily: 'Playfair Display, serif' }}
-                  >"</span>
-                  {/* Quote */}
-                  <p
-                    className="mb-8 flex-1 text-[14px] italic leading-relaxed text-neutral-600"
-                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
-                  >
-                    "{t(`homepage.${t_item.quoteKey}` as Parameters<typeof t>[0])}"
-                  </p>
-                  {/* Author */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(200,184,152,0.20)] overflow-hidden">
-                      {t_item.avatarUrl ? (
-                        <img
-                          src={t_item.avatarUrl}
-                          alt={t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0]) as string}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span
-                          className="text-[13px] text-[#8a7456]"
-                          style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}
-                        >
-                          {(t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0]) as string)[0]}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <p
-                        className="text-[13px] text-black"
-                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                </div>
+
+                {/* Column 2: Downwards */}
+                <div className="overflow-hidden relative h-full">
+                  <div className="flex flex-col gap-5 animate-marquee-down hover:[animation-play-state:paused]">
+                    {[...discoveryProducts.slice(4, 8), ...discoveryProducts.slice(4, 8)].map((product, i) => (
+                      <div
+                        key={`down-${i}`}
+                        onClick={() => navigate(`/product/${product.id}`)}
+                        className="group flex flex-col rounded-2xl border border-black/5 bg-white p-4 transition-all duration-300 hover:shadow-[0_12px_24px_rgba(200,184,152,0.15)] hover:border-[#c8b898]/40 hover:-translate-y-0.5 cursor-pointer"
                       >
-                        {t(`homepage.${t_item.authorKey}` as Parameters<typeof t>[0])}
-                      </p>
-                      <p
-                        className="text-[11px] text-neutral-400"
-                        style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-                      >
-                        {t(`homepage.${t_item.roleKey}` as Parameters<typeof t>[0])}
-                      </p>
-                    </div>
+                        <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 mb-3.5 relative">
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          <div className="absolute top-2 left-2 rounded-full bg-white/80 backdrop-blur-md px-2 py-0.5 text-[8px] uppercase tracking-wider text-[#a08c6a] border border-[#c8b898]/20">
+                            {product.category}
+                          </div>
+                        </div>
+                        <h4 className="text-[12px] font-medium text-black line-clamp-1 group-hover:text-[#a08c6a] transition-colors" style={{ fontFamily: 'Playfair Display, serif' }}>
+                          {product.name}
+                        </h4>
+                        <p className="text-[11px] text-[#8a7456] mt-1 font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          {product.price}
+                        </p>
+                      </div>
+                    ))}
                   </div>
+                </div>
+
+              </div>
+
+              {/* Right Column: Copy text & CTA */}
+              <div className="lg:col-span-5 flex flex-col justify-center text-left">
+                <motion.p
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                >
+                  {t('homepage.discoveryLabel')}
+                </motion.p>
+                <motion.h2
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-5 text-[clamp(1.75rem,3.5vw,2.5rem)] leading-tight text-black"
+                  style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                >
+                  {t('homepage.discoveryTitle')}
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-8 text-[13px] leading-relaxed text-neutral-500"
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                >
+                  {t('homepage.discoveryDesc')}
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+                  transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <button
+                    onClick={() => navigate('/discovery')}
+                    className="group inline-flex items-center gap-2.5 rounded-xl bg-[#161311] px-7 py-3.5 text-[11px] uppercase tracking-[0.18em] text-white shadow-[0_12px_30px_rgba(20,17,14,0.15)] transition-transform duration-300 hover:-translate-y-0.5"
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
+                  >
+                    {t('homepage.discoveryCta')}
+                    <ChevronRight size={13} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </button>
                 </motion.div>
-              ))}
-            </motion.div>
+              </div>
+
+            </div>
           </div>
 
           <motion.div
@@ -1378,10 +1459,49 @@ function Hompage() {
         ═══════════════════════════════════════════════════ */}
         <section
           id="pricing"
-          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-white px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-[#faf9f7] px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[400px]" style={{ background: 'radial-gradient(ellipse 70% 55% at 50% 0%, rgba(200,184,152,0.10) 0%, transparent 70%)' }} />
-          <div className="relative mx-auto max-w-[1440px] w-full">
+          {/* Floating glowing orbs for Glassmorphism depth */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <motion.div
+              className="absolute -left-10 top-1/4 h-[300px] w-[300px] rounded-full bg-[#c8b898]/12 blur-[80px]"
+              animate={{
+                x: [0, 40, 0],
+                y: [0, 30, 0],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 8,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute right-10 bottom-1/4 h-[350px] w-[350px] rounded-full bg-[#a08c6a]/8 blur-[100px]"
+              animate={{
+                x: [0, -50, 0],
+                y: [0, -40, 0],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 10,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute left-1/3 top-1/3 h-[250px] w-[250px] rounded-full bg-[#f4efe6]/40 blur-[70px]"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 6,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
+
+          <div className="relative mx-auto max-w-[1440px] w-full z-10">
             <div className="mb-14 text-center">
               <motion.p
                 initial={{ opacity: 0, y: 15 }}
@@ -1428,14 +1548,15 @@ function Hompage() {
                     hidden: { opacity: 0, y: 30 },
                     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
                   }}
-                  className={`relative flex flex-col rounded-[20px] border p-7 transition-all duration-500 hover:-translate-y-1 ${plan.highlight
-                    ? 'border-[#c8b898]/40 shadow-[0_8px_40px_rgba(200,184,152,0.18)]'
-                    : 'border-black/6 hover:border-[#c8b898]/30 hover:shadow-[0_4px_20px_rgba(200,184,152,0.10)]'
-                    }`}
+                  className={`relative flex flex-col rounded-[20px] border p-7 backdrop-blur-md transition-all duration-500 hover:-translate-y-1.5 ${
+                    plan.highlight
+                      ? 'border-white/10 shadow-[0_20px_50px_rgba(20,17,14,0.25)] hover:border-[#c8b898]/30 hover:shadow-[0_25px_60px_rgba(20,17,14,0.35)]'
+                      : 'border-white/60 shadow-[0_8px_32px_rgba(200,184,152,0.06)] hover:border-[#c8b898]/30 hover:shadow-[0_15px_40px_rgba(200,184,152,0.12)]'
+                  }`}
                   style={{
                     background: plan.highlight
-                      ? 'linear-gradient(135deg, #1a1714 0%, #252118 100%)'
-                      : 'linear-gradient(135deg, #fdfcfb 0%, #faf8f5 100%)',
+                      ? 'linear-gradient(135deg, rgba(26,23,20,0.92) 0%, rgba(37,33,24,0.95) 100%)'
+                      : 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(250,248,245,0.35) 100%)',
                   }}
                 >
                   {plan.highlight && (
@@ -1446,7 +1567,7 @@ function Hompage() {
                     </div>
                   )}
                   {plan.imageUrl && (
-                    <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-black/5 bg-white shadow-sm overflow-hidden">
+                    <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-white/70 shadow-sm overflow-hidden transition-transform duration-300 hover:scale-105">
                       <img
                         src={plan.imageUrl}
                         alt={t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0]) as string}
@@ -1507,7 +1628,7 @@ function Hompage() {
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             onClick={() => scrollToSection('stats')}
           >
-            <ChevronDown size={28} className="text-[#a08c6a] opacity-80 hover:opacity-100 transition-opacity" />
+            <ChevronDown size={28} className="text-[#c8b898]/60 opacity-80 hover:opacity-100 transition-opacity" />
           </motion.div>
         </section>
 

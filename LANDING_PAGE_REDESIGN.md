@@ -19,7 +19,7 @@ The goal of this redesign was to transform the landing page into an editorial, f
 | 1 | `hero` | Warm gradient | Hero + Before/After AI showcase |
 | 2 | `process` | `#faf9f7` | 3-step how-it-works flow |
 | 3 | `features` | White | 4 feature cards (AI viz, styles, comparison, shopping) |
-| 4 | `testimonials` | `#faf9f7` | 3 customer quotes with stars and author info |
+| 4 | `discovery` | `#faf9f7` | Split section showcasing vertical scrolling product marquees on the left and discovery intro on the right |
 | 5 | `pricing` | White | 4 pricing plan cards, CTA → `/subscription` |
 | 6 | `stats` | Dark charcoal `#1a1714` | Social proof numbers (12k+ rooms, 50+ styles, 4.9★, <60s) |
 | 7 | `footer` | White | Global footer with links |
@@ -77,12 +77,12 @@ An animated accordion item component:
 - Numbers animate in with `scale: 0.9 → 1` + stagger
 - CTA button below stats linking to `/ai-room-planner`
 
-#### 4. New Section: Testimonials (`id="testimonials"`)
+#### 4. New Section: Discovery (`id="discovery"`)
 
-- Light `#faf9f7` background
-- 3 testimonial cards from `testimonials[]` data array
-- Each card: 5 gold stars, italic quote in Playfair Display, decorative `"` quotemark, author avatar (initial letter)
-- Cards animate in with stagger
+- Light `#faf9f7` background.
+- Split-screen layout:
+  - Left side (`lg:col-span-7`): Two columns of vertically scrolling product cards (marquees) displaying products from Unsplash (Framer Motion / CSS keyframes). Hovering pauses the animation. Click navigates to product details.
+  - Right side (`lg:col-span-5`): Title, description, and "Explore Collection" button directing users to `/discovery`.
 
 #### 5. New Section: Pricing Preview (`id="pricing"`)
 
