@@ -21,8 +21,6 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { getFeaturedProducts } from '../services/productApi'
 import type { NewArrivalProduct } from '../services/productApi'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
-import heroAfterImage from '../assets/hero-after.png'
-import heroBeforeImage from '../assets/hero-before.png'
 // test deploy 2
 
 // Global top navigation with account dropdown actions.
@@ -591,7 +589,7 @@ function BeforeAfterShowcase() {
         <div className="group relative overflow-hidden rounded-[24px]">
           <div className="aspect-[4/3] overflow-hidden">
             <img
-              src={heroBeforeImage}
+              src="https://res.cloudinary.com/dgz3rhiv4/image/upload/v1780894218/ChatGPT_Image_Jun_8_2026_11_50_07_AM_xycatx.png"
               alt="Before room"
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
@@ -620,7 +618,7 @@ function BeforeAfterShowcase() {
         <div className="group relative overflow-hidden rounded-[24px]">
           <div className="aspect-[4/3] overflow-hidden">
             <img
-              src={heroAfterImage}
+              src="https://res.cloudinary.com/dgz3rhiv4/image/upload/v1780894205/ChatGPT_Image_Jun_8_2026_11_47_54_AM_unvcav.png"
               alt="After AI furniture integration"
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"
