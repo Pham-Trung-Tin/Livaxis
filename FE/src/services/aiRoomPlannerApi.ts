@@ -43,6 +43,7 @@ export type TurnsInfo = {
   turnsUsed: number | null
   turnsRemaining: number | null
   dailyLimit: number | null
+  purchasedTurns?: number | null
 }
 
 export const getAiTurns = async (): Promise<TurnsInfo> => {

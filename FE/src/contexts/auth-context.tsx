@@ -8,6 +8,7 @@ export type AuthUser = {
   avatarUrl?: string
   role: 'user' | 'manager' | 'admin'
   subscriptionPlan?: 'starter' | 'standard' | 'premium' | null
+  aiTurns?: number
   aiTurnsUsed?: number
   isActive: boolean
   emailVerified: boolean

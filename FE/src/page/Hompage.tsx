@@ -251,7 +251,13 @@ export function Header() {
                               ) : (
                                 <>
                                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#1a1a1a', fontFamily: 'Inter, sans-serif', lineHeight: 1.3 }}>
-                                    {t('homepage.turnsRemaining').replace('{remaining}', String(turnsInfo.turnsRemaining)).replace('{limit}', String(turnsInfo.dailyLimit))}
+                                    {turnsInfo.purchasedTurns && turnsInfo.purchasedTurns > 0
+                                      ? (language === 'vi'
+                                        ? `${turnsInfo.turnsRemaining} lượt thử AI (${turnsInfo.purchasedTurns} mua thêm)`
+                                        : `${turnsInfo.turnsRemaining} AI Try-ons (${turnsInfo.purchasedTurns} purchased)`)
+                                      : t('homepage.turnsRemaining')
+                                          .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
+                                          .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
                                   </p>
                                   <p style={{ margin: 0, fontSize: 10, color: '#a08c6a', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
                                     {t('homepage.resetsDaily')}

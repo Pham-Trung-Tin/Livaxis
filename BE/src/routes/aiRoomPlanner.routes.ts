@@ -21,7 +21,7 @@ aiRoomPlannerRouter.post('/detect-floor', detectFloorController);
 // Protected — must be logged in
 aiRoomPlannerRouter.get('/turns', authenticate, getTurnsController);
 
-// Protected + turn-limited (auth temporarily relaxed for testing)
-aiRoomPlannerRouter.post('/generate', generateController);
+// Protected + turn-limited
+aiRoomPlannerRouter.post('/generate', authenticate, checkAiTurns, generateController);
 
 export { aiRoomPlannerRouter };

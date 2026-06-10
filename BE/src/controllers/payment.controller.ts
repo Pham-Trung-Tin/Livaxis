@@ -123,9 +123,17 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
 
   if (registration) {
     try {
+      let planId: 'starter' | 'standard' | 'premium' | null = null;
+      if (registration.turnsToAdd === 10) planId = 'starter';
+      else if (registration.turnsToAdd === 40) planId = 'standard';
+      else if (registration.turnsToAdd === 70) planId = 'premium';
+
       const updatedUser = await User.findByIdAndUpdate(
         registration.userId,
-        { $inc: { aiTurns: registration.turnsToAdd } },
+        { 
+          $inc: { aiTurns: registration.turnsToAdd },
+          subscriptionPlan: planId,
+        },
         { new: true },
       );
 

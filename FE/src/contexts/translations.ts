@@ -433,7 +433,7 @@ export const translations = {
       reimaginedTitle: 'Căn phòng của bạn, được tái kiến tạo.',
       startToday: 'Bắt đầu ngay hôm nay.',
       startTodayDesc: 'Tham gia cùng những người đam mê thiết kế đang sử dụng công cụ lên kế hoạch phòng bằng AI để chuyển đổi ý tưởng thành hiện thực nhanh chóng.',
-      freeForever: 'Miễn phí mãi mãi',
+      freeForever: 'Miễn phí',
       oneTimePack: 'Gói mua một lần',
       mostPopularBadge: 'Phổ biến nhất',
       plans: {
@@ -446,17 +446,18 @@ export const translations = {
           cta: 'Gói hiện tại',
           features: [
             '3 lượt Thử đồ AI / ngày',
-            'Xuất hình ảnh độ phân giải tiêu chuẩn',
+            'Dành cho mọi tài khoản Livaxis',
             'Phân tích phòng cơ bản',
             'Truy cập thư viện cộng đồng'
           ]
         },
         starter: {
-          name: 'Gói Khởi đầu (Starter Pack)',
+          name: 'Gói Khởi đầu (10 lượt)',
           tagline: 'Hoàn hảo cho nhu cầu thỉnh thoảng sử dụng',
-          priceNote: 'mua một lần · không gia hạn',
+          price: '19.000 ₫',
+          priceNote: 'mua một lần · không giới hạn thời gian',
           turns: '10 lượt Thử đồ AI',
-          turnsNote: 'hạn dùng trong 30 ngày',
+          turnsNote: 'hiệu lực trọn đời',
           cta: 'Chọn gói Khởi đầu',
           features: [
             '10 lượt Thử đồ AI',
@@ -467,40 +468,39 @@ export const translations = {
           ]
         },
         standard: {
-          name: 'Đam mê thiết kế (Design Enthusiast)',
+          name: 'Đam mê thiết kế (40 lượt)',
           tagline: 'Nâng tầm không gian nội thất của bạn',
-          priceNote: {
-            monthly: 'mỗi tháng',
-            yearly: 'mỗi năm · tiết kiệm 10%'
-          },
-          turns: {
-            monthly: '50 lượt Thử đồ AI',
-            yearly: '600 lượt Thử đồ AI'
-          },
-          turnsNote: {
-            monthly: 'mỗi tháng · cộng dồn',
-            yearly: 'mỗi năm · ~50 lượt/tháng'
-          },
+          price: '49.000 ₫',
+          priceNote: 'mua một lần · không giới hạn thời gian',
+          turns: '40 lượt Thử đồ AI',
+          turnsNote: 'hiệu lực trọn đời',
           cta: 'Chọn gói Đam mê',
-          features: {
-            monthly: [
-              '50 lượt Thử đồ AI / tháng',
-              'Tải xuống chất lượng cao không giới hạn',
-              'Ưu tiên xử lý bằng Gemini AI',
-              'Gợi ý trang trí nâng cao',
-              'Hồ sơ phong cách & bảng ý tưởng',
-              'Ưu tiên hỗ trợ qua Email'
-            ],
-            yearly: [
-              '600 lượt Thử đồ AI / năm',
-              'Tải xuống chất lượng cao không giới hạn',
-              'Ưu tiên xử lý bằng Gemini AI',
-              'Gợi ý trang trí nâng cao',
-              'Hồ sơ phong cách & bảng ý tưởng',
-              'Ưu tiên hỗ trợ qua Email'
-            ]
-          },
-          extras: ['Đặc quyền thành viên sớm', 'Trải nghiệm tính năng mới sớm hơn']
+          features: [
+            '40 lượt Thử đồ AI',
+            'Tải xuống chất lượng cao không giới hạn',
+            'Ưu tiên xử lý bằng Gemini AI',
+            'Gợi ý trang trí nâng cao',
+            'Hồ sơ phong cách & bảng ý tưởng',
+            'Ưu tiên hỗ trợ qua Email'
+          ],
+          extras: ['Đặc quyền thành viên sớm']
+        },
+        premium: {
+          name: 'Chuyên gia sáng tạo (70 lượt)',
+          tagline: 'Trực quan hóa không giới hạn giới hạn sáng tạo',
+          price: '79.000 ₫',
+          priceNote: 'mua một lần · không giới hạn thời gian',
+          turns: '70 lượt Thử đồ AI',
+          turnsNote: 'hiệu lực trọn đời',
+          cta: 'Chọn gói Chuyên gia',
+          features: [
+            '70 lượt Thử đồ AI',
+            'Tải xuống chất lượng cao không giới hạn',
+            'Ưu tiên xử lý bằng Gemini AI',
+            'Bố trí dự án nhiều phòng',
+            'Tư vấn thiết kế riêng & Xuất thuyết trình',
+            'Hỗ trợ kỹ thuật 24/7'
+          ]
         }
       },
       compareHeaders: ['Lượt Thử đồ AI', 'Tải xuống chất lượng cao', 'Ưu tiên xử lý bằng Gemini AI', 'So sánh Trước/Sau', 'Hồ sơ phong cách & bảng ý tưởng', 'Dự án nhiều phòng', 'Tư vấn thiết kế riêng', 'Xuất bản thuyết trình cho khách hàng'],
@@ -1039,7 +1039,7 @@ export const translations = {
       reimaginedTitle: 'Your room, reimagined.',
       startToday: 'Start today.',
       startTodayDesc: 'Join design-conscious users who already use AI-assisted room planning to move faster from idea to purchase.',
-      freeForever: 'Free Forever',
+      freeForever: 'Free',
       oneTimePack: 'One-Time Pack',
       mostPopularBadge: 'Most Popular',
       plans: {
@@ -1052,18 +1052,19 @@ export const translations = {
           cta: 'Current Plan',
           features: [
             '3 AI Try-On turns / day',
-            'Standard resolution exports',
+            'Available for all accounts',
             'Basic room analysis',
             'Community gallery access'
           ]
         },
         starter: {
-          name: 'Starter Pack',
+          name: 'Starter Pack (10 turns)',
           tagline: 'Perfect for occasional use',
-          priceNote: 'one-time · no subscription',
+          price: '19,000 ₫',
+          priceNote: 'one-time · no expiration date',
           turns: '10 AI Try-On turns',
-          turnsNote: 'valid for 30 days',
-          cta: 'Choose Starter',
+          turnsNote: 'lifetime validity',
+          cta: 'Choose 10 turns',
           features: [
             '10 AI Try-On turns',
             'Unlimited high-res downloads',
@@ -1073,40 +1074,39 @@ export const translations = {
           ]
         },
         standard: {
-          name: 'Design Enthusiast',
+          name: 'Design Enthusiast (40 turns)',
           tagline: 'Elevate your interiors',
-          priceNote: {
-            monthly: 'per month',
-            yearly: 'per year · save 10%'
-          },
-          turns: {
-            monthly: '50 AI Try-On turns',
-            yearly: '600 AI Try-On turns'
-          },
-          turnsNote: {
-            monthly: 'per month · rolls over',
-            yearly: 'per year · ~50/month'
-          },
-          cta: 'Choose Standard',
-          features: {
-            monthly: [
-              '50 AI Try-On turns / month',
-              'Unlimited high-res downloads',
-              'Gemini AI Priority Processing',
-              'Advanced decor suggestions',
-              'Style profile & mood board',
-              'Priority email support'
-            ],
-            yearly: [
-              '600 AI Try-On turns / year',
-              'Unlimited high-res downloads',
-              'Gemini AI Priority Processing',
-              'Advanced decor suggestions',
-              'Style profile & mood board',
-              'Priority email support'
-            ]
-          },
-          extras: ['Exclusive member drops', 'Early access to new features']
+          price: '49,000 ₫',
+          priceNote: 'one-time · no expiration date',
+          turns: '40 AI Try-On turns',
+          turnsNote: 'lifetime validity',
+          cta: 'Choose 40 turns',
+          features: [
+            '40 AI Try-On turns',
+            'Unlimited high-res downloads',
+            'Gemini AI Priority Processing',
+            'Advanced decor suggestions',
+            'Style profile & mood board',
+            'Priority email support'
+          ],
+          extras: ['Early member privileges']
+        },
+        premium: {
+          name: 'Creative Professional (70 turns)',
+          tagline: 'Unlimited creative visualization',
+          price: '79,000 ₫',
+          priceNote: 'one-time · no expiration date',
+          turns: '70 AI Try-On turns',
+          turnsNote: 'lifetime validity',
+          cta: 'Choose 70 turns',
+          features: [
+            '70 AI Try-On turns',
+            'Unlimited high-res downloads',
+            'Gemini AI Priority Processing',
+            'Multi-room projects',
+            'Personal design consultation & export',
+            '24/7 Priority support'
+          ]
         }
       },
       compareHeaders: ['AI Try-On turns', 'High-res downloads', 'Gemini Priority Processing', 'Before/After comparisons', 'Style profile & mood board', 'Multi-room projects', 'Design concierge', 'Client presentation exports'],

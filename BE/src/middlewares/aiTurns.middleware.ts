@@ -2,8 +2,8 @@ import type { NextFunction, Request, Response } from 'express';
 import User from '../models/user.model';
 import { AppError } from '../utils/appError';
 
-/** Number of free AI turns granted to users without an active subscription, per day */
-const FREE_DAILY_TURNS = 100;
+/** Number of free AI turns granted to users per day */
+const FREE_DAILY_TURNS = 3;
 
 /** Returns true if the reset timestamp is from a previous calendar day (UTC) */
 function isNewDay(resetAt: Date): boolean {
@@ -17,9 +17,9 @@ function isNewDay(resetAt: Date): boolean {
 
 /**
  * Middleware: checks whether the authenticated user has remaining AI turns.
- * - Paid subscribers (starter / standard / premium) are not rate-limited by this middleware.
- * - Free users get FREE_DAILY_TURNS turns per UTC day; the counter resets automatically.
- * - Attaches `req.user.aiTurnsRemaining` so the controller can return it in the response.
+ * - Every user gets FREE_DAILY_TURNS free turns per UTC day.
+ * - Additionally, they can use purchased turns (aiTurns).
+ * - Attaches `aiTurnsInfo` for standard API responses.
  * Must be placed after the `authenticate` middleware.
  */
 export const checkAiTurns = async (
@@ -38,14 +38,6 @@ export const checkAiTurns = async (
     return;
   }
 
-  // Paid subscribers are not limited by daily free turns
-  if (user.subscriptionPlan) {
-    // Still attach info for convenience
-    (req as any).aiTurnsInfo = { unlimited: true, subscriptionPlan: user.subscriptionPlan };
-    next();
-    return;
-  }
-
   // Reset counter at the start of a new UTC day
   if (isNewDay(user.aiTurnsResetAt)) {
     user.aiTurnsUsed = 0;
@@ -54,14 +46,16 @@ export const checkAiTurns = async (
   }
 
   const turnsUsed = user.aiTurnsUsed ?? 0;
-  const turnsRemaining = Math.max(0, FREE_DAILY_TURNS - turnsUsed);
+  const freeTurnsRemaining = Math.max(0, FREE_DAILY_TURNS - turnsUsed);
+  const purchasedTurnsRemaining = Math.max(0, user.aiTurns ?? 0);
+  const turnsRemaining = freeTurnsRemaining + purchasedTurnsRemaining;
 
   if (turnsRemaining <= 0) {
     next(
       new AppError(
         429,
         'AI_TURNS_EXHAUSTED',
-        `Bạn đã sử dụng hết ${FREE_DAILY_TURNS} lượt thử AI miễn phí của ngày hôm nay. Hãy nâng cấp gói dịch vụ hoặc thử lại vào ngày mai.`,
+        `Bạn đã sử dụng hết lượt thử AI miễn phí hôm nay và lượt mua thêm. Hãy mua thêm lượt sử dụng hoặc thử lại vào ngày mai.`,
         { turnsUsed, turnsRemaining: 0, dailyLimit: FREE_DAILY_TURNS },
       ),
     );
@@ -74,6 +68,7 @@ export const checkAiTurns = async (
     turnsUsed,
     turnsRemaining,
     dailyLimit: FREE_DAILY_TURNS,
+    purchasedTurns: purchasedTurnsRemaining,
   };
 
   next();
@@ -81,12 +76,16 @@ export const checkAiTurns = async (
 
 /**
  * Helper called by the controller AFTER a successful generate to increment the counter.
- * Only increments for free users (paid subscribers are not tracked).
+ * Uses daily free turns first, then decrements purchased balance.
  */
 export async function incrementAiTurnsUsed(userId: string): Promise<void> {
   const user = await User.findById(userId);
-  if (!user || user.subscriptionPlan) return;
+  if (!user) return;
 
-  user.aiTurnsUsed = (user.aiTurnsUsed ?? 0) + 1;
+  if ((user.aiTurnsUsed ?? 0) < FREE_DAILY_TURNS) {
+    user.aiTurnsUsed = (user.aiTurnsUsed ?? 0) + 1;
+  } else {
+    user.aiTurns = Math.max(0, (user.aiTurns ?? 0) - 1);
+  }
   await user.save();
 }

@@ -3054,7 +3054,13 @@ export default function AIRoomPlanner() {
                 letterSpacing: '0.04em',
                 color: (turnsInfo.turnsRemaining ?? 0) > 0 ? 'inherit' : '#ffb4a0',
               }}>
-                {t('homepage.turnsRemaining').replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0)).replace('{limit}', String(turnsInfo.dailyLimit))}
+                {turnsInfo.purchasedTurns && turnsInfo.purchasedTurns > 0
+                  ? (language === 'vi'
+                    ? `${turnsInfo.turnsRemaining} lượt thử AI (${turnsInfo.purchasedTurns} mua thêm)`
+                    : `${turnsInfo.turnsRemaining} AI Try-ons (${turnsInfo.purchasedTurns} purchased)`)
+                  : t('homepage.turnsRemaining')
+                      .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
+                      .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
               </span>
             )}
           </button>

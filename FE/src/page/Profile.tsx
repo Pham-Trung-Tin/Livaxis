@@ -464,10 +464,10 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   className="rounded-2xl bg-white p-8 lg:p-10"
                 >
                   <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                    {t('profile.subscriptionPlan')}
+                    {language === 'vi' ? 'Lượt thử AI của bạn' : 'Your AI Turns'}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
-                    {t('profile.subscriptionPlanSub')}
+                    {language === 'vi' ? 'Quản lý số lượt sử dụng AI và số lượt mua thêm của bạn' : 'Manage your AI generation turns and purchased credit balance'}
                   </p>
 
                   <div className="mb-8 rounded-2xl border border-white/10 p-8" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}>
@@ -476,46 +476,34 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                         <div className="mb-2 flex items-center gap-2">
                           <Crown size={20} className="text-[#c8b898]" strokeWidth={1.5} />
                           <h3 className="text-[20px] tracking-tight text-white" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
-                            {t('profile.standardPlan')}
+                            {language === 'vi' ? 'Hạng thành viên' : 'Membership Level'}
                           </h3>
                         </div>
                         <p className="text-[13px] text-white/70" style={{ fontWeight: 300 }}>
-                          {t('profile.standardPlanPrice')}
+                          {language === 'vi' ? 'Tài khoản Livaxis Standard (3 lượt miễn phí/ngày)' : 'Livaxis Standard Account (3 free turns/day)'}
                         </p>
                       </div>
                       <div className="rounded-full px-3 py-1.5 text-[10px] uppercase tracking-wider" style={{ backgroundColor: 'rgba(200,184,152,0.2)', color: '#c8b898', fontWeight: 500 }}>
-                        {t('profile.active')}
+                        {language === 'vi' ? 'Đang hoạt động' : 'Active'}
                       </div>
-                    </div>
-
-                    <div className="mb-6 space-y-3">
-                      <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        {t('profile.features.0')}
-                      </p>
-                      <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        {t('profile.features.1')}
-                      </p>
-                      <p className="text-[13px] text-white/80" style={{ fontWeight: 300 }}>
-                        {t('profile.features.2')}
-                      </p>
                     </div>
 
                     <div className="border-t border-white/10 pt-6">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="mb-1 text-[11px] uppercase tracking-wide text-white/60" style={{ fontWeight: 400 }}>
-                            {t('profile.nextBillingDate')}
+                            {language === 'vi' ? 'Miễn phí hôm nay' : 'Daily Free Turns'}
                           </p>
                           <p className="text-[14px] text-white" style={{ fontWeight: 500 }}>
-                            {t('profile.billingDateValue')}
+                            {Math.max(0, 3 - (user.aiTurnsUsed ?? 0))} / 3 {language === 'vi' ? 'lượt còn lại' : 'remaining'}
                           </p>
                         </div>
                         <div>
                           <p className="mb-1 text-[11px] uppercase tracking-wide text-white/60" style={{ fontWeight: 400 }}>
-                            {t('profile.amount')}
+                            {language === 'vi' ? 'Lượt mua thêm' : 'Purchased Turns'}
                           </p>
                           <p className="text-[14px] text-white" style={{ fontWeight: 500 }}>
-                            49,000 VND
+                            {user.aiTurns ?? 0} {language === 'vi' ? 'lượt' : 'turns'}
                           </p>
                         </div>
                       </div>
@@ -526,15 +514,15 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                       <div>
                         <h4 className="mb-1 text-[16px] text-black" style={{ fontWeight: 600 }}>
-                          {t('profile.needMoreTurns')}
+                          {language === 'vi' ? 'Cần thêm lượt tạo trực quan bằng AI?' : 'Need more AI generations?'}
                         </h4>
                         <p className="text-[13px] text-neutral-600" style={{ fontWeight: 300 }}>
-                          {t('profile.upgradeDesc')}
+                          {language === 'vi' ? 'Mua thêm lượt thử AI bất cứ lúc nào với các gói ưu đãi giá rẻ.' : 'Purchase more AI turns at any time with our affordable one-time packages.'}
                         </p>
                       </div>
                       <button onClick={handleUpgrade} className="shrink-0 rounded-lg bg-[#1a1a1a] px-8 py-3 text-white transition-all duration-300 hover:bg-black">
                         <span className="text-[12px] uppercase tracking-[0.15em]" style={{ fontWeight: 500 }}>
-                          {t('profile.upgradePlan')}
+                          {language === 'vi' ? 'Mua thêm lượt' : 'Buy turns'}
                         </span>
                       </button>
                     </div>

@@ -24,22 +24,20 @@ import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
 import { translations } from '../contexts/translations'
 
-type BillingCycle = 'monthly' | 'yearly'
-
 type Plan = {
   id: string
   badge?: string
   name: string
   tagline: string
-  price: { monthly: string; yearly: string }
-  priceNote?: { monthly: string; yearly: string }
-  turns: { monthly: string; yearly: string }
-  turnsNote: { monthly: string; yearly: string }
-  turnsToAdd: { monthly: number; yearly: number }
+  price: string
+  priceNote?: string
+  turns: string
+  turnsNote?: string
+  turnsToAdd: number
   cta: string
   ctaStyle: 'ghost' | 'outline' | 'charcoal' | 'gold'
   highlight: boolean
-  features: { monthly: string[]; yearly: string[] }
+  features: string[]
   extras?: string[]
 }
 
@@ -106,70 +104,74 @@ export default function SubscriptionPage() {
       id: 'free',
       name: subTrans.plans.free.name,
       tagline: subTrans.plans.free.tagline,
-      price: { monthly: '0 ₫', yearly: '0 ₫' },
-      turns: { monthly: subTrans.plans.free.turns, yearly: subTrans.plans.free.turns },
-      turnsNote: { monthly: subTrans.plans.free.turnsNote, yearly: subTrans.plans.free.turnsNote },
-      turnsToAdd: { monthly: 0, yearly: 0 },
+      price: subTrans.plans.free.price,
+      turns: subTrans.plans.free.turns,
+      turnsNote: subTrans.plans.free.turnsNote,
+      turnsToAdd: 0,
       cta: subTrans.plans.free.cta,
       ctaStyle: 'ghost',
-      highlight: false,
-      features: {
-        monthly: subTrans.plans.free.features,
-        yearly: subTrans.plans.free.features,
-      },
+      highlight: (user?.subscriptionPlan || 'free') === 'free',
+      features: subTrans.plans.free.features,
     },
     {
       id: 'starter',
       name: subTrans.plans.starter.name,
       tagline: subTrans.plans.starter.tagline,
-      price: { monthly: '19.000 ₫', yearly: '190.000 ₫' },
-      priceNote: { monthly: subTrans.plans.starter.priceNote, yearly: subTrans.plans.starter.priceNote },
-      turns: { monthly: subTrans.plans.starter.turns, yearly: subTrans.plans.starter.turns },
-      turnsNote: { monthly: subTrans.plans.starter.turnsNote, yearly: subTrans.plans.starter.turnsNote },
-      turnsToAdd: { monthly: 10, yearly: 10 },
+      price: subTrans.plans.starter.price,
+      priceNote: subTrans.plans.starter.priceNote,
+      turns: subTrans.plans.starter.turns,
+      turnsNote: subTrans.plans.starter.turnsNote,
+      turnsToAdd: 10,
       cta: subTrans.plans.starter.cta,
       ctaStyle: 'outline',
-      highlight: false,
-      features: {
-        monthly: subTrans.plans.starter.features,
-        yearly: subTrans.plans.starter.features,
-      },
+      highlight: user?.subscriptionPlan === 'starter',
+      features: subTrans.plans.starter.features,
     },
     {
       id: 'standard',
       badge: subTrans.mostPopularBadge.toUpperCase(),
       name: subTrans.plans.standard.name,
       tagline: subTrans.plans.standard.tagline,
-      price: { monthly: '49.000 ₫', yearly: '490.000 ₫' },
-      priceNote: { monthly: subTrans.plans.standard.priceNote.monthly, yearly: subTrans.plans.standard.priceNote.yearly },
-      turns: { monthly: subTrans.plans.standard.turns.monthly, yearly: subTrans.plans.standard.turns.yearly },
-      turnsNote: { monthly: subTrans.plans.standard.turnsNote.monthly, yearly: subTrans.plans.standard.turnsNote.yearly },
-      turnsToAdd: { monthly: 50, yearly: 600 },
+      price: subTrans.plans.standard.price,
+      priceNote: subTrans.plans.standard.priceNote,
+      turns: subTrans.plans.standard.turns,
+      turnsNote: subTrans.plans.standard.turnsNote,
+      turnsToAdd: 40,
       cta: subTrans.plans.standard.cta,
       ctaStyle: 'charcoal',
-      highlight: true,
-      features: {
-        monthly: subTrans.plans.standard.features.monthly,
-        yearly: subTrans.plans.standard.features.yearly,
-      },
+      highlight: user?.subscriptionPlan === 'standard',
+      features: subTrans.plans.standard.features,
       extras: subTrans.plans.standard.extras,
+    },
+    {
+      id: 'premium',
+      name: subTrans.plans.premium.name,
+      tagline: subTrans.plans.premium.tagline,
+      price: subTrans.plans.premium.price,
+      priceNote: subTrans.plans.premium.priceNote,
+      turns: subTrans.plans.premium.turns,
+      turnsNote: subTrans.plans.premium.turnsNote,
+      turnsToAdd: 70,
+      cta: subTrans.plans.premium.cta,
+      ctaStyle: 'gold',
+      highlight: user?.subscriptionPlan === 'premium',
+      features: subTrans.plans.premium.features,
     },
   ]
 
   const COMPARISON_ROWS = [
-    { label: subTrans.compareHeaders[0], values: [language === 'vi' ? '3/ngày' : '3/day', '10', language === 'vi' ? '50/tháng' : '50/month'] },
-    { label: subTrans.compareHeaders[1], values: [false, true, true] },
-    { label: subTrans.compareHeaders[2], values: [false, true, true] },
-    { label: subTrans.compareHeaders[3], values: [false, true, true] },
-    { label: subTrans.compareHeaders[4], values: [false, false, true] },
-    { label: subTrans.compareHeaders[5], values: [false, false, false] },
-    { label: subTrans.compareHeaders[6], values: [false, false, false] },
-    { label: subTrans.compareHeaders[7], values: [false, false, false] },
+    { label: subTrans.compareHeaders[0], values: [language === 'vi' ? '3/ngày' : '3/day', '10', '40', '70'] },
+    { label: subTrans.compareHeaders[1], values: [false, true, true, true] },
+    { label: subTrans.compareHeaders[2], values: [false, true, true, true] },
+    { label: subTrans.compareHeaders[3], values: [false, true, true, true] },
+    { label: subTrans.compareHeaders[4], values: [false, false, true, true] },
+    { label: subTrans.compareHeaders[5], values: [false, false, false, true] },
+    { label: subTrans.compareHeaders[6], values: [false, false, false, true] },
+    { label: subTrans.compareHeaders[7], values: [false, false, false, true] },
   ]
 
   const TESTIMONIALS = subTrans.testimonials
 
-  const [billing, setBilling] = useState<BillingCycle>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const heroRef = useRef<HTMLDivElement | null>(null)
   const heroInView = useInView(heroRef, { once: true })
@@ -232,12 +234,11 @@ export default function SubscriptionPage() {
     setPaymentPlan(plan)
     setPaymentOpen(true)
     // Register the order with the backend so the webhook can credit aiTurns
-    // Use yearly turnsToAdd when billing is yearly
     if (user?.id) {
       void registerSubscriptionOrder({
         orderId: subOrderId,
         userId: user.id,
-        turnsToAdd: plan.turnsToAdd[billing],
+        turnsToAdd: plan.turnsToAdd,
       }).catch((err) => console.warn('[Payment] Failed to register order:', err))
     }
   }
@@ -304,56 +305,14 @@ export default function SubscriptionPage() {
             {subTrans.heroDesc}
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={heroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.26, duration: 0.45 }}
-            className="inline-flex items-center rounded-full border border-[#c8b898]/25 bg-[#f2ede6] p-1"
-          >
-            {(['monthly', 'yearly'] as BillingCycle[]).map((cycle) => (
-              <button
-                key={cycle}
-                onClick={() => setBilling(cycle)}
-                className="relative flex items-center gap-2 rounded-full px-6 py-2 transition-all duration-300"
-                style={{
-                  background: billing === cycle ? 'white' : 'transparent',
-                  boxShadow: billing === cycle ? '0 1px 6px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >
-                <span
-                  className="text-[12px] uppercase tracking-[0.08em]"
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: billing === cycle ? 500 : 400,
-                    color: billing === cycle ? '#1a1a1a' : '#999',
-                  }}
-                >
-                  {cycle === 'monthly' ? subTrans.toggleMonthly : subTrans.toggleYearly}
-                </span>
-                {cycle === 'yearly' && (
-                  <span
-                    className="rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-[0.06em]"
-                    style={{
-                      background: billing === 'yearly' ? '#1a1a1a' : 'rgba(200,184,152,0.3)',
-                      color: billing === 'yearly' ? 'white' : '#8a7456',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {subTrans.savePercentage}
-                  </span>
-                )}
-              </button>
-            ))}
-          </motion.div>
         </section>
 
         <section className="mx-auto max-w-[1440px] px-6 pb-24">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PLANS.map((plan, index) => (
               <PricingCard
                 key={plan.id}
                 plan={plan}
-                billing={billing}
                 index={index}
                 selected={selectedPlan === plan.id}
                 onSelect={() => setSelectedPlan(plan.id)}
@@ -435,7 +394,7 @@ export default function SubscriptionPage() {
             className="overflow-hidden rounded-2xl"
             style={{ border: '1px solid rgba(0,0,0,0.07)' }}
           >
-            <div className="grid grid-cols-4 border-b" style={{ borderColor: 'rgba(0,0,0,0.07)', background: '#fafafa' }}>
+            <div className="grid grid-cols-5 border-b" style={{ borderColor: 'rgba(0,0,0,0.07)', background: '#fafafa' }}>
               <div className="px-5 py-4" />
               {PLANS.map((plan) => (
                 <div
@@ -463,7 +422,7 @@ export default function SubscriptionPage() {
             {COMPARISON_ROWS.map((row, rowIndex) => (
               <div
                 key={row.label}
-                className="grid grid-cols-4"
+                className="grid grid-cols-5"
                 style={{
                   borderBottom: rowIndex < COMPARISON_ROWS.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none',
                   background: rowIndex % 2 === 0 ? 'white' : '#fdfcfb',
@@ -632,8 +591,8 @@ export default function SubscriptionPage() {
                     {paymentPlan.name}
                   </h3>
                   <p className="text-[12px] text-neutral-400">
-                    {billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly}
-                    {paymentPlan.priceNote ? ` · ${paymentPlan.priceNote[billing]}` : ''}
+                    {paymentPlan.price}
+                    {paymentPlan.priceNote ? ` · ${paymentPlan.priceNote}` : ''}
                   </p>
                 </div>
                 <button
@@ -698,7 +657,7 @@ export default function SubscriptionPage() {
                               <img
                                 src={buildVietQrUrl(
                                   bankInfo,
-                                  parsePrice(billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly),
+                                  parsePrice(paymentPlan.price),
                                   subOrderId,
                                 )}
                                 alt="VietQR Payment"
@@ -749,7 +708,7 @@ export default function SubscriptionPage() {
                             { label: language === 'vi' ? 'Chủ tài khoản' : 'Account Holder', value: bankInfo?.accountName ?? '—', copyable: false },
                             {
                               label: language === 'vi' ? 'Số tiền' : 'Amount',
-                              value: billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly,
+                              value: paymentPlan.price,
                               copyable: true,
                               copyKey: 'amount',
                             },
@@ -851,7 +810,7 @@ export default function SubscriptionPage() {
                     {paymentPlan.name}
                   </p>
                   <p className="text-[22px] font-semibold text-[#1a1a1a]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly}
+                    {paymentPlan.price}
                   </p>
                 </div>
 
@@ -860,7 +819,7 @@ export default function SubscriptionPage() {
                   <img
                     src={buildVietQrUrl(
                       bankInfo,
-                      parsePrice(billing === 'monthly' ? paymentPlan.price.monthly : paymentPlan.price.yearly),
+                      parsePrice(paymentPlan.price),
                       subOrderId,
                     )}
                     alt="VietQR Payment - Large"
@@ -899,14 +858,12 @@ export default function SubscriptionPage() {
 
 function PricingCard({
   plan,
-  billing,
   index,
   selected,
   onSelect,
   onNavigate,
 }: {
   plan: Plan
-  billing: BillingCycle
   index: number
   selected: boolean
   onSelect: () => void
@@ -924,7 +881,7 @@ function PricingCard({
     gold: 'border border-[#c8b898]/40 bg-[#f8f5f0] text-[#6b5d45] transition-all duration-300 hover:border-[#c8b898]/80 hover:bg-[#f0ebe0]',
   }
 
-  const currentPrice = billing === 'monthly' ? plan.price.monthly : plan.price.yearly
+  const currentPrice = plan.price
 
   return (
     <motion.div
@@ -944,15 +901,17 @@ function PricingCard({
         transition: { duration: 0.25 },
       }}
     >
-      {plan.badge && (
-        <div className="absolute left-0 right-0 top-0 bg-[#1a1a1a] py-2 text-center">
+      {(plan.badge || plan.highlight) && (
+        <div className={`absolute left-0 right-0 top-0 py-2 text-center ${plan.highlight ? 'bg-[#1a1a1a]' : 'bg-[#a08c6a]'}`}>
           <span className="text-[9px] uppercase tracking-[0.22em] text-white" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
-            {plan.badge}
+            {plan.highlight 
+              ? (language === 'vi' ? 'Gói hiện tại' : 'Current Plan') 
+              : plan.badge}
           </span>
         </div>
       )}
 
-      <div className={`flex flex-1 flex-col p-6 ${plan.badge ? 'pt-10' : ''}`}>
+      <div className={`flex flex-1 flex-col p-6 ${(plan.badge || plan.highlight) ? 'pt-10' : ''}`}>
         <div className="mb-5">
           <p className="mb-1.5 text-[10px] uppercase tracking-[0.18em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
             {plan.id === 'free' ? subTrans.freeForever : plan.id === 'starter' ? subTrans.oneTimePack : subTrans.mostPopularBadge}
@@ -971,7 +930,7 @@ function PricingCard({
           <div className="flex flex-wrap items-end gap-1.5">
             <AnimatePresence mode="wait">
               <motion.span
-                key={billing}
+                key={plan.id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
@@ -985,7 +944,7 @@ function PricingCard({
           </div>
           {plan.priceNote && (
             <p className="mt-1 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              {plan.priceNote[billing]}
+              {plan.priceNote}
             </p>
           )}
         </div>
@@ -1000,16 +959,18 @@ function PricingCard({
           <Camera size={14} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[#a08c6a]" />
           <div>
             <p className="text-[12px] text-black" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-              {plan.turns[billing]}
+              {plan.turns}
             </p>
-            <p className="mt-0.5 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              {plan.turnsNote[billing]}
-            </p>
+            {plan.turnsNote && (
+              <p className="mt-0.5 text-[10px] text-neutral-400" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                {plan.turnsNote}
+              </p>
+            )}
           </div>
         </div>
 
         <ul className="mb-6 flex-1 space-y-2.5">
-          {plan.features[billing].map((feature, featureIndex) => (
+          {plan.features.map((feature, featureIndex) => (
             <FeatureRow key={feature} text={feature} delay={featureIndex * 0.04} />
           ))}
           {plan.extras?.map((extra) => (
@@ -1046,7 +1007,7 @@ function PricingCard({
         {plan.id !== 'free' && (
           <p className="mt-2.5 flex items-center justify-center gap-1 text-center text-[9px] text-neutral-300" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
             <Shield size={9} strokeWidth={1.5} className="opacity-60" />
-            {plan.id === 'starter' ? subTrans.planStarterNote : subTrans.planBilledMonthly}
+            {subTrans.planStarterNote}
           </p>
         )}
       </div>

@@ -128,7 +128,7 @@ const userSchema = new Schema<IUser>(
     },
     aiTurns: {
       type: Number,
-      default: 3,
+      default: 0,
     },
   },
   {

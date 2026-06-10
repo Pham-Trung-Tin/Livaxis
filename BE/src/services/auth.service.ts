@@ -28,6 +28,9 @@ export type UserPublic = {
   role: 'user' | 'manager' | 'admin';
   isActive: boolean;
   emailVerified: boolean;
+  subscriptionPlan: 'starter' | 'standard' | 'premium' | null;
+  aiTurns: number;
+  aiTurnsUsed: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -41,6 +44,9 @@ const toPublicUser = (user: IUser): UserPublic => ({
   role: user.role,
   isActive: user.isActive,
   emailVerified: user.emailVerified,
+  subscriptionPlan: user.subscriptionPlan,
+  aiTurns: user.aiTurns ?? 0,
+  aiTurnsUsed: user.aiTurnsUsed ?? 0,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
