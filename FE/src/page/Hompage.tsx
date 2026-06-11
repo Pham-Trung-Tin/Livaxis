@@ -29,7 +29,7 @@ import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 // ---------------------------------------------------------------------------
 // Section type — 8 fullscreen sections total
 // ---------------------------------------------------------------------------
-type SectionId = 'hero' | 'features' | 'stats' | 'discovery' | 'pricing' | 'process' | 'footer'
+type SectionId = 'hero' | 'features' | 'stats' | 'discovery' | 'pricing' | 'process'
 
 // ---------------------------------------------------------------------------
 // Global top navigation with account dropdown actions.
@@ -744,7 +744,7 @@ function Hompage() {
     activeSectionRef.current = activeSection
   }, [activeSection])
 
-  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'discovery', 'pricing', 'stats', 'footer']
+  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'discovery', 'pricing', 'stats']
 
   const scrollToSection = (id: SectionId) => {
     const el = document.getElementById(id)
@@ -977,7 +977,6 @@ function Hompage() {
     { id: 'discovery' as SectionId, label: t('homepage.discoveryLabel') },
     { id: 'pricing' as SectionId, label: t('homepage.pricingLabel') },
     { id: 'stats' as SectionId, label: t('homepage.statsLabel') },
-    { id: 'footer' as SectionId, label: language === 'vi' ? 'Thông tin liên hệ' : 'Contact & Info' },
   ]
 
   return (
@@ -999,27 +998,36 @@ function Hompage() {
           <div className="absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(circle_at_top,rgba(200,184,152,0.22),transparent_50%)]" />
           <div className="mx-auto max-w-7xl text-center flex flex-col items-center justify-center">
             <motion.p
-              initial={{ opacity: 0, y: 15 }}
-              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(12px)', y: 8 }}
+              animate={activeSection === 'hero'
+                ? { opacity: 1, filter: 'blur(0px)', y: 0 }
+                : { opacity: 0, filter: 'blur(12px)', y: 8 }
+              }
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="text-[11px] uppercase tracking-[0.36em] text-[#a08c6a]"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               {t('homepage.roomVisualiser')}
             </motion.p>
             <motion.h1
-              initial={{ opacity: 0, y: 25 }}
-              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(20px)', scale: 0.97, y: 10 }}
+              animate={activeSection === 'hero'
+                ? { opacity: 1, filter: 'blur(0px)', scale: 1, y: 0 }
+                : { opacity: 0, filter: 'blur(20px)', scale: 0.97, y: 10 }
+              }
+              transition={{ duration: 0.85, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
               className="mt-5 text-4xl leading-[1.05] tracking-[-0.04em] text-[#1d1814] sm:text-5xl lg:text-[4.5rem]"
               style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
             >
               {t('homepage.heroTitle')}
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(10px)', y: 6 }}
+              animate={activeSection === 'hero'
+                ? { opacity: 1, filter: 'blur(0px)', y: 0 }
+                : { opacity: 0, filter: 'blur(10px)', y: 6 }
+              }
+              transition={{ duration: 0.75, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
               className="mx-auto mt-4 max-w-2xl text-xs sm:text-sm text-[#7b7368]"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
@@ -1027,18 +1035,24 @@ function Hompage() {
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(8px)', y: 24, scale: 0.98 }}
+              animate={activeSection === 'hero'
+                ? { opacity: 1, filter: 'blur(0px)', y: 0, scale: 1 }
+                : { opacity: 0, filter: 'blur(8px)', y: 24, scale: 0.98 }
+              }
+              transition={{ duration: 0.9, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
               className="mx-auto mt-8 w-full max-w-4xl"
             >
               <BeforeAfterShowcase />
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={activeSection === 'hero' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(8px)', y: 12 }}
+              animate={activeSection === 'hero'
+                ? { opacity: 1, filter: 'blur(0px)', y: 0 }
+                : { opacity: 0, filter: 'blur(8px)', y: 12 }
+              }
+              transition={{ duration: 0.65, delay: 0.58, ease: [0.16, 1, 0.3, 1] }}
               className="mt-6 flex justify-center"
             >
               <button
@@ -1070,28 +1084,29 @@ function Hompage() {
         >
           <div className="mx-auto max-w-[1440px] w-full flex flex-col items-center justify-center">
             <div className="mb-14 text-center">
+              {/* Process: Slide-from-left animation */}
               <motion.p
-                initial={{ opacity: 0, y: 15 }}
-                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, x: -40 }}
+                animate={activeSection === 'process' ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
                 {t('homepage.howItWorks')}
               </motion.p>
               <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, x: -50 }}
+                animate={activeSection === 'process' ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+                transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-3 text-[clamp(1.5rem,3vw,2.25rem)] text-black"
                 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
                 {t('homepage.howItWorksTitle')}
               </motion.h2>
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'process' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, x: -35 }}
+                animate={activeSection === 'process' ? { opacity: 1, x: 0 } : { opacity: 0, x: -35 }}
+                transition={{ duration: 0.65, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 className="mx-auto max-w-md text-[13px] text-neutral-400"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
@@ -1118,8 +1133,8 @@ function Hompage() {
                 <motion.div
                   key={step.number}
                   variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+                    hidden: { opacity: 0, y: 40, filter: 'blur(6px)' },
+                    visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } }
                   }}
                   className="relative flex flex-col items-center text-center"
                 >
@@ -1188,28 +1203,29 @@ function Hompage() {
               
               {/* Left Column: Text & Feature Cards */}
               <div className="lg:col-span-5 flex flex-col justify-center text-left">
+                {/* Features: Slide-from-left + scale reveal */}
                 <motion.p
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: -30, filter: 'blur(8px)' }}
+                  animate={activeSection === 'features' ? { opacity: 1, x: 0, filter: 'blur(0px)' } : { opacity: 0, x: -30, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                 >
                   {t('homepage.featuresLabel')}
                 </motion.p>
                 <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: -40, scale: 0.97 }}
+                  animate={activeSection === 'features' ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -40, scale: 0.97 }}
+                  transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-4 text-[clamp(1.5rem,3vw,2.25rem)] leading-tight text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
                   {t('homepage.featuresTitle')}
                 </motion.h2>
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={activeSection === 'features' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: -25 }}
+                  animate={activeSection === 'features' ? { opacity: 1, x: 0 } : { opacity: 0, x: -25 }}
+                  transition={{ duration: 0.65, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-8 max-w-lg text-[13px] text-neutral-400"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                 >
@@ -1232,8 +1248,8 @@ function Hompage() {
                       <motion.div
                         key={i}
                         variants={{
-                          hidden: { opacity: 0, y: 20 },
-                          visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+                          hidden: { opacity: 0, x: -20, filter: 'blur(4px)' },
+                          visible: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } }
                         }}
                         className="group relative flex flex-col rounded-[16px] border border-black/5 bg-[#fdfcfb] p-5 transition-all duration-300 hover:shadow-[0_8px_20px_rgba(200,184,152,0.1)] hover:-translate-y-0.5"
                       >
@@ -1265,9 +1281,9 @@ function Hompage() {
               {/* Right Column: High-Res Image Showcase */}
               <div className="lg:col-span-7 flex items-center justify-center">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.96, x: 20 }}
-                  animate={activeSection === 'features' ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.96, x: 20 }}
-                  transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, scale: 0.92, x: 40, filter: 'blur(10px)' }}
+                  animate={activeSection === 'features' ? { opacity: 1, scale: 1, x: 0, filter: 'blur(0px)' } : { opacity: 0, scale: 0.92, x: 40, filter: 'blur(10px)' }}
+                  transition={{ duration: 0.85, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
                   className="relative w-full overflow-hidden rounded-[24px] border border-black/5 bg-neutral-100 shadow-[0_20px_50px_rgba(200,184,152,0.15)] aspect-[4/3] max-w-[680px]"
                 >
                   <img
@@ -1397,28 +1413,29 @@ function Hompage() {
 
               {/* Right Column: Copy text & CTA */}
               <div className="lg:col-span-5 flex flex-col justify-center text-left">
+                {/* Discovery: Slide-from-right animation */}
                 <motion.p
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: 35 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, x: 0 } : { opacity: 0, x: 35 }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                 >
                   {t('homepage.discoveryLabel')}
                 </motion.p>
                 <motion.h2
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: 50, filter: 'blur(8px)' }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, x: 0, filter: 'blur(0px)' } : { opacity: 0, x: 50, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-5 text-[clamp(1.75rem,3.5vw,2.5rem)] leading-tight text-black"
                   style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                 >
                   {t('homepage.discoveryTitle')}
                 </motion.h2>
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+                  transition={{ duration: 0.65, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   className="mb-8 text-[13px] leading-relaxed text-neutral-500"
                   style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                 >
@@ -1426,9 +1443,9 @@ function Hompage() {
                 </motion.p>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={activeSection === 'discovery' ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-                  transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  initial={{ opacity: 0, x: 25, filter: 'blur(4px)' }}
+                  animate={activeSection === 'discovery' ? { opacity: 1, x: 0, filter: 'blur(0px)' } : { opacity: 0, x: 25, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <button
                     onClick={() => navigate('/discovery')}
@@ -1455,76 +1472,42 @@ function Hompage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════
-            Section 5: Pricing Preview
+            Section 5: Pricing Preview — Bento Grid
         ═══════════════════════════════════════════════════ */}
         <section
           id="pricing"
-          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-[#faf9f7] px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
+          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center bg-white px-6 py-16 md:py-0 relative overflow-hidden pt-[72px]"
         >
-          {/* Floating glowing orbs for Glassmorphism depth */}
+          {/* Subtle radial gradient overlays */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <motion.div
-              className="absolute -left-10 top-1/4 h-[300px] w-[300px] rounded-full bg-[#c8b898]/12 blur-[80px]"
-              animate={{
-                x: [0, 40, 0],
-                y: [0, 30, 0],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 8,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.div
-              className="absolute right-10 bottom-1/4 h-[350px] w-[350px] rounded-full bg-[#a08c6a]/8 blur-[100px]"
-              animate={{
-                x: [0, -50, 0],
-                y: [0, -40, 0],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 10,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.div
-              className="absolute left-1/3 top-1/3 h-[250px] w-[250px] rounded-full bg-[#f4efe6]/40 blur-[70px]"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.6, 0.3],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 6,
-                ease: "easeInOut",
-              }}
-            />
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 50% at 15% 50%, rgba(200,184,152,0.07) 0%, transparent 60%)' }} />
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 60% at 85% 50%, rgba(244,239,230,0.5) 0%, transparent 55%)' }} />
           </div>
 
           <div className="relative mx-auto max-w-[1440px] w-full z-10">
-            <div className="mb-14 text-center">
+            <div className="mb-10 text-center">
               <motion.p
-                initial={{ opacity: 0, y: 15 }}
-                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, scale: 0.85, letterSpacing: '0.5em' }}
+                animate={activeSection === 'pricing' ? { opacity: 1, scale: 1, letterSpacing: '0.2em' } : { opacity: 0, scale: 0.85, letterSpacing: '0.5em' }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-3 text-[11px] uppercase tracking-[0.2em] text-[#a08c6a]"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
               >
                 {t('homepage.pricingLabel')}
               </motion.p>
               <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, scale: 0.94, filter: 'blur(12px)' }}
+                animate={activeSection === 'pricing' ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : { opacity: 0, scale: 0.94, filter: 'blur(12px)' }}
+                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-3 text-[clamp(1.5rem,3vw,2.25rem)] text-black"
                 style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
                 {t('homepage.pricingTitle')}
               </motion.h2>
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 12, filter: 'blur(6px)' }}
+                animate={activeSection === 'pricing' ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 12, filter: 'blur(6px)' }}
+                transition={{ duration: 0.65, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
                 className="mx-auto max-w-lg text-[13px] text-neutral-400"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
@@ -1532,83 +1515,259 @@ function Hompage() {
               </motion.p>
             </div>
 
+            {/* ── Bento Grid ── */}
             <motion.div
               initial="hidden"
               animate={activeSection === 'pricing' ? 'visible' : 'hidden'}
-              variants={{
-                hidden: {},
-                visible: { transition: { staggerChildren: 0.12 } }
-              }}
-              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 px-4 mb-10"
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+              className="grid grid-cols-1 gap-4 px-4 mb-8 lg:grid-cols-3 lg:grid-rows-2 lg:h-[400px]"
             >
-              {pricingPlans.map((plan, i) => (
-                <motion.div
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-                  }}
-                  className={`relative flex flex-col rounded-[20px] border p-7 backdrop-blur-md transition-all duration-500 hover:-translate-y-1.5 ${
-                    plan.highlight
-                      ? 'border-white/10 shadow-[0_20px_50px_rgba(20,17,14,0.25)] hover:border-[#c8b898]/30 hover:shadow-[0_25px_60px_rgba(20,17,14,0.35)]'
-                      : 'border-white/60 shadow-[0_8px_32px_rgba(200,184,152,0.06)] hover:border-[#c8b898]/30 hover:shadow-[0_15px_40px_rgba(200,184,152,0.12)]'
-                  }`}
-                  style={{
-                    background: plan.highlight
-                      ? 'linear-gradient(135deg, rgba(26,23,20,0.92) 0%, rgba(37,33,24,0.95) 100%)'
-                      : 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(250,248,245,0.35) 100%)',
-                  }}
-                >
-                  {plan.highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#c8b898] px-3 py-1">
-                      <span className="text-[9px] uppercase tracking-[0.18em] text-white" style={{ fontWeight: 600 }}>
-                        {language === 'vi' ? 'Phổ biến' : 'Popular'}
+              {/* ── STANDARD (highlight) — tall card, col-span-1 row-span-2 ── */}
+              {(() => {
+                const plan = pricingPlans[2] // Standard
+                return (
+                  <motion.div
+                    key="standard"
+                    variants={{
+                      hidden: { opacity: 0, x: -40, scale: 0.93, filter: 'blur(8px)' },
+                      visible: { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                    className="relative flex flex-col rounded-[24px] p-8 overflow-hidden lg:col-span-1 lg:row-span-2 transition-all duration-500 hover:-translate-y-1 group cursor-pointer"
+                    style={{
+                      background: 'linear-gradient(150deg, #1a1714 0%, #24201a 55%, #2c2419 100%)',
+                      boxShadow: '0 24px 64px rgba(20,17,14,0.28), 0 0 0 1px rgba(200,184,152,0.1)',
+                    }}
+                    onClick={() => navigate('/subscription')}
+                  >
+                    {/* Animated golden shimmer */}
+                    <motion.div
+                      className="pointer-events-none absolute inset-0 rounded-[24px]"
+                      style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(200,184,152,0.14) 0%, transparent 60%)' }}
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+                    />
+                    {/* Top-right corner glow */}
+                    <motion.div
+                      className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[#c8b898]/20 blur-[40px]"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.9, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut' }}
+                    />
+                    {/* Popular badge */}
+                    <div className="absolute top-6 right-6">
+                      <div className="flex items-center gap-1.5 rounded-full bg-[#c8b898]/15 border border-[#c8b898]/30 px-3 py-1">
+                        <Star size={9} className="fill-[#c8b898] text-[#c8b898]" />
+                        <span className="text-[9px] uppercase tracking-[0.18em] text-[#c8b898]" style={{ fontWeight: 600 }}>
+                          {language === 'vi' ? 'Phổ biến' : 'Popular'}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Plan name */}
+                    <p
+                      className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#c8b898]/70"
+                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                    >
+                      {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    {/* Price */}
+                    <p
+                      className="mb-1 text-[clamp(2.5rem,4vw,3.2rem)] leading-none text-white"
+                      style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
+                    >
+                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    <p
+                      className="mb-8 text-[11px] text-white/40"
+                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                    >
+                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    {/* Feature list */}
+                    <div className="flex flex-col gap-3 mt-auto">
+                      {[
+                        language === 'vi' ? 'Không giới hạn lượt AI' : 'Unlimited AI try-ons',
+                        language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
+                        language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
+                        language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
+                      ].map((feat) => (
+                        <div key={feat} className="flex items-center gap-3">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#c8b898]/20 border border-[#c8b898]/30">
+                            <Check size={10} strokeWidth={2.5} className="text-[#c8b898]" />
+                          </div>
+                          <span className="text-[12px] text-white/70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* CTA button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate('/subscription') }}
+                      className="mt-8 w-full rounded-[14px] py-3.5 text-[11px] uppercase tracking-[0.18em] text-[#1a1714] transition-all duration-300 hover:opacity-90 hover:scale-[1.02]"
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 600,
+                        background: 'linear-gradient(135deg, #d4bc94 0%, #c8b898 60%, #b8a47e 100%)',
+                        boxShadow: '0 4px 20px rgba(200,184,152,0.35)',
+                      }}
+                    >
+                      {language === 'vi' ? 'Chọn gói này' : 'Get started'}
+                    </button>
+                  </motion.div>
+                )
+              })()}
+
+              {/* ── FREE — small top-center ── */}
+              {(() => {
+                const plan = pricingPlans[0]
+                return (
+                  <motion.div
+                    key="free"
+                    variants={{
+                      hidden: { opacity: 0, y: -30, scale: 0.94, filter: 'blur(6px)' },
+                      visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                    className="relative flex flex-col rounded-[20px] p-6 overflow-hidden transition-all duration-400 hover:-translate-y-1 group cursor-pointer"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(250,248,245,0.9) 100%)',
+                      border: '1px solid rgba(200,184,152,0.2)',
+                      boxShadow: '0 8px 32px rgba(200,184,152,0.08)',
+                    }}
+                    onClick={() => navigate('/subscription')}
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, transparent, #e8dfd0, transparent)' }} />
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #f4efe6, #e8dfd0)' }}>
+                        <Sparkles size={15} className="text-[#a08c6a]" />
+                      </div>
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                        {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                      </p>
+                    </div>
+                    <p className="mb-1 text-[2rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    <p className="text-[11px] text-neutral-400 mt-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    <div className="mt-auto pt-4 flex items-center gap-2 text-[11px] text-[#a08c6a]">
+                      <Check size={11} strokeWidth={2.5} />
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
+                        {language === 'vi' ? '3 lượt AI / ngày' : '3 AI try-ons / day'}
                       </span>
                     </div>
-                  )}
-                  {plan.imageUrl && (
-                    <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-white/60 bg-white/70 shadow-sm overflow-hidden transition-transform duration-300 hover:scale-105">
-                      <img
-                        src={plan.imageUrl}
-                        alt={t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0]) as string}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
+                  </motion.div>
+                )
+              })()}
+
+              {/* ── STARTER — small top-right ── */}
+              {(() => {
+                const plan = pricingPlans[1]
+                return (
+                  <motion.div
+                    key="starter"
+                    variants={{
+                      hidden: { opacity: 0, y: -30, scale: 0.94, filter: 'blur(6px)' },
+                      visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', transition: { duration: 0.65, delay: 0.08, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                    className="relative flex flex-col rounded-[20px] p-6 overflow-hidden transition-all duration-400 hover:-translate-y-1 group cursor-pointer"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(244,239,230,0.75) 0%, rgba(232,223,208,0.55) 100%)',
+                      border: '1px solid rgba(200,184,152,0.25)',
+                      boxShadow: '0 8px 32px rgba(160,140,106,0.08)',
+                    }}
+                    onClick={() => navigate('/subscription')}
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, transparent, #c8b898, transparent)' }} />
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #e8dfd0, #d4c8b0)' }}>
+                        <Zap size={15} className="text-[#8a7456]" />
+                      </div>
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-[#8a7456]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                        {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                      </p>
                     </div>
-                  )}
-                  <p
-                    className={`mb-2 text-[12px] uppercase tracking-[0.12em] ${plan.highlight ? 'text-[#c8b898]/80' : 'text-[#a08c6a]'}`}
-                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                    <p className="mb-1 text-[2rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    <p className="text-[11px] text-neutral-500 mt-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
+                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                    </p>
+                    <div className="mt-auto pt-4 flex items-center gap-2 text-[11px] text-[#8a7456]">
+                      <Check size={11} strokeWidth={2.5} />
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
+                        {language === 'vi' ? '20 lượt AI / tháng' : '20 AI try-ons / mo'}
+                      </span>
+                    </div>
+                  </motion.div>
+                )
+              })()}
+
+              {/* ── PREMIUM — wide bottom card spanning 2 cols ── */}
+              {(() => {
+                const plan = pricingPlans[3]
+                return (
+                  <motion.div
+                    key="premium"
+                    variants={{
+                      hidden: { opacity: 0, y: 30, scale: 0.94, filter: 'blur(6px)' },
+                      visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', transition: { duration: 0.65, delay: 0.18, ease: [0.16, 1, 0.3, 1] } },
+                    }}
+                    className="relative flex flex-col justify-between rounded-[20px] p-6 overflow-hidden transition-all duration-400 hover:-translate-y-1 group cursor-pointer lg:col-span-2 lg:flex-row lg:items-center"
+                    style={{
+                      background: 'linear-gradient(120deg, rgba(26,23,20,0.05) 0%, rgba(200,184,152,0.09) 50%, rgba(244,239,230,0.6) 100%)',
+                      border: '1px solid rgba(200,184,152,0.28)',
+                      boxShadow: '0 12px 40px rgba(200,184,152,0.10)',
+                    }}
+                    onClick={() => navigate('/subscription')}
                   >
-                    {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
-                  </p>
-                  <p
-                    className={`mb-1 text-[28px] leading-none ${plan.highlight ? 'text-white' : 'text-black'}`}
-                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
-                  >
-                    {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
-                  </p>
-                  <p
-                    className={`mb-6 text-[11px] ${plan.highlight ? 'text-white/50' : 'text-neutral-400'}`}
-                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-                  >
-                    {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
-                  </p>
-                  <div className={`mt-auto h-px mb-4 ${plan.highlight ? 'bg-white/10' : 'bg-black/5'}`} />
-                  <div className={`flex items-center gap-2 text-[11px] ${plan.highlight ? 'text-[#c8b898]' : 'text-[#a08c6a]'}`}>
-                    <Check size={12} strokeWidth={2.5} />
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                      {language === 'vi' ? 'Không cần thẻ tín dụng' : 'No credit card needed'}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
+                    {/* Animated shimmer line across bottom */}
+                    <motion.div
+                      className="pointer-events-none absolute inset-x-0 bottom-0 h-[1px]"
+                      style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(200,184,152,0.5) 50%, transparent 100%)' }}
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    />
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #2c2419, #1a1714)' }}>
+                        <Star size={18} className="fill-[#c8b898] text-[#c8b898]" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.14em] text-[#6b5a3e] mb-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
+                          {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                        </p>
+                        <p className="text-[1.8rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
+                          {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-4 lg:mt-0">
+                      {[
+                        language === 'vi' ? 'Không giới hạn' : 'Unlimited',
+                        language === 'vi' ? 'Tất cả tính năng' : 'All features',
+                        language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
+                      ].map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-[#c8b898]/30 bg-white/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-[#6b5a3e]"
+                          style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-4 lg:mt-0 text-[#8a7456] group-hover:text-[#6b5a3e] transition-colors">
+                      <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
+                        {language === 'vi' ? 'Khám phá' : 'Explore'}
+                      </span>
+                      <ChevronRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </div>
+                  </motion.div>
+                )
+              })()}
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={activeSection === 'pricing' ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-              transition={{ duration: 0.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={activeSection === 'pricing' ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.55, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
               className="flex justify-center"
             >
               <button
@@ -1664,19 +1823,22 @@ function Hompage() {
           <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(200,184,152,0.06) 0%, transparent 70%)' }} />
 
           <div className="relative mx-auto max-w-[1440px] w-full px-6 text-center z-10">
+            {/* Stats: Glow-blur reveal on dark background */}
             <motion.p
-              initial={{ opacity: 0, y: 15 }}
-              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(10px)', letterSpacing: '0.6em' }}
+              animate={activeSection === 'stats' ? { opacity: 1, filter: 'blur(0px)', letterSpacing: '0.26em' } : { opacity: 0, filter: 'blur(10px)', letterSpacing: '0.6em' }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="mb-3 text-[11px] uppercase tracking-[0.26em] text-[#c8b898]/70"
               style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
             >
               {t('homepage.statsLabel')}
             </motion.p>
             <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, filter: 'blur(24px)', scale: 0.95, textShadow: '0 0 40px rgba(200,184,152,0)' }}
+              animate={activeSection === 'stats'
+                ? { opacity: 1, filter: 'blur(0px)', scale: 1, textShadow: '0 0 0px rgba(200,184,152,0)' }
+                : { opacity: 0, filter: 'blur(24px)', scale: 0.95, textShadow: '0 0 40px rgba(200,184,152,0)' }}
+              transition={{ duration: 0.9, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
               className="mb-16 text-[clamp(1.5rem,3vw,2.5rem)] text-white"
               style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
             >
@@ -1696,8 +1858,8 @@ function Hompage() {
                 <motion.div
                   key={i}
                   variants={{
-                    hidden: { opacity: 0, y: 40, scale: 0.9 },
-                    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } }
+                    hidden: { opacity: 0, y: 50, scale: 0.85, filter: 'blur(12px)' },
+                    visible: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
                   }}
                   className="flex flex-col items-center gap-3"
                 >
@@ -1719,52 +1881,90 @@ function Hompage() {
               ))}
             </motion.div>
 
-            {/* CTA below stats */}
+            {/* ── Final CTA ── */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={activeSection === 'stats' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-16 flex justify-center"
+              initial={{ opacity: 0, y: 32, filter: 'blur(12px)' }}
+              animate={activeSection === 'stats' ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 32, filter: 'blur(12px)' }}
+              transition={{ duration: 0.8, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-20 flex flex-col items-center gap-6"
             >
-              <button
-                onClick={() => navigate('/ai-room-planner')}
-                className="group flex items-center gap-2.5 rounded-xl border px-8 py-3.5 text-[11px] uppercase tracking-[0.18em] text-white/70 transition-all duration-300 hover:border-[#c8b898]/40 hover:text-white"
-                style={{ border: '1px solid rgba(200,184,152,0.2)' }}
+              {/* Decorative line */}
+              <div className="h-px w-16" style={{ background: 'linear-gradient(90deg, transparent, rgba(200,184,152,0.5), transparent)' }} />
+              <p
+                className="text-[clamp(1.8rem,4vw,3rem)] text-white text-center leading-snug"
+                style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
               >
-                <Sparkles size={13} className="text-[#c8b898]" />
-                {t('homepage.startScan')}
-                <ChevronRight size={12} className="opacity-40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
-              </button>
+                {language === 'vi'
+                  ? <>Sẵn sàng biến phòng của bạn<br />thành kiệt tác?</>
+                  : <>Ready to transform your<br />space into a masterpiece?</>}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  onClick={() => navigate('/ai-room-planner')}
+                  className="group flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-[11px] uppercase tracking-[0.18em] text-[#1a1714] transition-all duration-300 hover:opacity-90 hover:scale-[1.02]"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4bc94 0%, #c8b898 60%, #b8a47e 100%)',
+                    boxShadow: '0 4px 24px rgba(200,184,152,0.3)',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Sparkles size={13} />
+                  {language === 'vi' ? 'Thử ngay miễn phí' : 'Try for free'}
+                </button>
+                <button
+                  onClick={() => navigate('/subscription')}
+                  className="group flex items-center gap-2 rounded-xl border px-8 py-3.5 text-[11px] uppercase tracking-[0.18em] text-white/60 transition-all duration-300 hover:border-[#c8b898]/40 hover:text-white"
+                  style={{ border: '1px solid rgba(200,184,152,0.18)', fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
+                >
+                  {language === 'vi' ? 'Xem các gói' : 'View plans'}
+                  <ChevronRight size={12} className="opacity-40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                </button>
+              </div>
             </motion.div>
           </div>
 
+          {/* ── Mini footer bar — pinned to bottom of stats section ── */}
           <motion.div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 cursor-pointer z-10 hidden md:block"
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            onClick={() => scrollToSection('footer')}
+            initial={{ opacity: 0 }}
+            animate={activeSection === 'stats' ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.6, delay: 1, ease: 'easeOut' }}
+            className="relative z-10 w-full border-t px-6 py-5 md:px-16"
+            style={{ borderColor: 'rgba(200,184,152,0.1)' }}
           >
-            <ChevronDown size={28} className="text-[#c8b898]/60 opacity-80 hover:opacity-100 transition-opacity" />
+            <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-3 md:flex-row">
+              <span
+                className="text-[11px] text-[#c8b898]/30"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+              >
+                {t('homepage.rightsReserved')}
+              </span>
+              <div className="flex items-center gap-6">
+                {[
+                  { label: language === 'vi' ? 'Khám phá' : 'Discovery', href: '/discovery' },
+                  { label: language === 'vi' ? 'Bộ sưu tập' : 'Collections', href: '/collections' },
+                  { label: language === 'vi' ? 'Gói đăng ký' : 'Subscription', href: '/subscription' },
+                  { label: t('homepage.privacy'), href: '#' },
+                  { label: t('homepage.terms'), href: '#' },
+                ].map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={(e) => {
+                      if (!link.href.startsWith('#')) {
+                        e.preventDefault()
+                        navigate(link.href)
+                      }
+                    }}
+                    className="text-[11px] text-[#c8b898]/40 transition-colors duration-300 hover:text-[#c8b898]/80"
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            </div>
           </motion.div>
-        </section>
-
-        {/* ═══════════════════════════════════════════════════
-            Section 8: Footer
-        ═══════════════════════════════════════════════════ */}
-        <section
-          id="footer"
-          className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-end bg-white relative overflow-hidden pt-[72px]"
-        >
-          <div className="flex-grow flex items-center justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={activeSection === 'footer' ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full"
-            >
-              <Footer />
-            </motion.div>
-          </div>
         </section>
       </main>
 
