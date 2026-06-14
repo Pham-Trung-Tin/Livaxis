@@ -78,6 +78,7 @@ export type SubscriptionPlanApiData = {
   ctaStyle: 'ghost' | 'outline' | 'charcoal' | 'gold'
   badge?: { vi: string; en: string }
   features: { vi: string[]; en: string[] }
+  tags?: { vi: string[]; en: string[] }
   extras?: { vi: string[]; en: string[] }
 }
 

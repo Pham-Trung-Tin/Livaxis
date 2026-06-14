@@ -741,6 +741,7 @@ function Hompage() {
   const isScrollingRef = useRef(false)
   const activeSectionRef = useRef<SectionId>('hero')
   const [dbProducts, setDbProducts] = useState<any[]>([])
+  const [dbPlans, setDbPlans] = useState<any[]>([])
 
   useEffect(() => {
     let active = true
@@ -754,6 +755,16 @@ function Hompage() {
       .catch((err) => {
         console.error('Failed to load featured products for discovery:', err)
       })
+    
+    fetch('/api/payment/subscription-plans')
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && json.success && json.data) {
+          setDbPlans(json.data)
+        }
+      })
+      .catch((err) => console.error('Failed to load subscription plans:', err))
+
     return () => {
       active = false
     }
@@ -997,18 +1008,88 @@ function Hompage() {
     return finalItems
   }, [dbProducts, language, t])
 
-  const pricingPlans = [
-    {
-      nameKey: 'pricingFreeName',
-      priceKey: 'pricingFreePrice',
-      descKey: 'pricingFreeDesc',
-      highlight: false,
-      imageUrl: 'https://res.cloudinary.com/dgz3rhiv4/image/upload/v1781088637/section5_jxnt0i.png',
-    },
-    { nameKey: 'pricingStarterName', priceKey: 'pricingStarterPrice', descKey: 'pricingStarterDesc', highlight: false },
-    { nameKey: 'pricingStandardName', priceKey: 'pricingStandardPrice', descKey: 'pricingStandardDesc', highlight: true },
-    { nameKey: 'pricingPremiumName', priceKey: 'pricingPremiumPrice', descKey: 'pricingPremiumDesc', highlight: false },
-  ]
+  const pricingPlans = useMemo(() => {
+    if (dbPlans.length === 0) {
+      return [
+        {
+          planId: 'free',
+          name: t('homepage.pricingFreeName'),
+          price: t('homepage.pricingFreePrice'),
+          desc: t('homepage.pricingFreeDesc'),
+          turnsLabel: language === 'vi' ? '3 lượt AI / ngày' : '3 AI try-ons / day',
+          features: [
+            language === 'vi' ? '3 lượt AI / ngày' : '3 AI try-ons / day',
+            language === 'vi' ? 'Phân tích phòng cơ bản' : 'Basic room analysis',
+          ]
+        },
+        {
+          planId: 'starter',
+          name: t('homepage.pricingStarterName'),
+          price: t('homepage.pricingStarterPrice'),
+          desc: t('homepage.pricingStarterDesc'),
+          turnsLabel: language === 'vi' ? '10 lượt AI' : '10 AI try-ons',
+        },
+        {
+          planId: 'standard',
+          name: t('homepage.pricingStandardName'),
+          price: t('homepage.pricingStandardPrice'),
+          desc: t('homepage.pricingStandardDesc'),
+          features: [
+            language === 'vi' ? '40 lượt AI' : '40 AI try-ons',
+            language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
+            language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
+            language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
+          ]
+        },
+        {
+          planId: 'premium',
+          name: t('homepage.pricingPremiumName'),
+          price: t('homepage.pricingPremiumPrice'),
+          desc: t('homepage.pricingPremiumDesc'),
+          tags: [
+            language === 'vi' ? '70 lượt AI' : '70 AI try-ons',
+            language === 'vi' ? 'Tất cả tính năng' : 'All features',
+            language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
+          ]
+        }
+      ]
+    }
+
+    return dbPlans.map((p) => {
+      const formattedPrice = p.price === 0
+        ? (language === 'vi' ? '0 ₫' : '0 ₫')
+        : p.price.toLocaleString('vi-VN') + ' ₫'
+
+      let desc = ''
+      if (p.planId === 'free') {
+        desc = language === 'vi'
+          ? '3 lượt AI / ngày, làm mới lúc nửa đêm'
+          : '3 AI turns / day, resets at midnight'
+      } else {
+        const typeText = p.priceNote ? (p.priceNote[language] || p.priceNote.en) : ''
+        desc = language === 'vi'
+          ? `${p.turns} lượt AI · ${typeText}`
+          : `${p.turns} AI turns · ${typeText}`
+      }
+
+      const turnsSuffix = p.planId === 'free'
+        ? (language === 'vi' ? 'lượt AI / ngày' : 'AI try-ons / day')
+        : (language === 'vi' ? 'lượt AI' : 'AI try-ons')
+      const turnsLabel = `${p.turns} ${turnsSuffix}`
+
+      const tags = p.tags ? (p.tags[language] || p.tags.en) : []
+
+      return {
+        planId: p.planId,
+        name: p.name[language] || p.name.en,
+        price: formattedPrice,
+        desc: desc,
+        turnsLabel: turnsLabel,
+        features: p.features[language] || p.features.en,
+        tags: tags
+      }
+    })
+  }, [dbPlans, language, t])
 
   const faqs = [
     { qKey: 'faq1Q', aKey: 'faq1A' },
@@ -1572,7 +1653,7 @@ function Hompage() {
             >
               {/* ── STANDARD (highlight) — tall card, col-span-1 row-span-2 ── */}
               {(() => {
-                const plan = pricingPlans[2] // Standard
+                const plan = pricingPlans.find((p) => p.planId === 'standard') || pricingPlans[2]
                 return (
                   <motion.div
                     key="standard"
@@ -1614,29 +1695,32 @@ function Hompage() {
                       className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#c8b898]/70"
                       style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}
                     >
-                      {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                      {plan.name}
                     </p>
                     {/* Price */}
                     <p
                       className="mb-1 text-[clamp(2.5rem,4vw,3.2rem)] leading-none text-white"
                       style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}
                     >
-                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                      {plan.price}
                     </p>
                     <p
                       className="mb-8 text-[11px] text-white/40"
                       style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                     >
-                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                      {plan.desc}
                     </p>
                     {/* Feature list */}
                     <div className="flex flex-col gap-3 mt-auto">
-                      {[
-                        language === 'vi' ? 'Không giới hạn lượt AI' : 'Unlimited AI try-ons',
-                        language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
-                        language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
-                        language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
-                      ].map((feat) => (
+                      {(plan.features && plan.features.length > 0
+                        ? plan.features
+                        : [
+                            language === 'vi' ? '40 lượt AI' : '40 AI try-ons',
+                            language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
+                            language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
+                            language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
+                          ]
+                      ).slice(0, 4).map((feat: string) => (
                         <div key={feat} className="flex items-center gap-3">
                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#c8b898]/20 border border-[#c8b898]/30">
                             <Check size={10} strokeWidth={2.5} className="text-[#c8b898]" />
@@ -1664,7 +1748,7 @@ function Hompage() {
 
               {/* ── FREE — small top-center ── */}
               {(() => {
-                const plan = pricingPlans[0]
+                const plan = pricingPlans.find((p) => p.planId === 'free') || pricingPlans[0]
                 return (
                   <motion.div
                     key="free"
@@ -1686,19 +1770,19 @@ function Hompage() {
                         <Sparkles size={15} className="text-[#a08c6a]" />
                       </div>
                       <p className="text-[11px] uppercase tracking-[0.14em] text-[#a08c6a]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                        {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                        {plan.name}
                       </p>
                     </div>
                     <p className="mb-1 text-[2rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                      {plan.price}
                     </p>
                     <p className="text-[11px] text-neutral-400 mt-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                      {plan.desc}
                     </p>
                     <div className="mt-auto pt-4 flex items-center gap-2 text-[11px] text-[#a08c6a]">
                       <Check size={11} strokeWidth={2.5} />
                       <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                        {language === 'vi' ? '3 lượt AI / ngày' : '3 AI try-ons / day'}
+                        {plan.turnsLabel || (language === 'vi' ? '3 lượt AI / ngày' : '3 AI try-ons / day')}
                       </span>
                     </div>
                   </motion.div>
@@ -1707,7 +1791,7 @@ function Hompage() {
 
               {/* ── STARTER — small top-right ── */}
               {(() => {
-                const plan = pricingPlans[1]
+                const plan = pricingPlans.find((p) => p.planId === 'starter') || pricingPlans[1]
                 return (
                   <motion.div
                     key="starter"
@@ -1729,19 +1813,19 @@ function Hompage() {
                         <Zap size={15} className="text-[#8a7456]" />
                       </div>
                       <p className="text-[11px] uppercase tracking-[0.14em] text-[#8a7456]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                        {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                        {plan.name}
                       </p>
                     </div>
                     <p className="mb-1 text-[2rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                      {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                      {plan.price}
                     </p>
                     <p className="text-[11px] text-neutral-500 mt-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-                      {t(`homepage.${plan.descKey}` as Parameters<typeof t>[0])}
+                      {plan.desc}
                     </p>
                     <div className="mt-auto pt-4 flex items-center gap-2 text-[11px] text-[#8a7456]">
                       <Check size={11} strokeWidth={2.5} />
                       <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
-                        {language === 'vi' ? '20 lượt AI / tháng' : '20 AI try-ons / mo'}
+                        {plan.turnsLabel || (language === 'vi' ? '20 lượt AI / tháng' : '20 AI try-ons / mo')}
                       </span>
                     </div>
                   </motion.div>
@@ -1750,7 +1834,7 @@ function Hompage() {
 
               {/* ── PREMIUM — wide bottom card spanning 2 cols ── */}
               {(() => {
-                const plan = pricingPlans[3]
+                const plan = pricingPlans.find((p) => p.planId === 'premium') || pricingPlans[3]
                 return (
                   <motion.div
                     key="premium"
@@ -1779,19 +1863,22 @@ function Hompage() {
                       </div>
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.14em] text-[#6b5a3e] mb-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
-                          {t(`homepage.${plan.nameKey}` as Parameters<typeof t>[0])}
+                          {plan.name}
                         </p>
                         <p className="text-[1.8rem] leading-none text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 400 }}>
-                          {t(`homepage.${plan.priceKey}` as Parameters<typeof t>[0])}
+                          {plan.price}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-3 mt-4 lg:mt-0">
-                      {[
-                        language === 'vi' ? 'Không giới hạn' : 'Unlimited',
-                        language === 'vi' ? 'Tất cả tính năng' : 'All features',
-                        language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
-                      ].map((tag) => (
+                      {(plan.tags && plan.tags.length > 0
+                        ? plan.tags
+                        : [
+                            language === 'vi' ? '70 lượt AI' : '70 AI try-ons',
+                            language === 'vi' ? 'Tất cả tính năng' : 'All features',
+                            language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
+                          ]
+                      ).map((tag: string) => (
                         <span
                           key={tag}
                           className="rounded-full border border-[#c8b898]/30 bg-white/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-[#6b5a3e]"

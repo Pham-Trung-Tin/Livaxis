@@ -89,6 +89,18 @@ const seedPlans = [
         'Priority email support'
       ]
     },
+    tags: {
+      vi: [
+        '40 lượt Thử đồ AI',
+        'Tải xuống chất lượng cao không giới hạn',
+        'Ưu tiên xử lý bằng Gemini AI'
+      ],
+      en: [
+        '40 AI Try-On turns',
+        'Unlimited high-res downloads',
+        'Gemini AI Priority Processing'
+      ]
+    },
     extras: {
       vi: ['Đặc quyền thành viên sớm'],
       en: ['Early member privileges']
@@ -123,6 +135,18 @@ const seedPlans = [
         'Multi-room projects',
         'Personal design consultation & export',
         '24/7 Priority support'
+      ]
+    },
+    tags: {
+      vi: [
+        '70 lượt Thử đồ AI',
+        'Tất cả tính năng',
+        'Hỗ trợ ưu tiên'
+      ],
+      en: [
+        '70 AI Try-On turns',
+        'All features',
+        'Priority support'
       ]
     },
     order: 4,

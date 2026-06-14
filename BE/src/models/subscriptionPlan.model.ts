@@ -34,6 +34,10 @@ export interface ISubscriptionPlan extends Document {
     vi: string[];
     en: string[];
   };
+  tags?: {
+    vi: string[];
+    en: string[];
+  };
   extras?: {
     vi: string[];
     en: string[];
@@ -95,6 +99,10 @@ const SubscriptionPlanSchema = new Schema<ISubscriptionPlan>(
     features: {
       vi: { type: [String], required: true },
       en: { type: [String], required: true },
+    },
+    tags: {
+      vi: { type: [String] },
+      en: { type: [String] },
     },
     extras: {
       vi: { type: [String] },
