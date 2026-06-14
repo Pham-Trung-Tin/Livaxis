@@ -1,9 +1,15 @@
 import { Router } from 'express';
-import { sePayWebhook, getPaymentStatus, getBankInfo, registerOrder, getSubscriptionRevenue } from '../controllers/payment.controller';
+import { sePayWebhook, getPaymentStatus, getBankInfo, registerOrder, getSubscriptionRevenue, getSubscriptionPlans } from '../controllers/payment.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 import { checkRole, ROLES } from '../middlewares/permission.middleware';
 
 export const paymentRouter = Router();
+
+/**
+ * GET /api/payment/subscription-plans
+ * Returns all active subscription plans stored in MongoDB.
+ */
+paymentRouter.get('/subscription-plans', getSubscriptionPlans);
 
 /**
  * POST /api/payment/register-order

@@ -19,11 +19,12 @@ import {
   ShoppingBag,
   SlidersHorizontal,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
+import { getFeaturedProducts } from '../services/productApi'
 // test deploy 2
 
 // ---------------------------------------------------------------------------
@@ -739,6 +740,24 @@ function Hompage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const isScrollingRef = useRef(false)
   const activeSectionRef = useRef<SectionId>('hero')
+  const [dbProducts, setDbProducts] = useState<any[]>([])
+
+  useEffect(() => {
+    let active = true
+    getFeaturedProducts(12)
+      .then((items) => {
+        if (!active) return
+        if (items && items.length > 0) {
+          setDbProducts(items)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load featured products for discovery:', err)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
   // Keep ref in sync with state
   useEffect(() => {
     activeSectionRef.current = activeSection
@@ -890,7 +909,7 @@ function Hompage() {
     { valueKey: 'stat4Value', labelKey: 'stat4Label' },
   ]
 
-  const discoveryProducts = [
+  const staticDiscoveryProducts = [
     {
       id: '1',
       name: language === 'vi' ? 'Sofa vải lanh Serene' : 'Serene Linen Sofa',
@@ -948,6 +967,35 @@ function Hompage() {
       imageUrl: 'https://images.unsplash.com/photo-1755770355297-1526e33a3c82?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     },
   ]
+
+  const CATEGORY_KEYS: Record<string, string> = {
+    All: 'discovery.allProducts',
+    Sofas: 'discovery.sofas',
+    Tables: 'discovery.tables',
+    Chairs: 'discovery.chairs',
+    Beds: 'discovery.beds',
+    Lighting: 'discovery.lighting',
+    Storage: 'discovery.storage',
+    Decor: 'discovery.decor',
+  }
+
+  const discoveryProducts = useMemo(() => {
+    if (dbProducts.length === 0) {
+      return staticDiscoveryProducts
+    }
+    const mapped = dbProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: t(CATEGORY_KEYS[p.category] || p.category as any),
+      price: `${p.price.toLocaleString('vi-VN')}₫`,
+      imageUrl: p.imageUrl,
+    }))
+    let finalItems = [...mapped]
+    while (finalItems.length < 8) {
+      finalItems = [...finalItems, ...mapped]
+    }
+    return finalItems
+  }, [dbProducts, language, t])
 
   const pricingPlans = [
     {

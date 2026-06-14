@@ -16,10 +16,10 @@ import {
   Zap,
   ZoomIn,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Footer, Header } from './Hompage'
-import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, registerSubscriptionOrder, type BankInfo } from '../services/paymentApi'
+import { checkPaymentStatus, fetchBankInfo, buildVietQrUrl, registerSubscriptionOrder, type BankInfo, fetchSubscriptionPlans, type SubscriptionPlanApiData } from '../services/paymentApi'
 import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
 import { translations } from '../contexts/translations'
@@ -99,7 +99,7 @@ export default function SubscriptionPage() {
   const { language, t } = useLanguage()
   const subTrans = translations[language].subscription
 
-  const PLANS: Plan[] = [
+  const staticPlans: Plan[] = [
     {
       id: 'free',
       name: subTrans.plans.free.name,
@@ -159,16 +159,59 @@ export default function SubscriptionPage() {
     },
   ]
 
-  const COMPARISON_ROWS = [
-    { label: subTrans.compareHeaders[0], values: [language === 'vi' ? '3/ngày' : '3/day', '10', '40', '70'] },
-    { label: subTrans.compareHeaders[1], values: [false, true, true, true] },
-    { label: subTrans.compareHeaders[2], values: [false, true, true, true] },
-    { label: subTrans.compareHeaders[3], values: [false, true, true, true] },
-    { label: subTrans.compareHeaders[4], values: [false, false, true, true] },
-    { label: subTrans.compareHeaders[5], values: [false, false, false, true] },
-    { label: subTrans.compareHeaders[6], values: [false, false, false, true] },
-    { label: subTrans.compareHeaders[7], values: [false, false, false, true] },
-  ]
+  const [apiPlans, setApiPlans] = useState<SubscriptionPlanApiData[]>([])
+
+  useEffect(() => {
+    fetchSubscriptionPlans()
+      .then(setApiPlans)
+      .catch((err) => console.warn('[Subscription] Failed to load plans from DB:', err))
+  }, [])
+
+  const PLANS: Plan[] = useMemo(() => {
+    if (apiPlans.length === 0) {
+      return staticPlans
+    }
+    return apiPlans.map((p) => {
+      const formattedPrice = p.price === 0
+        ? (language === 'vi' ? '0 ₫' : '0 ₫')
+        : p.price.toLocaleString('vi-VN') + ' ₫'
+
+      const planHighlight = p.planId === 'free'
+        ? (user?.subscriptionPlan || 'free') === 'free'
+        : user?.subscriptionPlan === p.planId
+
+      return {
+        id: p.planId,
+        badge: p.badge ? p.badge[language]?.toUpperCase() : undefined,
+        name: p.name[language] || p.name.en,
+        tagline: p.tagline[language] || p.tagline.en,
+        price: formattedPrice,
+        priceNote: p.priceNote ? p.priceNote[language] : undefined,
+        turns: String(p.turns),
+        turnsNote: p.turnsNote ? p.turnsNote[language] : undefined,
+        turnsToAdd: p.turnsToAdd,
+        cta: p.cta[language] || p.cta.en,
+        ctaStyle: p.ctaStyle,
+        highlight: planHighlight,
+        features: p.features[language] || p.features.en,
+        extras: p.extras ? p.extras[language] : undefined,
+      }
+    })
+  }, [apiPlans, language, user?.subscriptionPlan])
+
+  const COMPARISON_ROWS = useMemo(() => {
+    const turnsValues = PLANS.map(p => p.id === 'free' ? (language === 'vi' ? '3/ngày' : '3/day') : String(p.turnsToAdd))
+    return [
+      { label: subTrans.compareHeaders[0], values: turnsValues },
+      { label: subTrans.compareHeaders[1], values: PLANS.map(p => p.id !== 'free') },
+      { label: subTrans.compareHeaders[2], values: PLANS.map(p => p.id !== 'free') },
+      { label: subTrans.compareHeaders[3], values: PLANS.map(p => p.id !== 'free') },
+      { label: subTrans.compareHeaders[4], values: PLANS.map(p => p.id === 'standard' || p.id === 'premium') },
+      { label: subTrans.compareHeaders[5], values: PLANS.map(p => p.id === 'premium') },
+      { label: subTrans.compareHeaders[6], values: PLANS.map(p => p.id === 'premium') },
+      { label: subTrans.compareHeaders[7], values: PLANS.map(p => p.id === 'premium') },
+    ]
+  }, [PLANS, language, subTrans.compareHeaders])
 
   const TESTIMONIALS = subTrans.testimonials
 

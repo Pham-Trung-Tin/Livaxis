@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { env } from '../config/env';
 import User from '../models/user.model';
+import SubscriptionPlan from '../models/subscriptionPlan.model';
 
 // ---------------------------------------------------------------------------
 // In-memory stores..ß
@@ -327,6 +328,26 @@ export async function getSubscriptionRevenue(_req: Request, res: Response): Prom
     res.status(500).json({
       success: false,
       message: 'Lỗi khi lấy dữ liệu từ SePay',
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/payment/subscription-plans
+// Returns active subscription plans ordered by rank/order.
+// ---------------------------------------------------------------------------
+export async function getSubscriptionPlans(_req: Request, res: Response): Promise<void> {
+  try {
+    const plans = await SubscriptionPlan.find({ isActive: true }).sort({ order: 1 });
+    res.status(200).json({
+      success: true,
+      data: plans,
+    });
+  } catch (err: any) {
+    console.error('[Payment] Error getting subscription plans:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Không thể lấy thông tin các gói đăng ký',
     });
   }
 }

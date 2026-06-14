@@ -64,3 +64,26 @@ export function buildVietQrUrl(bankInfo: BankInfo, amount: number, orderId: stri
     `?amount=${amount}&addInfo=${addInfo}&accountName=${accountName}`
   )
 }
+
+export type SubscriptionPlanApiData = {
+  planId: string
+  name: { vi: string; en: string }
+  tagline: { vi: string; en: string }
+  price: number
+  priceNote?: { vi: string; en: string }
+  turns: number
+  turnsNote?: { vi: string; en: string }
+  turnsToAdd: number
+  cta: { vi: string; en: string }
+  ctaStyle: 'ghost' | 'outline' | 'charcoal' | 'gold'
+  badge?: { vi: string; en: string }
+  features: { vi: string[]; en: string[] }
+  extras?: { vi: string[]; en: string[] }
+}
+
+export async function fetchSubscriptionPlans(): Promise<SubscriptionPlanApiData[]> {
+  const res = await fetch(`${API_BASE}/subscription-plans`, { credentials: 'include' })
+  if (!res.ok) throw new Error('Failed to fetch subscription plans')
+  const json = await res.json()
+  return json.data as SubscriptionPlanApiData[]
+}
