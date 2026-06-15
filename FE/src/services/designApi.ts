@@ -74,3 +74,14 @@ export const deleteDesign = async (id: string): Promise<{ success: boolean; mess
 
   return data
 }
+
+export const getPublicDesign = async (id: string): Promise<UserDesign> => {
+  const response = await fetch(`${API_BASE}/public/${id}`)
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || 'Failed to get public design')
+  }
+
+  return data?.data
+}

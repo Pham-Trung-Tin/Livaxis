@@ -78,3 +78,23 @@ export const deleteDesignController = asyncHandler(async (req: Request, res: Res
     message: 'Xóa thiết kế thành công',
   });
 });
+
+/**
+ * GET /api/designs/public/:id
+ * Get a public design by ID (no auth required)
+ */
+export const getPublicDesignController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const design = await Design.findById(id);
+
+  if (!design) {
+    res.status(404).json({ success: false, error: { message: 'Không tìm thấy thiết kế' } });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: design,
+  });
+});

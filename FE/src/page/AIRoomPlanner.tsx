@@ -6,6 +6,7 @@ import { saveDesign, type DesignProduct } from '../services/designApi';
 import { useAuth } from '../contexts/auth-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMemo } from 'react';
+import { ShoppingBag } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /* Style Presets & Catalog Data */
@@ -30,6 +31,8 @@ type CatalogProduct = {
   imagePath: string;
   removeBackground?: boolean;
   isDbProduct?: boolean;
+  price?: number;
+  affiliateUrl?: string;
   draw: (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, product: CatalogProduct) => void;
 };
 
@@ -1050,6 +1053,8 @@ function mapApiProductToCatalogProduct(p: any): CatalogProduct {
     imagePath: p.imageUrl,
     removeBackground: true,
     isDbProduct: true,
+    price: p.price,
+    affiliateUrl: p.affiliateUrl,
     draw: drawFn,
   };
 }
@@ -1158,6 +1163,7 @@ export default function AIRoomPlanner() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [designName, setDesignName] = useState("");
   const [isSavingDesign, setIsSavingDesign] = useState(false);
+  const [savedDesignId, setSavedDesignId] = useState<string | null>(null);
 
   // Dragging states
   const draggingRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
@@ -2371,7 +2377,7 @@ export default function AIRoomPlanner() {
         };
       });
 
-      await saveDesign({
+      const saved = await saveDesign({
         name: designName,
         beforeImageUrl: beforeUrl,
         afterImageUrl: afterUrl,
@@ -2381,7 +2387,11 @@ export default function AIRoomPlanner() {
       });
 
       toast(language === 'vi' ? 'Lưu thiết kế thành công!' : 'Design saved successfully!');
-      setShowSaveModal(false);
+      if (saved && saved._id) {
+        setSavedDesignId(saved._id);
+      } else {
+        setShowSaveModal(false);
+      }
       setDesignName("");
     } catch (err: any) {
       console.error("Failed to save design:", err);
@@ -3020,6 +3030,8 @@ export default function AIRoomPlanner() {
         .room-planner-container .selected-list {
           display: grid;
           gap: 8px;
+          width: 100%;
+          min-width: 0;
         }
 
         .room-planner-container .selected-empty,
@@ -3536,120 +3548,126 @@ export default function AIRoomPlanner() {
 
         {/* Right Side Panel (Selected List & Notes) */}
         <aside className="side-panel output-panel">
-          <section className="tool-section">
-            <div className="section-heading">
-              <span>{t('aiRoomPlanner.selectedItems')}</span>
-              <button className="text-btn" onClick={() => {
-                setSelected(new Set());
-                setPlacements(new Map());
-                setActiveId(null);
-                setGeneratedImage(null);
-                setLastGenerationMode(null);
-                toast(t('aiRoomPlanner.selectionsCleared'));
-              }} type="button">
-                {t('aiRoomPlanner.clearAll')}
-              </button>
-            </div>
-            <div className="selected-list">
-              {localizedProductsList.filter((p) => selected.has(p.id)).length === 0 ? (
-                <div className="selected-empty">{t('aiRoomPlanner.selectFurnitureDesc')}</div>
-              ) : (
-                localizedProductsList
-                  .filter((p) => selected.has(p.id))
-                  .map((product) => {
-                    const p = placements.get(product.id) || { scale: 1, rotation: 0, rotationY: 0, flipped: false };
-                    const isActive = activeId === product.id;
-                    return (
-                      <div
-                        key={product.id}
-                        className={`selected-item ${isActive ? "active" : ""}`}
-                        onClick={() => setActiveId(product.id)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
-                          <div>
-                            <strong>{product.name}</strong>
-                            <small>{t('aiRoomPlanner.itemSpecDesc')
-                              .replace('{scale}', String(Math.round(p.scale * globalScale * 100)))
-                              .replace('{rotation}', String(p.rotation || 0))
-                              .replace('{flipped}', p.flipped ? t('aiRoomPlanner.itemFlipped') : '')}</small>
+          {/* Active Edit Placed Items Controls (Hidden when showBeforeAfter is true) */}
+          {!showBeforeAfter && (
+            <section className="tool-section">
+              <div className="section-heading">
+                <span>{t('aiRoomPlanner.selectedItems')}</span>
+                <button className="text-btn" onClick={() => {
+                  setSelected(new Set());
+                  setPlacements(new Map());
+                  setActiveId(null);
+                  setGeneratedImage(null);
+                  setLastGenerationMode(null);
+                  toast(t('aiRoomPlanner.selectionsCleared'));
+                }} type="button">
+                  {t('aiRoomPlanner.clearAll')}
+                </button>
+              </div>
+              <div className="selected-list">
+                {localizedProductsList.filter((p) => selected.has(p.id)).length === 0 ? (
+                  <div className="selected-empty">{t('aiRoomPlanner.selectFurnitureDesc')}</div>
+                ) : (
+                  localizedProductsList
+                    .filter((p) => selected.has(p.id))
+                    .map((product) => {
+                      const p = placements.get(product.id) || { scale: 1, rotation: 0, rotationY: 0, flipped: false };
+                      const isActive = activeId === product.id;
+                      return (
+                        <div
+                          key={product.id}
+                          className={`selected-item ${isActive ? "active" : ""}`}
+                          onClick={() => setActiveId(product.id)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <div style={{ display: "flex", justifycontent: "space-between", alignItems: "flex-start", width: "100%" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
+                              <div>
+                                <strong>{product.name}</strong>
+                                <small>{t('aiRoomPlanner.itemSpecDesc')
+                                  .replace('{scale}', String(Math.round(p.scale * globalScale * 100)))
+                                  .replace('{rotation}', String(p.rotation || 0))
+                                  .replace('{flipped}', p.flipped ? t('aiRoomPlanner.itemFlipped') : '')}</small>
+                              </div>
+                              <button
+                                className="mini-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleProduct(product.id);
+                                }}
+                                type="button"
+                              >
+                                x
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            className="mini-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleProduct(product.id);
-                            }}
-                            type="button"
-                          >
-                            x
-                          </button>
-                        </div>
-                        <div className="selected-controls" style={{ width: "100%", marginTop: 8 }}>
-                          <label className="control-row">
-                            <span>{t('aiRoomPlanner.itemSizeLabel')}</span>
-                            <input
-                              type="range"
-                              min="60"
-                              max="150"
-                              value={Math.round(p.scale * 100)}
-                              onChange={(e) => handlePlacementScale(product.id, Number(e.target.value))}
-                            />
-                          </label>
-                          <label className="control-row" style={{ marginTop: 6 }}>
-                            <span>{t('aiRoomPlanner.itemRotateLabel')}</span>
-                            <input
-                              type="range"
-                              min="0"
-                              max="360"
-                              value={p.rotation || 0}
-                              onChange={(e) => handlePlacementRotate(product.id, Number(e.target.value))}
-                            />
-                          </label>
-                          <label className="control-row" style={{ marginTop: 6 }}>
-                            <span>Rotate Y (3D):</span>
-                            <input
-                              type="range"
-                              min="0"
-                              max="360"
-                              value={p.rotationY || 0}
-                              onChange={(e) => handlePlacementRotateY(product.id, Number(e.target.value))}
-                            />
-                          </label>
-                          <div className="check-row-compact" style={{ marginTop: 6 }}>
-                            <input
-                              type="checkbox"
-                              id={`flip-${product.id}`}
-                              checked={p.flipped || false}
-                              onChange={(e) => handlePlacementFlip(product.id, e.target.checked)}
-                            />
-                            <label htmlFor={`flip-${product.id}`} onClick={(e) => e.stopPropagation()}>
-                              {t('aiRoomPlanner.itemFlipLabel')}
+                          <div className="selected-controls" style={{ width: "100%", marginTop: 8 }}>
+                            <label className="control-row">
+                              <span>{t('aiRoomPlanner.itemSizeLabel')}</span>
+                              <input
+                                type="range"
+                                min="60"
+                                max="150"
+                                value={Math.round(p.scale * 100)}
+                                onChange={(e) => handlePlacementScale(product.id, Number(e.target.value))}
+                              />
                             </label>
-                          </div>
-                          <div className="select-row" style={{ marginTop: 6 }}>
-                            <span>Floor Blend:</span>
-                            <select
-                              value={floorBlend}
-                              onChange={(e) => {
-                                setFloorBlend(e.target.value as 'shadow' | 'rug' | 'clean');
-                                setGeneratedImage(null);
-                                setLastGenerationMode(null);
-                              }}
-                            >
-                              <option value="shadow">Subtle Shadow</option>
-                              <option value="rug">Modern Rug</option>
-                              <option value="clean">Clean Floor</option>
-                            </select>
+                            <label className="control-row" style={{ marginTop: 6 }}>
+                              <span>{t('aiRoomPlanner.itemRotateLabel')}</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                value={p.rotation || 0}
+                                onChange={(e) => handlePlacementRotate(product.id, Number(e.target.value))}
+                              />
+                            </label>
+                            <label className="control-row" style={{ marginTop: 6 }}>
+                              <span>Rotate Y (3D):</span>
+                              <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                value={p.rotationY || 0}
+                                onChange={(e) => handlePlacementRotateY(product.id, Number(e.target.value))}
+                              />
+                            </label>
+                            <div className="check-row-compact" style={{ marginTop: 6 }}>
+                              <input
+                                type="checkbox"
+                                id={`flip-${product.id}`}
+                                checked={p.flipped || false}
+                                onChange={(e) => handlePlacementFlip(product.id, e.target.checked)}
+                              />
+                              <label htmlFor={`flip-${product.id}`} onClick={(e) => e.stopPropagation()}>
+                                {t('aiRoomPlanner.itemFlipLabel')}
+                              </label>
+                            </div>
+                            <div className="select-row" style={{ marginTop: 6 }}>
+                              <span>Floor Blend:</span>
+                              <select
+                                value={floorBlend}
+                                onChange={(e) => {
+                                  setFloorBlend(e.target.value as 'shadow' | 'rug' | 'clean');
+                                  setGeneratedImage(null);
+                                  setLastGenerationMode(null);
+                                }}
+                              >
+                                <option value="shadow">Subtle Shadow</option>
+                                <option value="rug">Modern Rug</option>
+                                <option value="clean">Clean Floor</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-              )}
-            </div>
-          </section>
+                      );
+                    })
+                )}
+              </div>
+            </section>
+          )}
 
+          {/* AI Designer Notes Section */}
           <section className="tool-section">
             <div className="section-heading">
               <span>{t('aiRoomPlanner.aiNotes')}</span>
@@ -3662,6 +3680,93 @@ export default function AIRoomPlanner() {
               ))}
             </div>
           </section>
+
+          {/* Shopping List Section (Only when showBeforeAfter is true, placed below notes) */}
+          {showBeforeAfter && (
+            <section className="tool-section">
+              <div className="section-heading">
+                <span>{language === 'vi' ? 'Sản phẩm mua sắm' : 'Shopping List'}</span>
+              </div>
+              <div className="selected-list">
+                {localizedProductsList.filter((p) => selected.has(p.id)).length === 0 ? (
+                  <div className="selected-empty">
+                    {language === 'vi' ? 'Không có sản phẩm nào trong thiết kế này' : 'No products in this design'}
+                  </div>
+                ) : (
+                  localizedProductsList
+                    .filter((p) => selected.has(p.id))
+                    .map((product) => {
+                      const shopeeLink = product.affiliateUrl || `https://shopee.vn/search?keyword=${encodeURIComponent(product.name)}`;
+                      return (
+                        <div
+                          key={product.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '8px 10px',
+                            borderRadius: 10,
+                            background: 'var(--surface-strong)',
+                            border: '1px solid var(--line)',
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 6,
+                            background: 'var(--surface)',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {product.imagePath ? (
+                              <img src={product.imagePath} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ fontSize: 9, color: 'var(--muted)' }}>No Pic</div>
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
+                            <h4 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#f3f4f6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {product.name}
+                            </h4>
+                            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--teal)', fontWeight: 500 }}>
+                              {product.price ? `${product.price.toLocaleString('vi-VN')}₫` : (language === 'vi' ? 'Tìm trên Shopee' : 'Find on Shopee')}
+                            </p>
+                          </div>
+                          <a
+                            href={shopeeLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '6px 8px',
+                              borderRadius: 6,
+                              background: 'linear-gradient(135deg, #ee4d2d 0%, #ff6633 100%)',
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              textDecoration: 'none',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ShoppingBag size={10} />
+                            <span>{language === 'vi' ? 'Mua' : 'Buy'}</span>
+                          </a>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </section>
+          )}
         </aside>
       </main>
 
@@ -3689,85 +3794,170 @@ export default function AIRoomPlanner() {
             flexDirection: 'column',
             gap: 20,
           }}>
-            <h3 style={{
-              margin: 0,
-              fontSize: 18,
-              fontWeight: 800,
-              color: '#f3f4f6',
-              letterSpacing: '0.02em',
-              fontFamily: 'Playfair Display, serif',
-            }}>
-              {language === 'vi' ? 'Lưu thiết kế của bạn' : 'Save Your Design'}
-            </h3>
-            
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
-              {language === 'vi' 
-                ? 'Thiết kế của bạn sẽ được lưu vào mục "Thiết kế của tôi" trong tài khoản cá nhân.' 
-                : 'Your design will be saved in the "My Designs" gallery in your profile.'}
-            </p>
+            {savedDesignId ? (
+              <>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: '#f3f4f6',
+                  letterSpacing: '0.02em',
+                  fontFamily: 'Playfair Display, serif',
+                }}>
+                  {language === 'vi' ? 'Đã lưu thiết kế!' : 'Design Saved!'}
+                </h3>
+                
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+                  {language === 'vi' 
+                    ? 'Thiết kế của bạn đã được lưu thành công. Bạn có muốn sao chép liên kết để chia sẻ với mọi người?' 
+                    : 'Your design has been saved successfully. Would you like to copy the link to share it with others?'}
+                </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.08em' }}>
-                {language === 'vi' ? 'Tên thiết kế' : 'Design Name'}
-              </label>
-              <input
-                type="text"
-                value={designName}
-                onChange={(e) => setDesignName(e.target.value)}
-                placeholder={language === 'vi' ? 'Nhập tên thiết kế...' : 'Enter design name...'}
-                autoFocus
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--line)',
-                  borderRadius: 8,
-                  padding: '12px 16px',
-                  fontSize: 13,
-                  outline: 'none',
-                  width: '100%',
-                  color: '#fff',
-                }}
-              />
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.08em' }}>
+                    {language === 'vi' ? 'Liên kết chia sẻ' : 'Share Link'}
+                  </label>
+                  <div style={{
+                    display: 'flex',
+                    gap: 8,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 8,
+                    padding: '6px 6px 6px 12px',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ fontSize: 12, color: '#f3f4f6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {window.location.origin}/share/{savedDesignId}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/share/${savedDesignId}`;
+                        navigator.clipboard.writeText(shareUrl)
+                          .then(() => toast(language === 'vi' ? 'Đã sao chép liên kết!' : 'Link copied to clipboard!'))
+                          .catch(() => toast('Failed to copy link'));
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        background: 'var(--teal)',
+                        color: 'var(--ink)',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {language === 'vi' ? 'Sao chép' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowSaveModal(false)}
-                disabled={isSavingDesign}
-                style={{
-                  height: 38,
-                  padding: '0 18px',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: '1px solid var(--line)',
-                  color: '#9ca3af',
-                  background: 'transparent',
-                }}
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDesign}
-                disabled={isSavingDesign}
-                style={{
-                  height: 38,
-                  padding: '0 20px',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  background: 'var(--teal)',
-                  color: 'var(--ink)',
-                }}
-              >
-                {isSavingDesign 
-                  ? (language === 'vi' ? 'Đang lưu...' : 'Saving...') 
-                  : (language === 'vi' ? 'Lưu ngay' : 'Save')}
-              </button>
-            </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSaveModal(false);
+                      setSavedDesignId(null);
+                    }}
+                    style={{
+                      height: 38,
+                      padding: '0 20px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: 'var(--surface-strong)',
+                      color: '#fff',
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    {language === 'vi' ? 'Đóng' : 'Close'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: '#f3f4f6',
+                  letterSpacing: '0.02em',
+                  fontFamily: 'Playfair Display, serif',
+                }}>
+                  {language === 'vi' ? 'Lưu thiết kế của bạn' : 'Save Your Design'}
+                </h3>
+                
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+                  {language === 'vi' 
+                    ? 'Thiết kế của bạn sẽ được lưu vào mục "Thiết kế của tôi" trong tài khoản cá nhân.' 
+                    : 'Your design will be saved in the "My Designs" gallery in your profile.'}
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.08em' }}>
+                    {language === 'vi' ? 'Tên thiết kế' : 'Design Name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={designName}
+                    onChange={(e) => setDesignName(e.target.value)}
+                    placeholder={language === 'vi' ? 'Nhập tên thiết kế...' : 'Enter design name...'}
+                    autoFocus
+                    style={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 8,
+                      padding: '12px 16px',
+                      fontSize: 13,
+                      outline: 'none',
+                      width: '100%',
+                      color: '#fff',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveModal(false)}
+                    disabled={isSavingDesign}
+                    style={{
+                      height: 38,
+                      padding: '0 18px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: '1px solid var(--line)',
+                      color: '#9ca3af',
+                      background: 'transparent',
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveDesign}
+                    disabled={isSavingDesign}
+                    style={{
+                      height: 38,
+                      padding: '0 20px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: 'var(--teal)',
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    {isSavingDesign 
+                      ? (language === 'vi' ? 'Đang lưu...' : 'Saving...') 
+                      : (language === 'vi' ? 'Lưu ngay' : 'Save')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

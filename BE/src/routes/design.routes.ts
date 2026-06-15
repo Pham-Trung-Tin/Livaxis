@@ -3,12 +3,16 @@ import {
   createDesignController,
   listDesignsController,
   deleteDesignController,
+  getPublicDesignController,
 } from '../controllers/design.controller';
 import { authenticate } from '../middlewares/auth.middleware';
 
 const designRouter = Router();
 
-// All design routes are protected by the authentication middleware
+// Public routes (no auth required)
+designRouter.get('/public/:id', getPublicDesignController);
+
+// All design routes below are protected by the authentication middleware
 designRouter.use(authenticate);
 
 designRouter.post('/', createDesignController);

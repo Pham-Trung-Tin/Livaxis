@@ -989,14 +989,31 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
                   </div>
                 )}
 
-                {/* Continue Editing Button */}
-                <button
-                  onClick={() => handleContinueEditing(selectedDesign)}
-                  className="w-full mb-6 rounded-xl bg-[#1a1a1a] py-3.5 text-white text-[13px] font-semibold uppercase tracking-wider hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <ArrowRight size={15} />
-                  {language === 'vi' ? 'Tiếp tục chỉnh sửa' : 'Continue Editing'}
-                </button>
+                {/* Share Design & Continue Editing Buttons */}
+                <div className="flex gap-2.5 mb-6">
+                  <button
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/share/${selectedDesign._id}`;
+                      navigator.clipboard.writeText(shareUrl)
+                        .then(() => showToast({
+                          title: language === 'vi' ? 'Đã sao chép liên kết!' : 'Link copied!',
+                          description: language === 'vi' ? 'Liên kết chia sẻ đã được copy vào bộ nhớ tạm.' : 'Shareable link copied to clipboard.'
+                        }))
+                        .catch(() => showToast({ title: 'Error', description: 'Failed to copy link' }));
+                    }}
+                    className="flex-1 rounded-xl border border-neutral-200 bg-white py-3.5 text-neutral-700 text-[12px] font-semibold uppercase tracking-wider hover:bg-neutral-50 hover:text-black transition-all flex items-center justify-center gap-1.5"
+                  >
+                    {language === 'vi' ? 'Chia sẻ' : 'Share'}
+                  </button>
+
+                  <button
+                    onClick={() => handleContinueEditing(selectedDesign)}
+                    className="flex-[2] rounded-xl bg-[#1a1a1a] py-3.5 text-white text-[12px] font-semibold uppercase tracking-wider hover:bg-black transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <ArrowRight size={14} />
+                    {language === 'vi' ? 'Sửa tiếp' : 'Edit'}
+                  </button>
+                </div>
 
                 {/* Shopping List Section */}
                 <div className="flex-1 flex flex-col min-h-0">

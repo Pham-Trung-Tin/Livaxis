@@ -17,6 +17,7 @@ const DiscoveryPage = lazy(() => import('./page/Discovery'))
 const CollectionsPage = lazy(() => import('./page/Collections'))
 const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
 const AIRoomPlannerPage = lazy(() => import('./page/AIRoomPlanner'))
+const SharedDesignPage = lazy(() => import('./page/SharedDesign'))
 
 // Admin pages
 const AdminLayout = lazy(() => import('./page/Admin/AdminLayout'))
@@ -49,6 +50,7 @@ function AppContent() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/profile" element={<UserProfilePage />} />
+            <Route path="/share/:id" element={<SharedDesignPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
