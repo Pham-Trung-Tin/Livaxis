@@ -803,9 +803,9 @@ function hasVisibleProductPixel(
 function shouldUseServerCutout(product: CatalogProduct) {
   return Boolean(
     product.isDbProduct &&
-      product.removeBackground &&
-      product.imagePath &&
-      /^https?:\/\//i.test(product.imagePath)
+    product.removeBackground &&
+    product.imagePath &&
+    /^https?:\/\//i.test(product.imagePath)
   );
 }
 
@@ -955,19 +955,19 @@ async function prepareProductImageForExport(product: CatalogProduct): Promise<vo
     } else if (cutout?.status === "loading") {
       cutoutDataUrl = await cutout.promise;
     } else if (!cutout) {
-      cutoutDataUrl = await requestProductCutout(product, () => {});
+      cutoutDataUrl = await requestProductCutout(product, () => { });
     }
 
     if (cutoutDataUrl) {
       // Force reload from the clean cutout data URL
       delete imageCache[product.id];
       delete imageLoadPromises[product.id];
-      await loadProductImageFromSource(product, cutoutDataUrl, () => {}, false);
+      await loadProductImageFromSource(product, cutoutDataUrl, () => { }, false);
     } else if (product.imagePath) {
       // Server cutout failed → use browser-side bg removal as fallback
       delete imageCache[product.id];
       delete imageLoadPromises[product.id];
-      await loadProductImageFromSource(product, product.imagePath, () => {}, Boolean(product.removeBackground));
+      await loadProductImageFromSource(product, product.imagePath, () => { }, Boolean(product.removeBackground));
     }
   } else {
     const cached = imageCache[product.id];
@@ -976,7 +976,7 @@ async function prepareProductImageForExport(product: CatalogProduct): Promise<vo
     if (imageLoadPromises[product.id]) {
       await imageLoadPromises[product.id];
     } else if (product.imagePath) {
-      await loadProductImageFromSource(product, product.imagePath, () => {}, Boolean(product.removeBackground));
+      await loadProductImageFromSource(product, product.imagePath, () => { }, Boolean(product.removeBackground));
     }
   }
 
@@ -1448,7 +1448,7 @@ export default function AIRoomPlanner() {
 
     // Reduce shadow intensity when multiple products are present to avoid dark blob accumulation
     const intensityScale = productCount <= 1 ? 1 : Math.max(0.4, 1 - (productCount - 1) * 0.2);
-    
+
     // Shift shadow slightly to the left to simulate directional lighting from the right/window
     const sx = x - w * 0.12;
     const sy = y + h * 0.06;
@@ -1645,7 +1645,7 @@ export default function AIRoomPlanner() {
     img.src = "/assets/sample_room.png";
     img.onload = async () => {
       setRoomImage(img);
-      
+
       // Convert sample room image to Base64 Data URL so backend gets a valid image payload
       const canvas = document.createElement("canvas");
       canvas.width = img.naturalWidth || img.width;
@@ -1715,7 +1715,7 @@ export default function AIRoomPlanner() {
         setPlacements(new Map());
         setActiveId(null);
         setPreparingProductIds(new Set());
-        
+
         // Start with a safe middle-ground default
         setFloorDepth(0.60);
         prevFloorDepthRef.current = 0.60;
@@ -1774,7 +1774,7 @@ export default function AIRoomPlanner() {
         if (state.placements && Array.isArray(state.placements)) {
           const newSelected = new Set<string>();
           const newPlacements = new Map<string, any>();
-          
+
           state.placements.forEach((p) => {
             const prodId = p.productId || p.id;
             if (prodId) {
@@ -1798,7 +1798,7 @@ export default function AIRoomPlanner() {
 
         toast(language === 'vi' ? 'Đã tải thiết kế thành công' : 'Loaded saved design successfully');
       };
-      
+
       // Clear location state after loading so refreshing doesn't keep reloading it
       window.history.replaceState({}, document.title);
     } else {
@@ -1819,7 +1819,7 @@ export default function AIRoomPlanner() {
   useEffect(() => {
     const prevFloorDepth = prevFloorDepthRef.current;
     if (prevFloorDepth === floorDepth) return;
-    
+
     // Calculate the delta (how much the floor moved)
     const delta = floorDepth - prevFloorDepth;
     prevFloorDepthRef.current = floorDepth;
@@ -1850,7 +1850,7 @@ export default function AIRoomPlanner() {
     // Avoid edges (x < 0.30 or x > 0.75) where stairs, doors, walls, and windows typically are.
     // This ensures products land on open floor area regardless of room layout.
     const pattern = [
-      { x: 0.50, y: floorDepth,        scale: 1    },
+      { x: 0.50, y: floorDepth, scale: 1 },
       { x: 0.62, y: floorDepth + 0.02, scale: 0.92 },
       { x: 0.38, y: floorDepth + 0.01, scale: 0.95 },
       { x: 0.55, y: floorDepth + 0.05, scale: 0.85 },
@@ -1861,11 +1861,11 @@ export default function AIRoomPlanner() {
     // Default: no rotation/flip — show product at natural front-facing angle.
     // The AI will handle perspective correction in the final render.
     // Users can manually adjust rotationY and flip if needed.
-    const p = { 
-      ...item, 
-      rotation: 0, 
-      rotationY: 0, 
-      flipped: false, 
+    const p = {
+      ...item,
+      rotation: 0,
+      rotationY: 0,
+      flipped: false,
       hasManualRotationY: false,
       hasManualFlip: false
     };
@@ -2058,7 +2058,7 @@ export default function AIRoomPlanner() {
     const box = getProductBox(product, placement);
     if (cx < box.left || cx > box.right || cy < box.top || cy > box.bottom) return false;
 
-    const img = getProductImage(product, () => {});
+    const img = getProductImage(product, () => { });
     if (!img) return true;
 
     const size = stage.width * product.baseScale * globalScale * placement.scale;
@@ -2154,7 +2154,7 @@ export default function AIRoomPlanner() {
       p.y = Math.min(0.94, Math.max(0.42, (point.y - draggingRef.current.offsetY) / stage.height));
       p.userMoved = true;
       p.hasManualDrag = true;
-      
+
       setPlacements(next);
     }
   };
@@ -2243,7 +2243,7 @@ export default function AIRoomPlanner() {
         if (offCtx) {
           drawRoom(offCtx);
           drawAiLighting(offCtx);
-          drawSelectedProducts(offCtx, false, () => {});
+          drawSelectedProducts(offCtx, false, () => { });
           // Skip vignette for auto-place to avoid dark borders in AI input
           if (pipelineMode !== "auto-place") {
             drawAfterVignette(offCtx);
@@ -2284,7 +2284,7 @@ export default function AIRoomPlanner() {
         const errMsg = errData?.error?.message || 'API error';
         // Refresh turns info so the UI reflects the exhausted state
         if (response.status === 429) {
-          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => {});
+          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => { });
         }
         throw new Error(errMsg);
       }
@@ -2317,7 +2317,7 @@ export default function AIRoomPlanner() {
           setTurnsInfo(generated.turnsInfo as TurnsInfo);
         } else {
           // Fallback: re-fetch
-          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => {});
+          getAiTurns().then((info) => setTurnsInfo(info)).catch(() => { });
         }
       } else {
         throw new Error("Invalid API response");
@@ -3192,10 +3192,10 @@ export default function AIRoomPlanner() {
               {isGenerating
                 ? t('aiRoomPlanner.processingAi')
                 : isPreparingProducts
-                ? t('aiRoomPlanner.preparingImages')
-                : turnsInfo && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0
-                ? t('aiRoomPlanner.upgradeToContinue')
-                : t('aiRoomPlanner.generateAfter')}
+                  ? t('aiRoomPlanner.preparingImages')
+                  : turnsInfo && !turnsInfo.unlimited && (turnsInfo.turnsRemaining ?? 0) <= 0
+                    ? t('aiRoomPlanner.upgradeToContinue')
+                    : t('aiRoomPlanner.generateAfter')}
             </span>
             {/* Turns sub-label — only for free users, hidden while generating */}
             {!isGenerating && !isPreparingProducts && turnsInfo && !turnsInfo.unlimited && (
@@ -3211,8 +3211,8 @@ export default function AIRoomPlanner() {
                     ? `${turnsInfo.turnsRemaining} lượt thử AI (${turnsInfo.purchasedTurns} mua thêm)`
                     : `${turnsInfo.turnsRemaining} AI Try-ons (${turnsInfo.purchasedTurns} purchased)`)
                   : t('homepage.turnsRemaining')
-                      .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
-                      .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
+                    .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
+                    .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
               </span>
             )}
           </button>
@@ -3526,8 +3526,8 @@ export default function AIRoomPlanner() {
             )}
             <div style={{ display: 'flex', gap: 10 }}>
               {showBeforeAfter && (
-                <button 
-                  className="primary-btn" 
+                <button
+                  className="primary-btn"
                   onClick={() => {
                     const currentStyle = stylePreset.charAt(0).toUpperCase() + stylePreset.slice(1);
                     setDesignName(language === 'vi' ? `Thiết kế ${currentStyle}` : `${currentStyle} Design`);
@@ -3806,10 +3806,10 @@ export default function AIRoomPlanner() {
                 }}>
                   {language === 'vi' ? 'Đã lưu thiết kế!' : 'Design Saved!'}
                 </h3>
-                
+
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
-                  {language === 'vi' 
-                    ? 'Thiết kế của bạn đã được lưu thành công. Bạn có muốn sao chép liên kết để chia sẻ với mọi người?' 
+                  {language === 'vi'
+                    ? 'Thiết kế của bạn đã được lưu thành công. Bạn có muốn sao chép liên kết để chia sẻ với mọi người?'
                     : 'Your design has been saved successfully. Would you like to copy the link to share it with others?'}
                 </p>
 
@@ -3887,10 +3887,10 @@ export default function AIRoomPlanner() {
                 }}>
                   {language === 'vi' ? 'Lưu thiết kế của bạn' : 'Save Your Design'}
                 </h3>
-                
+
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
-                  {language === 'vi' 
-                    ? 'Thiết kế của bạn sẽ được lưu vào mục "Thiết kế của tôi" trong tài khoản cá nhân.' 
+                  {language === 'vi'
+                    ? 'Thiết kế của bạn sẽ được lưu vào mục "Thiết kế của tôi" trong tài khoản cá nhân.'
                     : 'Your design will be saved in the "My Designs" gallery in your profile.'}
                 </p>
 
@@ -3951,8 +3951,8 @@ export default function AIRoomPlanner() {
                       color: 'var(--ink)',
                     }}
                   >
-                    {isSavingDesign 
-                      ? (language === 'vi' ? 'Đang lưu...' : 'Saving...') 
+                    {isSavingDesign
+                      ? (language === 'vi' ? 'Đang lưu...' : 'Saving...')
                       : (language === 'vi' ? 'Lưu ngay' : 'Save')}
                   </button>
                 </div>

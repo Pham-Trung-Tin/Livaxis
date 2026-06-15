@@ -1,4 +1,4 @@
-import { Schema, model, type Document } from 'mongoose';
+import { Schema, model, type Document, Types } from 'mongoose';
 
 export interface IDesignProduct {
   productId: string;
@@ -11,7 +11,7 @@ export interface IDesignProduct {
 }
 
 export interface IDesign extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   name: string;
   beforeImageUrl: string;
   afterImageUrl: string;

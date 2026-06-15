@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { asyncHandler } from '../utils/asyncHandler';
 import Design from '../models/design.model';
 
@@ -43,7 +44,7 @@ export const createDesignController = asyncHandler(async (req: Request, res: Res
  * List current user's designs
  */
 export const listDesignsController = asyncHandler(async (req: Request, res: Response) => {
-  const designs = await Design.find({ userId: req.user!.id }).sort({ createdAt: -1 });
+  const designs = await Design.find({ userId: new Types.ObjectId(req.user!.id) }).sort({ createdAt: -1 });
 
   res.status(200).json({
     success: true,
