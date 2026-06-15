@@ -18,6 +18,7 @@ import {
   Cpu,
   ShoppingBag,
   SlidersHorizontal,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -267,8 +268,8 @@ export function Header() {
                                         ? `${turnsInfo.turnsRemaining} lượt thử AI (${turnsInfo.purchasedTurns} mua thêm)`
                                         : `${turnsInfo.turnsRemaining} AI Try-ons (${turnsInfo.purchasedTurns} purchased)`)
                                       : t('homepage.turnsRemaining')
-                                          .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
-                                          .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
+                                        .replace('{remaining}', String(turnsInfo.turnsRemaining ?? 0))
+                                        .replace('{limit}', String(turnsInfo.dailyLimit ?? 3))}
                                   </p>
                                   <p style={{ margin: 0, fontSize: 10, color: '#a08c6a', fontFamily: 'Inter, sans-serif', fontWeight: 400 }}>
                                     {t('homepage.resetsDaily')}
@@ -747,6 +748,7 @@ function Hompage() {
   const activeSectionRef = useRef<SectionId>('hero')
   const [dbProducts, setDbProducts] = useState<any[]>([])
   const [dbPlans, setDbPlans] = useState<any[]>([])
+  const [showBlogQr, setShowBlogQr] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -760,7 +762,7 @@ function Hompage() {
       .catch((err) => {
         console.error('Failed to load featured products for discovery:', err)
       })
-    
+
     fetch('/api/payment/subscription-plans')
       .then((res) => res.json())
       .then((json) => {
@@ -884,7 +886,7 @@ function Hompage() {
       container.removeEventListener('wheel', handleWheel)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const steps = [
@@ -1334,7 +1336,7 @@ function Hompage() {
           <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(200,184,152,0.10) 0%, transparent 60%)' }} />
           <div className="mx-auto max-w-[1440px] w-full px-4 md:px-8">
             <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
-              
+
               {/* Left Column: Text & Feature Cards */}
               <div className="lg:col-span-5 flex flex-col justify-center text-left">
                 {/* Features: Slide-from-left + scale reveal */}
@@ -1471,10 +1473,10 @@ function Hompage() {
           `}</style>
 
           <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(200,184,152,0.08) 0%, transparent 70%)' }} />
-          
+
           <div className="relative mx-auto max-w-[1440px] w-full px-4 md:px-8">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-              
+
               {/* Left Column: Vertical Marquees */}
               <div className="lg:col-span-7 h-[420px] md:h-[500px] overflow-hidden grid grid-cols-2 gap-6 relative select-none rounded-[24px]">
                 {/* Fade overlays for elevation depth */}
@@ -1720,11 +1722,11 @@ function Hompage() {
                       {(plan.features && plan.features.length > 0
                         ? plan.features
                         : [
-                            language === 'vi' ? '40 lượt AI' : '40 AI try-ons',
-                            language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
-                            language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
-                            language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
-                          ]
+                          language === 'vi' ? '40 lượt AI' : '40 AI try-ons',
+                          language === 'vi' ? 'Tất cả phong cách nội thất' : 'All interior styles',
+                          language === 'vi' ? 'Lưu & chia sẻ thiết kế' : 'Save & share designs',
+                          language === 'vi' ? 'Ưu tiên xử lý nhanh' : 'Priority processing',
+                        ]
                       ).slice(0, 4).map((feat: string) => (
                         <div key={feat} className="flex items-center gap-3">
                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#c8b898]/20 border border-[#c8b898]/30">
@@ -1879,10 +1881,10 @@ function Hompage() {
                       {(plan.tags && plan.tags.length > 0
                         ? plan.tags
                         : [
-                            language === 'vi' ? '70 lượt AI' : '70 AI try-ons',
-                            language === 'vi' ? 'Tất cả tính năng' : 'All features',
-                            language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
-                          ]
+                          language === 'vi' ? '70 lượt AI' : '70 AI try-ons',
+                          language === 'vi' ? 'Tất cả tính năng' : 'All features',
+                          language === 'vi' ? 'Hỗ trợ ưu tiên' : 'Priority support',
+                        ]
                       ).map((tag: string) => (
                         <span
                           key={tag}
@@ -2086,12 +2088,16 @@ function Hompage() {
                   { label: language === 'vi' ? 'Gói đăng ký' : 'Subscription', href: '/subscription' },
                   { label: t('homepage.privacy'), href: '#' },
                   { label: t('homepage.terms'), href: '#' },
+                  { label: 'How To Use', href: '#', isBlog: true },
                 ].map((link) => (
                   <a
                     key={link.label}
                     href={link.href}
                     onClick={(e) => {
-                      if (!link.href.startsWith('#')) {
+                      if (link.isBlog) {
+                        e.preventDefault()
+                        setShowBlogQr(true)
+                      } else if (!link.href.startsWith('#')) {
                         e.preventDefault()
                         navigate(link.href)
                       }
@@ -2137,6 +2143,68 @@ function Hompage() {
           )
         })}
       </div>
+
+      {/* ── Blog QR Modal ── */}
+      <AnimatePresence>
+        {showBlogQr && (
+          <motion.div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowBlogQr(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-sm overflow-hidden rounded-[28px] border border-white/10 bg-[#161311] p-6 text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)]"
+              initial={{ scale: 0.94, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 8 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-left">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[#c8b898]">
+                    {language === 'vi' ? 'Trang Blog' : 'Our Blog'}
+                  </p>
+                  <h3
+                    className="mt-0.5 text-[20px] text-white"
+                    style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
+                  >
+                    Livaxis
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowBlogQr(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-neutral-400 hover:text-white transition-all duration-300 hover:rotate-90"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* QR Image Box */}
+              <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-neutral-950 p-4 mb-4 flex items-center justify-center">
+                <img
+                  src="/assets/blog-qr.png"
+                  alt="Livaxis Blog QR"
+                  className="max-h-[300px] w-auto object-contain"
+                />
+              </div>
+
+              {/* Footer text */}
+              <p
+                className="text-[12px] leading-relaxed text-neutral-400"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+              >
+                {language === 'vi'
+                  ? 'Quét mã QR bằng điện thoại để truy cập trang blog và cập nhật các xu hướng thiết kế nội thất mới nhất.'
+                  : 'Scan the QR code with your phone to access our blog and explore the latest interior design trends.'}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
