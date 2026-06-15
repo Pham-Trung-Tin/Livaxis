@@ -1129,7 +1129,7 @@ export default function AIRoomPlanner() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [stage, setStage] = useState({ width: 1280, height: 800 });
   const [sourceType, setSourceType] = useState("sample");
-  const [compareMode, setCompareMode] = useState("compare");
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
   const [sliderPos, setSliderPos] = useState(48);
   const [globalScale, setGlobalScale] = useState(1);
   const [floorDepth, setFloorDepth] = useState(0.72);
@@ -1215,6 +1215,13 @@ export default function AIRoomPlanner() {
       .then((info) => setTurnsInfo(info))
       .catch(() => setTurnsInfo(null));
   }, [user]);
+
+  // Sync showBeforeAfter when results are unlocked
+  useEffect(() => {
+    if (!isResultLocked) {
+      setShowBeforeAfter(false);
+    }
+  }, [isResultLocked]);
 
   // Sync Designer Notes
   useEffect(() => {
@@ -1567,15 +1574,17 @@ export default function AIRoomPlanner() {
   // Combined Render
   const renderAll = useCallback(() => {
     if (!roomImage) return;
-    const beforeCtx = beforeCanvasRef.current?.getContext("2d");
     const afterCtx = afterCanvasRef.current?.getContext("2d");
-    if (!beforeCtx || !afterCtx) return;
+    if (!afterCtx) return;
 
     const { width, height } = stage;
-    beforeCtx.clearRect(0, 0, width, height);
     afterCtx.clearRect(0, 0, width, height);
 
-    drawRoom(beforeCtx);
+    const beforeCtx = beforeCanvasRef.current?.getContext("2d");
+    if (beforeCtx) {
+      beforeCtx.clearRect(0, 0, width, height);
+      drawRoom(beforeCtx);
+    }
 
     if (generatedImage) {
       afterCtx.drawImage(generatedImage, 0, 0, width, height);
@@ -1597,7 +1606,7 @@ export default function AIRoomPlanner() {
     }
 
     drawAfterVignette(afterCtx);
-  }, [roomImage, generatedImage, stage, drawRoom, drawAiLighting, drawAfterVignette, drawFallbackBadge, drawSelectedProducts, selected, lastGenerationMode, isResultLocked]);
+  }, [roomImage, generatedImage, stage, drawRoom, drawAiLighting, drawAfterVignette, drawFallbackBadge, drawSelectedProducts, selected, lastGenerationMode, isResultLocked, sharpOverlay]);
 
   triggerRenderRef.current = renderAll;
 
@@ -1864,8 +1873,25 @@ export default function AIRoomPlanner() {
 
   // Toggle products from catalog
   const toggleProduct = async (id: string) => {
-    setGeneratedImage(null);
-    setLastGenerationMode(null);
+    if (generatedImage) {
+      setRoomImage(generatedImage);
+      if (generatedImage.src) {
+        setRoomDataUrl(generatedImage.src);
+      }
+      setSelected(new Set());
+      setPlacements(new Map());
+      setActiveId(null);
+      setGeneratedImage(null);
+      setLastGenerationMode(null);
+      setShowBeforeAfter(false);
+    } else if (lastGenerationMode === "mock-preview") {
+      setGeneratedImage(null);
+      setLastGenerationMode(null);
+      setShowBeforeAfter(false);
+    } else {
+      setGeneratedImage(null);
+      setLastGenerationMode(null);
+    }
     const product = localizedProductsList.find((item) => item.id === id);
     if (!product) return;
 
@@ -2205,11 +2231,11 @@ export default function AIRoomPlanner() {
         if (generated.imageDataUrl) {
           const outputImage = await loadGeneratedImage(generated.imageDataUrl);
           setGeneratedImage(outputImage);
-          setCompareMode("after");
+          setShowBeforeAfter(true);
           toast(generated.message || t('aiRoomPlanner.previewGenerated'));
         } else {
           setGeneratedImage(null);
-          setCompareMode("after");
+          setShowBeforeAfter(true);
           toast(generated.message || t('aiRoomPlanner.previewRenderedLocally'));
         }
 
@@ -2234,7 +2260,7 @@ export default function AIRoomPlanner() {
       setLastProvider("browser-fallback");
       setLastGenerationMode("mock-preview");
       setGeneratedImage(null);
-      setCompareMode("after");
+      setShowBeforeAfter(true);
       const errMsg = e instanceof Error ? e.message : t('aiRoomPlanner.aiUnavailableLocalShow');
       toast(errMsg);
     } finally {
@@ -3250,19 +3276,7 @@ export default function AIRoomPlanner() {
                   </button>
                 ))}
               </div>
-              {/* Compare Mode Tabs */}
-              <div className="mode-tabs">
-                <button
-                  className={`tab-btn ${compareMode === "compare" ? "active" : ""}`}
-                  onClick={() => setCompareMode("compare")}
-                  type="button"
-                >Compare</button>
-                <button
-                  className={`tab-btn ${compareMode === "after" ? "active" : ""}`}
-                  onClick={() => setCompareMode("after")}
-                  type="button"
-                >After only</button>
-              </div>
+
             </div>
 
             {/* Compact Controls Row */}
@@ -3332,7 +3346,7 @@ export default function AIRoomPlanner() {
 
           <div className="compare-frame">
             <div
-              className={`compare-stage ${compareMode === "after" ? "after-only" : ""}`}
+              className="compare-stage"
               style={{
                 "--split": `${sliderPos}%`,
                 "aspectRatio": `${stage.width} / ${stage.height}`
@@ -3348,32 +3362,42 @@ export default function AIRoomPlanner() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
               />
-              <canvas
-                id="beforeCanvas"
-                ref={beforeCanvasRef}
-                className="before-layer"
-                width={stage.width}
-                height={stage.height}
-              />
-              <div className="split-line" style={{ left: `${sliderPos}%` }}>
-                <span />
-              </div>
-              <input
-                className="split-range"
-                type="range"
-                min="0"
-                max="100"
-                value={sliderPos}
-                onChange={(e) => setSliderPos(Number(e.target.value))}
-              />
+              {showBeforeAfter && (
+                <>
+                  <canvas
+                    id="beforeCanvas"
+                    ref={beforeCanvasRef}
+                    className="before-layer"
+                    width={stage.width}
+                    height={stage.height}
+                  />
+                  <div className="split-line" style={{ left: `${sliderPos}%` }}>
+                    <span />
+                  </div>
+                  <input
+                    className="split-range"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={sliderPos}
+                    onChange={(e) => setSliderPos(Number(e.target.value))}
+                  />
+                </>
+              )}
             </div>
           </div>
 
           <div className="stage-footer">
-            <div className="legend">
-              <span className="legend-item before-dot">{t('aiRoomPlanner.legendBefore')}</span>
-              <span className="legend-item after-dot">{t('aiRoomPlanner.legendAfter')}</span>
-            </div>
+            {showBeforeAfter ? (
+              <div className="legend">
+                <span className="legend-item before-dot">{t('aiRoomPlanner.legendBefore')}</span>
+                <span className="legend-item after-dot">{t('aiRoomPlanner.legendAfter')}</span>
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: '#66726f', fontWeight: 700 }}>
+                {language === 'vi' ? 'Kéo thả vật thể để sắp xếp' : 'Drag furniture to position'}
+              </div>
+            )}
             <button className="ghost-btn" onClick={handleDownload} type="button">
               {t('aiRoomPlanner.downloadResult')}
             </button>
