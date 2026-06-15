@@ -317,9 +317,9 @@ export function Header() {
 
                       <div className="space-y-2 px-3 py-3">
                         {[
-                          { icon: User, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub'), href: '/profile' },
-                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub') },
-                          { icon: Settings, label: t('profile.accountSettings'), sub: t('profile.personalInfoSub') },
+                          { icon: User, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub'), href: '/profile?tab=personal' },
+                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub'), href: '/profile?tab=designs' },
+                          { icon: Settings, label: t('profile.accountSettings'), sub: t('profile.personalInfoSub'), href: '/profile?tab=personal' },
                         ].map(({ icon: Icon, label, sub, href }) => (
                           <button
                             key={label}
@@ -452,13 +452,18 @@ export function Header() {
 
                       <div className="px-3 py-3">
                         {[
-                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub') },
-                          { icon: Settings, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub') },
-                        ].map(({ icon: Icon, label, sub }) => (
+                          { icon: Heart, label: t('profile.myDesigns'), sub: t('profile.myDesignsSub'), href: '/profile?tab=designs' },
+                          { icon: Settings, label: t('profile.personalInfo'), sub: t('profile.personalInfoSub'), href: '/profile?tab=personal' },
+                        ].map(({ icon: Icon, label, sub, href }) => (
                           <button
                             key={label}
                             className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-200 hover:bg-[#f8f5f0]"
-                            onClick={() => setUserMenuOpen(false)}
+                            onClick={() => {
+                              setUserMenuOpen(false)
+                              if (href) {
+                                navigate(href)
+                              }
+                            }}
                           >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 transition-all duration-200 group-hover:border-[#c8b898]/30 group-hover:bg-[#fdf9f5]">
                               <Icon

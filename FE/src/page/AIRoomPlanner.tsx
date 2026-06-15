@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { removeBackground } from '@imgly/background-removal';
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi';
+import { saveDesign, type DesignProduct } from '../services/designApi';
 import { useAuth } from '../contexts/auth-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useMemo } from 'react';
@@ -1080,6 +1081,7 @@ async function fetchAllPlannerProducts(): Promise<CatalogProduct[]> {
 
 export default function AIRoomPlanner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { t, language } = useLanguage();
 
@@ -1151,6 +1153,11 @@ export default function AIRoomPlanner() {
   const [sharpOverlay, setSharpOverlay] = useState(false);
   const [turnsInfo, setTurnsInfo] = useState<TurnsInfo | null>(null);
   const [isDetectingFloor, setIsDetectingFloor] = useState(false);
+
+  // Save Design states
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [designName, setDesignName] = useState("");
+  const [isSavingDesign, setIsSavingDesign] = useState(false);
 
   // Dragging states
   const draggingRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
@@ -1732,10 +1739,66 @@ export default function AIRoomPlanner() {
     reader.readAsDataURL(file);
   };
 
-  // Setup Initial Sample Room
+  // Setup Initial Room (either from location state or fallback to sample room)
   useEffect(() => {
-    loadSampleRoom();
-  }, []);
+    const state = location.state as {
+      roomImageUrl?: string;
+      placements?: any[];
+      name?: string;
+    };
+
+    if (state && state.roomImageUrl) {
+      const img = new Image();
+      img.src = state.roomImageUrl;
+      img.onload = () => {
+        setRoomImage(img);
+        setRoomDataUrl(state.roomImageUrl!);
+        setImageName(state.name || "Saved design");
+        setSourceType("upload");
+        setLastGenerationMode(null);
+        setGeneratedImage(null);
+        setSelected(new Set());
+        setPlacements(new Map());
+        setActiveId(null);
+        setPreparingProductIds(new Set());
+        setFloorDepth(0.60);
+        prevFloorDepthRef.current = 0.60;
+
+        // Restore placements if they exist
+        if (state.placements && Array.isArray(state.placements)) {
+          const newSelected = new Set<string>();
+          const newPlacements = new Map<string, any>();
+          
+          state.placements.forEach((p) => {
+            const prodId = p.productId || p.id;
+            if (prodId) {
+              newSelected.add(prodId);
+              newPlacements.set(prodId, {
+                x: p.x,
+                y: p.y,
+                scale: p.scale,
+                rotation: p.rotation,
+                rotationY: p.rotationY ?? 0,
+                flipped: p.flipped ?? false,
+                hasManualDrag: true,
+                userMoved: true,
+              });
+            }
+          });
+
+          setSelected(newSelected);
+          setPlacements(newPlacements);
+        }
+
+        toast(language === 'vi' ? 'Đã tải thiết kế thành công' : 'Loaded saved design successfully');
+      };
+      
+      // Clear location state after loading so refreshing doesn't keep reloading it
+      window.history.replaceState({}, document.title);
+    } else {
+      loadSampleRoom();
+    }
+  }, [location.state, loadSampleRoom, language, toast]);
 
   // Update Canvas Size based on Image Ratio
   useEffect(() => {
@@ -2275,6 +2338,57 @@ export default function AIRoomPlanner() {
     link.download = `livaxis-room-designer-${Date.now()}.png`;
     link.href = afterCanvasRef.current.toDataURL("image/png");
     link.click();
+  };
+
+  // Save Design to Backend
+  const handleSaveDesign = async () => {
+    if (!designName.trim()) {
+      toast(language === 'vi' ? 'Vui lòng nhập tên thiết kế' : 'Please enter a design name');
+      return;
+    }
+
+    if (!roomImage || !afterCanvasRef.current || !beforeCanvasRef.current) {
+      toast(language === 'vi' ? 'Không có dữ liệu thiết kế để lưu' : 'No design data to save');
+      return;
+    }
+
+    setIsSavingDesign(true);
+
+    try {
+      const beforeUrl = beforeCanvasRef.current.toDataURL("image/png");
+      const afterUrl = afterCanvasRef.current.toDataURL("image/png");
+
+      const productsPayload = [...selected].map((id) => {
+        const p = placements.get(id) || {};
+        return {
+          productId: id,
+          x: p.x || 0.5,
+          y: p.y || 0.5,
+          scale: p.scale || 1,
+          rotation: p.rotation || 0,
+          rotationY: p.rotationY || 0,
+          flipped: p.flipped || false,
+        };
+      });
+
+      await saveDesign({
+        name: designName,
+        beforeImageUrl: beforeUrl,
+        afterImageUrl: afterUrl,
+        products: productsPayload,
+        prompt: stylePrompt,
+        stylePreset: stylePreset,
+      });
+
+      toast(language === 'vi' ? 'Lưu thiết kế thành công!' : 'Design saved successfully!');
+      setShowSaveModal(false);
+      setDesignName("");
+    } catch (err: any) {
+      console.error("Failed to save design:", err);
+      toast(err.message || (language === 'vi' ? 'Không thể lưu thiết kế' : 'Failed to save design'));
+    } finally {
+      setIsSavingDesign(false);
+    }
   };
 
   return (
@@ -3398,9 +3512,25 @@ export default function AIRoomPlanner() {
                 {language === 'vi' ? 'Kéo thả vật thể để sắp xếp' : 'Drag furniture to position'}
               </div>
             )}
-            <button className="ghost-btn" onClick={handleDownload} type="button">
-              {t('aiRoomPlanner.downloadResult')}
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {showBeforeAfter && (
+                <button 
+                  className="primary-btn" 
+                  onClick={() => {
+                    const currentStyle = stylePreset.charAt(0).toUpperCase() + stylePreset.slice(1);
+                    setDesignName(language === 'vi' ? `Thiết kế ${currentStyle}` : `${currentStyle} Design`);
+                    setShowSaveModal(true);
+                  }}
+                  type="button"
+                  style={{ height: 34, padding: '0 14px', fontSize: 12 }}
+                >
+                  {language === 'vi' ? 'Lưu thiết kế' : 'Save Design'}
+                </button>
+              )}
+              <button className="ghost-btn" onClick={handleDownload} type="button">
+                {t('aiRoomPlanner.downloadResult')}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -3534,6 +3664,113 @@ export default function AIRoomPlanner() {
           </section>
         </aside>
       </main>
+
+      {/* Save Design Modal */}
+      {showSaveModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'grid',
+          placeItems: 'center',
+          zIndex: 10000,
+          backdropFilter: 'blur(10px)',
+          padding: 24,
+        }}>
+          <div style={{
+            background: 'var(--panel)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--radius)',
+            padding: 32,
+            width: '100%',
+            maxWidth: 440,
+            boxShadow: 'var(--shadow)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+          }}>
+            <h3 style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 800,
+              color: '#f3f4f6',
+              letterSpacing: '0.02em',
+              fontFamily: 'Playfair Display, serif',
+            }}>
+              {language === 'vi' ? 'Lưu thiết kế của bạn' : 'Save Your Design'}
+            </h3>
+            
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.4 }}>
+              {language === 'vi' 
+                ? 'Thiết kế của bạn sẽ được lưu vào mục "Thiết kế của tôi" trong tài khoản cá nhân.' 
+                : 'Your design will be saved in the "My Designs" gallery in your profile.'}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.08em' }}>
+                {language === 'vi' ? 'Tên thiết kế' : 'Design Name'}
+              </label>
+              <input
+                type="text"
+                value={designName}
+                onChange={(e) => setDesignName(e.target.value)}
+                placeholder={language === 'vi' ? 'Nhập tên thiết kế...' : 'Enter design name...'}
+                autoFocus
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 8,
+                  padding: '12px 16px',
+                  fontSize: 13,
+                  outline: 'none',
+                  width: '100%',
+                  color: '#fff',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={() => setShowSaveModal(false)}
+                disabled={isSavingDesign}
+                style={{
+                  height: 38,
+                  padding: '0 18px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: '1px solid var(--line)',
+                  color: '#9ca3af',
+                  background: 'transparent',
+                }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDesign}
+                disabled={isSavingDesign}
+                style={{
+                  height: 38,
+                  padding: '0 20px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: 'var(--teal)',
+                  color: 'var(--ink)',
+                }}
+              >
+                {isSavingDesign 
+                  ? (language === 'vi' ? 'Đang lưu...' : 'Saving...') 
+                  : (language === 'vi' ? 'Lưu ngay' : 'Save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Toast Notification */}
       <div className={`toast ${toastShow ? "show" : ""}`}>

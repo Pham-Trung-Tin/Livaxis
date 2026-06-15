@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Crown, Menu, Package, Shield, ShoppingBag, User, X, Mail, Phone, Camera, Check, AlertCircle, Globe } from 'lucide-react'
+import { Crown, Menu, Package, Shield, ShoppingBag, User, X, Mail, Phone, Camera, Check, AlertCircle, Globe, Calendar, Trash2, ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useState, useRef, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { uploadAvatar } from '../services/authApi'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/toast-context'
+import { getUserDesigns, deleteDesign, type UserDesign } from '../services/designApi'
 
 type TabType = 'personal' | 'designs' | 'orders' | 'subscription' | 'security' | 'language'
 
@@ -22,13 +23,112 @@ const navItems = [
   { id: 'language' as TabType, labelKey: 'profile.language', icon: Globe },
 ]
 
+// Before/After Hover Slider Card Component
+function DesignCard({ design, onClick, onDelete }: { design: UserDesign; onClick: () => void; onDelete: (e: React.MouseEvent) => void }) {
+  const [hoverPos, setHoverPos] = useState(50);
+  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setHoverPos(percentage);
+  };
+
+  const formattedDate = new Date(design.createdAt).toLocaleDateString(
+    undefined,
+    { year: 'numeric', month: 'short', day: 'numeric' }
+  );
+
+  return (
+    <div 
+      ref={cardRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setHoverPos(50);
+      }}
+      onMouseMove={handleMouseMove}
+      onClick={onClick}
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md cursor-pointer h-full"
+    >
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-neutral-100 select-none">
+        <img 
+          src={design.afterImageUrl} 
+          alt={design.name} 
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        <div 
+          className="absolute inset-0 overflow-hidden"
+          style={{ clipPath: `inset(0 ${100 - hoverPos}% 0 0)` }}
+        >
+          <img 
+            src={design.beforeImageUrl} 
+            alt="Before" 
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ width: cardRef.current?.getBoundingClientRect().width || '100%', height: '100%' }}
+          />
+        </div>
+
+        {isHovered && (
+          <div 
+            className="absolute top-0 bottom-0 w-[2px] bg-white shadow-lg pointer-events-none"
+            style={{ left: `${hoverPos}%` }}
+          />
+        )}
+
+        {!isHovered && (
+          <div className="absolute bottom-3 right-3 rounded bg-black/60 px-2 py-0.5 text-[9px] font-medium tracking-wider text-white uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+            Hover to Compare
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <h4 className="text-[14px] font-semibold text-neutral-900 group-hover:text-black line-clamp-1 mb-1">
+          {design.name}
+        </h4>
+        <div className="flex items-center justify-between text-[11px] text-neutral-400 mt-auto">
+          <span className="flex items-center gap-1">
+            <Calendar size={12} />
+            {formattedDate}
+          </span>
+          <span className="text-neutral-500 font-medium group-hover:underline flex items-center gap-0.5">
+            View details <ArrowRight size={10} />
+          </span>
+        </div>
+      </div>
+
+      <button
+        onClick={onDelete}
+        className="absolute top-3 left-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-neutral-500 shadow hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all duration-200"
+        title="Delete design"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
 export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePageProps) {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user, loading, setUser } = useAuth()
   const { language, setLanguage, t } = useLanguage()
   const { showToast } = useToast()
   
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
+  const tabQuery = searchParams.get('tab') as TabType
+  
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const validTabs: TabType[] = ['personal', 'designs', 'orders', 'subscription', 'security', 'language']
+    if (tabQuery && validTabs.includes(tabQuery)) {
+      return tabQuery
+    }
+    return defaultTab
+  })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -43,9 +143,96 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
   const [isEditing, setIsEditing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Designs states
+  const [designs, setDesigns] = useState<UserDesign[]>([])
+  const [loadingDesigns, setLoadingDesigns] = useState(false)
+  const [selectedDesign, setSelectedDesign] = useState<UserDesign | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [productsList, setProductsList] = useState<any[]>([])
+  const [sliderPosDetail, setSliderPosDetail] = useState(50)
+
+  // Sync activeTab when defaultTab changes (if any external prop change)
   useEffect(() => {
-    setActiveTab(defaultTab)
-  }, [defaultTab])
+    if (!tabQuery) {
+      setActiveTab(defaultTab)
+    }
+  }, [defaultTab, tabQuery])
+
+  // Sync search parameters when activeTab changes
+  useEffect(() => {
+    const validTabs: TabType[] = ['personal', 'designs', 'orders', 'subscription', 'security', 'language']
+    if (validTabs.includes(activeTab)) {
+      setSearchParams({ tab: activeTab }, { replace: true })
+    }
+  }, [activeTab, setSearchParams])
+
+  // Sync activeTab when URL search parameters change externally
+  useEffect(() => {
+    const validTabs: TabType[] = ['personal', 'designs', 'orders', 'subscription', 'security', 'language']
+    if (tabQuery && validTabs.includes(tabQuery) && tabQuery !== activeTab) {
+      setActiveTab(tabQuery)
+    }
+  }, [tabQuery, activeTab])
+
+  // Load user designs and product catalog
+  useEffect(() => {
+    if (activeTab === 'designs') {
+      setLoadingDesigns(true)
+      getUserDesigns()
+        .then((data) => setDesigns(data))
+        .catch((err) => console.error("Failed to load designs:", err))
+        .finally(() => setLoadingDesigns(false))
+
+      // Also fetch catalog products to map Shopee links and images
+      fetch('/api/products?limit=100')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data?.items) {
+            setProductsList(res.data.items);
+          }
+        })
+        .catch(e => console.error("Failed to load products list:", e));
+    }
+  }, [activeTab])
+
+  // Delete Design helper
+  const handleDeleteDesign = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (!window.confirm(language === 'vi' ? 'Bạn có chắc chắn muốn xóa thiết kế này?' : 'Are you sure you want to delete this design?')) {
+      return
+    }
+    setDeletingId(id)
+    try {
+      await deleteDesign(id)
+      setDesigns(prev => prev.filter(d => d._id !== id))
+      showToast({ 
+        title: language === 'vi' ? 'Xóa thành công!' : 'Deleted successfully!', 
+        description: language === 'vi' ? 'Thiết kế đã được xóa khỏi tài khoản.' : 'The design has been removed.' 
+      })
+      if (selectedDesign?._id === id) {
+        setSelectedDesign(null)
+      }
+    } catch (err: any) {
+      console.error(err)
+      showToast({ 
+        title: language === 'vi' ? 'Xóa thất bại' : 'Failed to delete', 
+        description: err.message 
+      })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  // Continue Editing helper
+  const handleContinueEditing = (design: UserDesign) => {
+    navigate('/ai-room-planner', {
+      state: {
+        roomImageUrl: design.afterImageUrl,
+        placements: design.products,
+        name: design.name,
+      }
+    })
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -532,15 +719,36 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
 
               {activeTab === 'designs' && (
                 <motion.div key="designs" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="rounded-2xl bg-white p-8 lg:p-10">
-                  <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontWeight: 600 }}>
+                  <h2 className="mb-2 text-[26px] tracking-tight text-black" style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'normal', fontWeight: 600 }}>
                     {t('profile.myDesigns')}
                   </h2>
                   <p className="mb-10 text-[13px] text-neutral-500" style={{ fontWeight: 300 }}>
                     {t('profile.myDesignsSub')}
                   </p>
-                  <div className="py-12 text-center text-neutral-400">
-                    {t('profile.noSavedDesigns')}
-                  </div>
+
+                  {loadingDesigns ? (
+                    <div className="py-12 text-center text-neutral-400">
+                      {t('common.loading')}
+                    </div>
+                  ) : designs.length === 0 ? (
+                    <div className="py-12 text-center text-neutral-400">
+                      {t('profile.noSavedDesigns')}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {designs.map((design) => (
+                        <DesignCard
+                          key={design._id}
+                          design={design}
+                          onClick={() => {
+                            setSelectedDesign(design)
+                            setSliderPosDetail(50)
+                          }}
+                          onDelete={(e) => handleDeleteDesign(e, design._id)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -682,6 +890,176 @@ export default function UserProfilePage({ defaultTab = 'personal' }: ProfilePage
           </main>
         </div>
       </div>
+      {/* Design Detail Modal */}
+      <AnimatePresence>
+        {selectedDesign && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedDesign(null)}
+              className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Container */}
+            <motion.div
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              className="fixed left-1/2 top-1/2 z-[80] w-[min(94vw,900px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-2xl flex flex-col md:flex-row h-[min(90vh,600px)]"
+            >
+              {/* Left Side: Before/After Slider */}
+              <div className="relative flex-1 bg-neutral-100 h-64 md:h-full overflow-hidden select-none">
+                {/* After Image */}
+                <img 
+                  src={selectedDesign.afterImageUrl} 
+                  alt="Generated Design" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+
+                {/* Before Image (clipped) */}
+                <div 
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ clipPath: `inset(0 ${100 - sliderPosDetail}% 0 0)` }}
+                >
+                  <img 
+                    src={selectedDesign.beforeImageUrl} 
+                    alt="Before Design" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                </div>
+
+                {/* Vertical split line */}
+                <div 
+                  className="absolute top-0 bottom-0 w-[2px] bg-white shadow-lg pointer-events-none"
+                  style={{ left: `${sliderPosDetail}%` }}
+                >
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white text-black border border-neutral-300 flex items-center justify-center font-bold text-[12px] shadow-md">
+                    ↔
+                  </div>
+                </div>
+
+                {/* Invisible input range covering the area */}
+                <input 
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sliderPosDetail}
+                  onChange={(e) => setSliderPosDetail(Number(e.target.value))}
+                  className="absolute inset-0 opacity-0 cursor-ew-resize w-full h-full"
+                />
+
+                {/* Badges */}
+                <div className="absolute top-4 left-4 flex gap-1.5 pointer-events-none">
+                  <span className="rounded bg-black/60 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wider">Before</span>
+                </div>
+                <div className="absolute top-4 right-4 flex gap-1.5 pointer-events-none">
+                  <span className="rounded bg-black/60 px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wider">After</span>
+                </div>
+              </div>
+
+              {/* Right Side: Details & Products */}
+              <div className="w-full md:w-[360px] bg-white border-t md:border-t-0 md:border-l border-neutral-100 p-6 flex flex-col h-full overflow-y-auto">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <h3 className="text-[20px] font-semibold text-black" style={{ fontFamily: 'Playfair Display, serif' }}>
+                      {selectedDesign.name}
+                    </h3>
+                    <p className="text-[11px] text-neutral-400 mt-1">
+                      {new Date(selectedDesign.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedDesign(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 transition-colors"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                {selectedDesign.prompt && (
+                  <div className="mb-6 rounded-xl bg-neutral-50 p-4 border border-neutral-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">Prompt</span>
+                    <p className="text-[12px] text-neutral-600 leading-relaxed italic">
+                      "{selectedDesign.prompt}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Continue Editing Button */}
+                <button
+                  onClick={() => handleContinueEditing(selectedDesign)}
+                  className="w-full mb-6 rounded-xl bg-[#1a1a1a] py-3.5 text-white text-[13px] font-semibold uppercase tracking-wider hover:bg-black transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <ArrowRight size={15} />
+                  {language === 'vi' ? 'Tiếp tục chỉnh sửa' : 'Continue Editing'}
+                </button>
+
+                {/* Shopping List Section */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-3">
+                    {language === 'vi' ? 'Sản phẩm trong thiết kế' : 'Products in Design'}
+                  </span>
+                  
+                  <div className="space-y-3 overflow-y-auto flex-1 pr-1">
+                    {selectedDesign.products.length === 0 ? (
+                      <p className="text-[12px] text-neutral-400 italic">
+                        {language === 'vi' ? 'Không có sản phẩm catalog nào.' : 'No catalog products featured.'}
+                      </p>
+                    ) : (
+                      selectedDesign.products.map((p, idx) => {
+                        const matchedProduct = productsList.find(item => item._id === p.productId || item.id === p.productId);
+                        if (!matchedProduct) return null;
+
+                        return (
+                          <div key={idx} className="flex items-center gap-3 p-2 rounded-lg border border-neutral-100 bg-[#fafafa]">
+                            <img 
+                              src={matchedProduct.imageUrl} 
+                              alt={matchedProduct.name} 
+                              className="w-12 h-12 rounded object-contain bg-white border border-neutral-200 p-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-[12px] font-semibold text-neutral-900 truncate">
+                                {matchedProduct.name}
+                              </h5>
+                              <p className="text-[10px] text-neutral-400">
+                                {matchedProduct.category}
+                              </p>
+                            </div>
+                            {matchedProduct.affiliateUrl && (
+                              <a 
+                                href={matchedProduct.affiliateUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-md bg-[#EE4D2D] hover:bg-[#d94429] text-white text-[10px] font-bold uppercase tracking-wider transition-colors"
+                              >
+                                Shop
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Delete in modal */}
+                <button
+                  onClick={(e) => {
+                    handleDeleteDesign(e, selectedDesign._id);
+                  }}
+                  className="mt-6 w-full py-2.5 text-[11px] font-semibold text-red-500 hover:text-red-700 hover:bg-red-50/50 rounded-lg transition-colors border border-dashed border-red-200"
+                >
+                  {language === 'vi' ? 'Xóa thiết kế này' : 'Delete Design'}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

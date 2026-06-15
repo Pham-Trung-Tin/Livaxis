@@ -9,6 +9,7 @@ import { productRouter } from './routes/product.routes';
 import { aiRoomPlannerRouter } from './routes/aiRoomPlanner.routes';
 import { paymentRouter } from './routes/payment.routes';
 import { adminRouter } from './routes/admin.routes';
+import { designRouter } from './routes/design.routes';
 import { notFoundHandler } from './middlewares/notFound.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 
@@ -34,6 +35,7 @@ app.use('/api/products', productRouter);
 app.use('/api/ai-room-planner', aiRoomPlannerRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/designs', designRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
