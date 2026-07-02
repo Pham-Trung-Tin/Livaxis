@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronLeft,
   Bell,
+  MessageSquare,
 } from 'lucide-react'
 
 export default function AdminLayout() {
@@ -31,6 +32,7 @@ export default function AdminLayout() {
     { label: adminTrans.usersTitle, href: '/admin/users', icon: Users, end: false },
     { label: adminTrans.subscriptionsTitle, href: '/admin/subscriptions', icon: CreditCard, end: false },
     { label: adminTrans.aiAnalyticsTitle, href: '/admin/ai-analytics', icon: Zap, end: false },
+    { label: language === 'vi' ? 'Quản lý phản hồi' : 'Feedbacks', href: '/admin/feedbacks', icon: MessageSquare, end: false },
   ]
 
   const pageTitleMap: Record<string, { title: string; subtitle: string }> = {
@@ -39,6 +41,7 @@ export default function AdminLayout() {
     '/admin/users': { title: adminTrans.usersTitle, subtitle: adminTrans.usersSub },
     '/admin/subscriptions': { title: adminTrans.subscriptionsTitle, subtitle: adminTrans.subscriptionsSub },
     '/admin/ai-analytics': { title: adminTrans.aiAnalyticsTitle, subtitle: adminTrans.aiAnalyticsSub },
+    '/admin/feedbacks': { title: language === 'vi' ? 'Quản lý phản hồi' : 'Feedbacks', subtitle: language === 'vi' ? 'Xem và duyệt phản hồi từ người dùng' : 'Manage user feedbacks' },
   }
 
   const handleLogout = async () => {

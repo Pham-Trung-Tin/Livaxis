@@ -1,5 +1,6 @@
 import User from '../models/user.model';
 import Product from '../models/product.model';
+import Feedback from '../models/feedback.model';
 
 export type AdminUserItem = {
   id: string;
@@ -146,4 +147,19 @@ export const getSubscriptionStats = async () => {
   const arpu = totalUsers > 0 ? Math.round(mrr / totalUsers) : 0;
 
   return { plans: stats, totalUsers, mrr, arpu };
+};
+
+export const listAdminFeedbacks = async () => {
+  const feedbacks = await Feedback.find().sort({ createdAt: -1 });
+  return feedbacks;
+};
+
+
+
+export const deleteFeedbackAdmin = async (id: string) => {
+  const feedback = await Feedback.findByIdAndDelete(id);
+  if (!feedback) {
+    throw new Error('Feedback not found');
+  }
+  return feedback;
 };

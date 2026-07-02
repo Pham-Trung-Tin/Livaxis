@@ -3,17 +3,19 @@ import Feedback from '../models/feedback.model'
 
 export const createFeedback = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, phone, email, service, content, language } = req.body
+    const { name, phone, email, service, content } = req.body
 
-    const role = language === 'en' ? 'Customer' : 'Khách hàng'
+    if (!email) {
+      res.status(400).json({ error: { message: 'Vui lòng cung cấp địa chỉ email' } })
+      return
+    }
 
     const feedback = new Feedback({
       name,
       phone,
       email,
       service,
-      content,
-      role,
+      content
     })
 
     await feedback.save()
@@ -36,9 +38,8 @@ export const getRandomFeedbacks = async (req: Request, res: Response): Promise<v
   try {
     const limit = parseInt(req.query.limit as string) || 5
 
-    // Get random approved feedbacks
+    // Get random feedbacks
     const feedbacks = await Feedback.aggregate([
-      { $match: { status: 'approved' } },
       { $sample: { size: limit } }
     ])
 

@@ -6,9 +6,6 @@ export interface IFeedback extends Document {
   email?: string
   service: string
   content: string
-  role: string
-  rating: number
-  status: 'pending' | 'approved' | 'rejected'
   createdAt: Date
   updatedAt: Date
 }
@@ -26,6 +23,7 @@ const FeedbackSchema = new Schema<IFeedback>(
     },
     email: {
       type: String,
+      required: true,
       trim: true,
       lowercase: true,
     },
@@ -38,22 +36,6 @@ const FeedbackSchema = new Schema<IFeedback>(
       type: String,
       required: true,
       trim: true,
-    },
-    role: {
-      type: String,
-      default: 'Khách hàng',
-      trim: true,
-    },
-    rating: {
-      type: Number,
-      default: 5,
-      min: 1,
-      max: 5,
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'approved', // Default to approved so users can see it immediately on demo/landing
     },
   },
   {

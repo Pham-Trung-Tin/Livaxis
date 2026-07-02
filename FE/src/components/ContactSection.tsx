@@ -25,7 +25,7 @@ export function ContactSection({ activeSection }: { activeSection: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.service || !formData.content) return
+    if (!formData.name || !formData.email || !formData.service || !formData.content) return
     setIsSubmitting(true)
     try {
       await submitFeedback({ ...formData, language })
@@ -201,10 +201,11 @@ export function ContactSection({ activeSection }: { activeSection: string }) {
               </div>
               
               <div className="flex flex-col gap-2.5">
-                <label className="text-[12px] font-medium text-white/80">Email</label>
+                <label className="text-[12px] font-medium text-white/80">Email *</label>
                 <input
                   type="email"
                   name="email"
+                  required
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="example@gmail.com"

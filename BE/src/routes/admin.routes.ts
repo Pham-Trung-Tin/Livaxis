@@ -7,6 +7,8 @@ import {
   listAdminProductsController,
   listAdminUsersController,
   updateUserStatusController,
+  listAdminFeedbacksController,
+  deleteFeedbackController,
 } from '../controllers/admin.controller';
 
 const adminRouter = Router();
@@ -18,5 +20,7 @@ adminRouter.get('/users', listAdminUsersController);
 adminRouter.patch('/users/:id/status', updateUserStatusController);
 adminRouter.get('/products', listAdminProductsController);
 adminRouter.get('/subscriptions', getSubscriptionStatsController);
+adminRouter.get('/feedbacks', listAdminFeedbacksController);
+adminRouter.delete('/feedbacks/:id', deleteFeedbackController);
 
 export { adminRouter };

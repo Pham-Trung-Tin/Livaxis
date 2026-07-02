@@ -25,6 +25,7 @@ const AdminDashboard = lazy(() => import('./page/Admin/AdminDashboard'))
 const AdminUserManagement = lazy(() => import('./page/Admin/UserManagement'))
 const AdminSubscriptionPlans = lazy(() => import('./page/Admin/SubscriptionPlans'))
 const AdminProductInventory = lazy(() => import('./page/Admin/ProductInventory'))
+const AdminFeedbackManagement = lazy(() => import('./page/Admin/FeedbackManagement'))
 
 export default function App() {
   return (
@@ -81,6 +82,7 @@ function AppContent() {
               <Route path="users" element={<AdminUserManagement />} />
               <Route path="subscriptions" element={<AdminSubscriptionPlans />} />
               <Route path="products" element={<AdminProductInventory />} />
+              <Route path="feedbacks" element={<AdminFeedbackManagement />} />
             </Route>
 
             <Route path="*" element={<HomePage />} />

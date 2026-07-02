@@ -141,3 +141,37 @@ export const getSubscriptionRevenue = async (): Promise<RevenueData> => {
   }
   return data as RevenueData
 }
+
+export type AdminFeedbackItem = {
+  _id: string
+  name: string
+  email: string
+  phone: string
+  service: string
+  content: string
+  createdAt: string
+}
+
+export const getAdminFeedbacks = async (): Promise<AdminFeedbackItem[]> => {
+  const response = await fetch('/api/admin/feedbacks', {
+    credentials: 'include',
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(data?.error?.message || 'Không thể tải danh sách phản hồi')
+  }
+  return data?.data ?? []
+}
+
+
+
+export const deleteFeedbackAdmin = async (id: string): Promise<void> => {
+  const response = await fetch(`/api/admin/feedbacks/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(data?.error?.message || 'Không thể xóa phản hồi')
+  }
+}

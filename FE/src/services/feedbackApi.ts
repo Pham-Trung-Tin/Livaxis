@@ -14,8 +14,6 @@ export interface FeedbackResponse {
   email?: string
   service: string
   content: string
-  role: string
-  rating: number
   status: string
   createdAt: string
   updatedAt: string

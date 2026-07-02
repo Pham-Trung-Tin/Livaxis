@@ -6,6 +6,8 @@ import {
   listAdminProducts,
   listAdminUsers,
   updateUserStatus,
+  listAdminFeedbacks,
+  deleteFeedbackAdmin,
 } from '../services/admin.service';
 
 export const listAdminUsersController = asyncHandler(async (req: Request, res: Response) => {
@@ -69,5 +71,35 @@ export const getSubscriptionStatsController = asyncHandler(async (_req: Request,
   res.status(200).json({
     success: true,
     data: stats,
+  });
+});
+
+export const listAdminFeedbacksController = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await listAdminFeedbacks();
+
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+
+
+export const deleteFeedbackController = asyncHandler(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  if (!id) {
+    res.status(400).json({
+      success: false,
+      error: { message: 'Thiếu ID' },
+    });
+    return;
+  }
+
+  await deleteFeedbackAdmin(id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Xóa phản hồi thành công',
   });
 });
