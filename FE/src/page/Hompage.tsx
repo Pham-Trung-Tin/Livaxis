@@ -25,12 +25,14 @@ import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
 import { getFeaturedProducts } from '../services/productApi'
+import { ContactSection } from '../components/ContactSection'
+import { TestimonialsSection } from '../components/TestimonialsSection'
 // test deploy 2
 
 // ---------------------------------------------------------------------------
 // Section type — 8 fullscreen sections total
 // ---------------------------------------------------------------------------
-type SectionId = 'hero' | 'features' | 'stats' | 'discovery' | 'pricing' | 'process'
+type SectionId = 'hero' | 'features' | 'stats' | 'discovery' | 'pricing' | 'process' | 'testimonials' | 'contact'
 
 // ---------------------------------------------------------------------------
 // Global top navigation with account dropdown actions.
@@ -779,7 +781,7 @@ function Hompage() {
     activeSectionRef.current = activeSection
   }, [activeSection])
 
-  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'discovery', 'pricing', 'stats']
+  const sectionsList: SectionId[] = ['hero', 'process', 'features', 'discovery', 'pricing', 'testimonials', 'contact', 'stats']
 
   const scrollToSection = (id: SectionId) => {
     const el = document.getElementById(id)
@@ -850,6 +852,11 @@ function Hompage() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keydown events if the user is typing in form elements
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        return
+      }
+
       if (window.innerWidth < 768) return
       if (isScrollingRef.current) return
 
@@ -1110,6 +1117,8 @@ function Hompage() {
     { id: 'features' as SectionId, label: t('homepage.featuresLabel') },
     { id: 'discovery' as SectionId, label: t('homepage.discoveryLabel') },
     { id: 'pricing' as SectionId, label: t('homepage.pricingLabel') },
+    { id: 'testimonials' as SectionId, label: language === 'vi' ? 'Phản hồi' : 'Testimonials' },
+    { id: 'contact' as SectionId, label: language === 'vi' ? 'Liên hệ' : 'Contact' },
     { id: 'stats' as SectionId, label: t('homepage.statsLabel') },
   ]
 
@@ -1934,6 +1943,9 @@ function Hompage() {
         {/* ═══════════════════════════════════════════════════
             Section 7: Stats / Social Proof
         ═══════════════════════════════════════════════════ */}
+        <TestimonialsSection activeSection={activeSection} />
+        <ContactSection activeSection={activeSection} />
+
         <section
           id="stats"
           className="w-full min-h-[100dvh] md:h-screen flex flex-col justify-center items-center relative overflow-hidden pt-[72px]"
