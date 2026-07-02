@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
-import { MessageSquare, Trash2, AlertTriangle, X } from 'lucide-react'
+import { MessageSquare, Trash2, AlertTriangle, X, Eye } from 'lucide-react'
 import {
   getAdminFeedbacks,
   deleteFeedbackAdmin,
@@ -13,6 +13,7 @@ export default function FeedbackManagement() {
   const [isLoading, setIsLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [viewFeedback, setViewFeedback] = useState<AdminFeedbackItem | null>(null)
   const { showToast } = useToast()
 
   const fetchFeedbacks = async () => {
@@ -107,13 +108,22 @@ export default function FeedbackManagement() {
                       {new Date(item.createdAt).toLocaleDateString('vi-VN')}
                     </td>
                     <td className="py-4 text-right">
-                      <button
-                        onClick={() => setDeleteId(item._id)}
-                        className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                        title="Xóa phản hồi"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setViewFeedback(item)}
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-500"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(item._id)}
+                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                          title="Xóa phản hồi"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 ))}
@@ -154,6 +164,67 @@ export default function FeedbackManagement() {
                 className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
               >
                 {isDeleting ? 'Đang xóa...' : 'Xóa phản hồi'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal xem chi tiết */}
+      {viewFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <h3 className="text-lg font-bold text-gray-900">Chi tiết phản hồi</h3>
+              <button
+                onClick={() => setViewFeedback(null)}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Người gửi</h4>
+                  <p className="mt-1 font-medium text-gray-900">{viewFeedback.name}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Dịch vụ quan tâm</h4>
+                  <p className="mt-1 font-medium text-gray-900">{viewFeedback.service}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                  <p className="mt-1 text-gray-900">{viewFeedback.email || 'Không có'}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500">Số điện thoại</h4>
+                  <p className="mt-1 text-gray-900">{viewFeedback.phone || 'Không có'}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500">Nội dung phản hồi</h4>
+                  <div className="mt-2 rounded-lg bg-gray-50 p-4 text-gray-700 whitespace-pre-wrap break-words">
+                    {viewFeedback.content}
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <h4 className="text-sm font-medium text-gray-500">Thời gian gửi</h4>
+                  <p className="mt-1 text-gray-900">
+                    {new Date(viewFeedback.createdAt).toLocaleString('vi-VN')}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end border-t border-gray-100 bg-gray-50 px-6 py-4">
+              <button
+                onClick={() => setViewFeedback(null)}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              >
+                Đóng
               </button>
             </div>
           </motion.div>
