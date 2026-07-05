@@ -242,7 +242,7 @@ function DesktopHeader() {
                             <p style={{
                               margin: 0, fontSize: 13, fontFamily: 'Inter, sans-serif', fontWeight: 500, color: '#1a1a1a'
                             }}>
-                              {turnsInfo?.unlimited ? 'Unlimited' : (turnsInfo?.remaining ?? 0)} remaining
+                              {turnsInfo?.unlimited ? 'Unlimited' : (turnsInfo?.turnsRemaining ?? 0)} remaining
                             </p>
                           </div>
                         </div>
