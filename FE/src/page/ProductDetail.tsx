@@ -15,7 +15,7 @@ import {
   ShoppingCart,
 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Header } from './Hompage'
+import { Header } from '../components/Header'
 import { Footer } from './Hompage'
 import { getProductById, type ProductDetail as ProductDetailType } from '../services/productApi'
 import { useLanguage } from '../contexts/LanguageContext'
