@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, ArrowRight, ShoppingBag, Calendar, AlertCircle } from 'lucide-react'
 import { getPublicDesign, type UserDesign } from '../services/designApi'
-import { Header, Footer } from './Hompage'
+import { Footer } from './Hompage'
+import { Header } from '../components/Header'
 import { useLanguage } from '../contexts/LanguageContext'
 
 export default function SharedDesignPage() {
