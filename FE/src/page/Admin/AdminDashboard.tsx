@@ -313,7 +313,15 @@ export default function AdminDashboard() {
               revenueData.recentOrders.map((order) => {
                 const sc = statusColors['Completed']
                 const amountFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)
-                const dateFormatted = new Date(order.date).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')
+                const dateFormatted = new Date(order.date).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                })
                 return (
                   <tr key={order.sePayId}>
                     <td className="adm-td-mono">{order.id}</td>
