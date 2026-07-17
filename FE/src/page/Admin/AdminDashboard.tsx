@@ -74,6 +74,30 @@ export default function AdminDashboard() {
   const [revenueLoading, setRevenueLoading] = useState(true)
   const [showRoomTryOn, setShowRoomTryOn] = useState(true)
   const [showRoomPlanner, setShowRoomPlanner] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [searchOrder, setSearchOrder] = useState('')
+  const ITEMS_PER_PAGE = 8
+
+  const filteredRevenueOrders = revenueData?.recentOrders.filter(o => 
+    o.id.toLowerCase().includes(searchOrder.toLowerCase()) || 
+    o.content.toLowerCase().includes(searchOrder.toLowerCase())
+  ) || []
+  
+  const filteredMockOrders = RECENT_ORDERS.filter(o => 
+    o.id.toLowerCase().includes(searchOrder.toLowerCase()) || 
+    o.email.toLowerCase().includes(searchOrder.toLowerCase())
+  )
+
+  const isUsingRealData = !!(revenueData && revenueData.recentOrders.length > 0)
+  const totalItems = isUsingRealData ? filteredRevenueOrders.length : filteredMockOrders.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
+  
+  const paginatedRevenueOrders = filteredRevenueOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  const paginatedMockOrders = filteredMockOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) setCurrentPage(totalPages)
+  }, [totalPages, currentPage])
 
   const statusTranslations: Record<string, string> = language === 'vi' ? {
     Completed: 'Hoàn thành',
@@ -284,7 +308,12 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="adm-table-actions">
-            <input className="adm-search" placeholder={language === 'vi' ? 'Tìm đơn hàng...' : 'Search orders...'} />
+            <input 
+              className="adm-search" 
+              placeholder={language === 'vi' ? 'Tìm đơn hàng...' : 'Search orders...'} 
+              value={searchOrder}
+              onChange={(e) => setSearchOrder(e.target.value)}
+            />
             <button className="adm-icon-btn" title={adminTrans.buttons.filter}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
             </button>
@@ -309,8 +338,8 @@ export default function AdminDashboard() {
               <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>
                 {language === 'vi' ? 'Đang tải dữ liệu từ SePay...' : 'Loading data from SePay...'}
               </td></tr>
-            ) : revenueData && revenueData.recentOrders.length > 0 ? (
-              revenueData.recentOrders.map((order) => {
+            ) : isUsingRealData ? (
+              paginatedRevenueOrders.map((order) => {
                 const sc = statusColors['Completed']
                 const amountFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)
                 const dateFormatted = new Date(order.date).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
@@ -337,7 +366,7 @@ export default function AdminDashboard() {
                 )
               })
             ) : (
-              RECENT_ORDERS.map((order) => {
+              paginatedMockOrders.map((order) => {
                 const sc = statusColors[order.status] ?? statusColors.Completed
                 return (
                   <tr key={order.id}>
@@ -367,6 +396,28 @@ export default function AdminDashboard() {
             )}
           </tbody>
         </table>
+
+        {totalItems > ITEMS_PER_PAGE && (
+          <div className="adm-pagination">
+            <button 
+              className="adm-page-btn" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            >
+              {language === 'vi' ? 'Trước' : 'Prev'}
+            </button>
+            <span className="adm-page-info">
+              {language === 'vi' ? `Trang ${currentPage} / ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+            </span>
+            <button 
+              className="adm-page-btn" 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            >
+              {language === 'vi' ? 'Sau' : 'Next'}
+            </button>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -641,6 +692,44 @@ export default function AdminDashboard() {
           font-weight: 500;
           padding: 3px 10px;
           border-radius: 20px;
+        }
+
+        .adm-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+          padding-top: 16px;
+          border-top: 1px solid #f8f6f3;
+          margin-top: 12px;
+        }
+
+        .adm-page-btn {
+          height: 30px;
+          padding: 0 12px;
+          border: 1px solid #e0dbd3;
+          background: #fff;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #444;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+
+        .adm-page-btn:hover:not(:disabled) {
+          border-color: #a78bfa;
+          color: #7c3aed;
+        }
+
+        .adm-page-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: #fafaf8;
+        }
+
+        .adm-page-info {
+          font-size: 13px;
+          color: #777;
         }
 
         @media (max-width: 1100px) {
