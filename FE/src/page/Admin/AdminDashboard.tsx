@@ -185,9 +185,11 @@ export default function AdminDashboard() {
     {
       label: adminTrans.stats.aiTurnsUsed,
       value: stats ? stats.aiTurnsConsumed.toLocaleString() : '42.810',
-      sub: language === 'vi' ? 'Tổng lượt AI đã dùng' : 'Total AI turns used',
-      trend: language === 'vi' ? '+5.2% vs tháng trước' : '+5.2% vs last month',
-      up: true,
+      sub: language === 'vi' ? 'Tổng lượt AI 30 ngày qua' : 'Total AI turns 30 days',
+      trend: stats 
+        ? `${stats.aiTurnsTrend} ${language === 'vi' ? 'vs tháng trước' : 'vs last month'}`
+        : (language === 'vi' ? '+5.2% vs tháng trước' : '+5.2% vs last month'),
+      up: stats ? stats.aiTurnsTrend.startsWith('+') : true,
       icon: '⚡',
       iconBg: '#ecfdf5',
       iconColor: '#059669',

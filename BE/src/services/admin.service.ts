@@ -24,6 +24,7 @@ export type AdminUserListResult = {
 export type AdminDashboardStats = {
   totalActiveUsers: number;
   aiTurnsConsumed: number;
+  aiTurnsTrend: string;
   newUsersThisWeek: number;
   chartData: {
     roomTryOn: number[];
@@ -98,9 +99,9 @@ export const getAdminDashboardStats = async (): Promise<AdminDashboardStats> => 
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - 7);
 
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 29);
-  const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+  const sixtyDaysAgo = new Date(now);
+  sixtyDaysAgo.setDate(now.getDate() - 59);
+  const startDateStr = sixtyDaysAgo.toISOString().split('T')[0];
 
   const [totalActiveUsers, aiTurnsResult, newUsersThisWeek, dailyUsage] = await Promise.all([
     User.countDocuments({ isActive: true, role: { $ne: 'admin' } }),
@@ -137,9 +138,37 @@ export const getAdminDashboardStats = async (): Promise<AdminDashboardStats> => 
     chartData.roomPlanner.push(record?.roomPlanner ?? 0);
   }
 
+  // Calculate trend
+  let currentMonthTurns = 0;
+  let lastMonthTurns = 0;
+
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (59 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const record = usageMap.get(dateStr);
+    const totalDay = (record?.roomTryOn ?? 0) + (record?.roomPlanner ?? 0);
+
+    if (i < 30) {
+      lastMonthTurns += totalDay;
+    } else {
+      currentMonthTurns += totalDay;
+    }
+  }
+
+  let aiTurnsTrend = '0%';
+  if (lastMonthTurns === 0) {
+    if (currentMonthTurns > 0) aiTurnsTrend = '+100%';
+  } else {
+    const diff = currentMonthTurns - lastMonthTurns;
+    const percent = (diff / lastMonthTurns) * 100;
+    aiTurnsTrend = (percent > 0 ? '+' : '') + percent.toFixed(1) + '%';
+  }
+
   return {
     totalActiveUsers,
-    aiTurnsConsumed: aiTurnsResult[0]?.total ?? 0,
+    aiTurnsConsumed: currentMonthTurns, // Dùng số thực tế 30 ngày qua
+    aiTurnsTrend,
     newUsersThisWeek,
     chartData,
   };

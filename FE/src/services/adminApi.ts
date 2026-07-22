@@ -21,6 +21,7 @@ export type AdminUserListResponse = {
 export type AdminDashboardStats = {
   totalActiveUsers: number
   aiTurnsConsumed: number
+  aiTurnsTrend: string
   newUsersThisWeek: number
   chartData: {
     roomTryOn: number[]
