@@ -12,6 +12,7 @@
     "seed:admin": "tsx src/utils/seed-admin.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.13.0",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "bcrypt": "^6.0.0",

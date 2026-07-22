@@ -11,6 +11,7 @@ import { paymentRouter } from './routes/payment.routes';
 import { adminRouter } from './routes/admin.routes';
 import { designRouter } from './routes/design.routes';
 import feedbackRouter from './routes/feedback.routes';
+import { chatRouter } from './routes/chat.routes';
 import { notFoundHandler } from './middlewares/notFound.middleware';
 import { errorHandler } from './middlewares/error.middleware';
 
@@ -38,6 +39,7 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/designs', designRouter);
 app.use('/api/feedbacks', feedbackRouter);
+app.use('/api/chat', chatRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

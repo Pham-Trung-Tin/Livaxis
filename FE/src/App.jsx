@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/toast-context'
 import { AdminGuard } from './components/guards/AdminGuard'
 import { AuthGuard } from './components/guards/AuthGuard'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { AIChatbox } from './components/AIChatbox'
 
 const HomePage = lazy(() => import('./page/Hompage'))
 const SignInPage = lazy(() => import('./page/SignIn'))
@@ -45,8 +46,9 @@ function AppContent() {
   const { t } = useLanguage()
 
   return (
-    <Suspense fallback={<div className="p-6 text-center">{t('common.loading')}</div>}>
-      <Routes>
+    <>
+      <Suspense fallback={<div className="p-6 text-center">{t('common.loading')}</div>}>
+        <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/sign-in" element={<SignInPage />} />
             <Route path="/sign-up" element={<SignUpPage />} />
@@ -92,5 +94,7 @@ function AppContent() {
             <Route path="*" element={<HomePage />} />
           </Routes>
         </Suspense>
+      <AIChatbox />
+    </>
   )
 }
