@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, Banknote } from 'lucide-react'
 import { getAdminDashboardStats, getSubscriptionRevenue, type AdminDashboardStats, type RevenueData } from '../../services/adminApi'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { translations } from '../../contexts/translations'
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
       sub: revenueSub,
       trend: revenueTrend,
       up: revenueTrendUp,
-      icon: '₫',
+      icon: <Banknote size={20} strokeWidth={2} />,
       iconBg: '#fef3c7',
       iconColor: '#d97706',
     },
