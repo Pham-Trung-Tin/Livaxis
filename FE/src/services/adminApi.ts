@@ -22,6 +22,11 @@ export type AdminDashboardStats = {
   totalActiveUsers: number
   aiTurnsConsumed: number
   newUsersThisWeek: number
+  chartData: {
+    roomTryOn: number[]
+    roomPlanner: number[]
+    labels: string[]
+  }
 }
 
 export type AdminProduct = {

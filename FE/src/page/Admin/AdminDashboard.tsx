@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, RefreshCw, Banknote } from 'lucide-react'
-import { getAdminDashboardStats, getSubscriptionRevenue, type AdminDashboardStats, type RevenueData } from '../../services/adminApi'
+import { TrendingUp, TrendingDown, RefreshCw, Banknote, Crown } from 'lucide-react'
+import { getAdminDashboardStats, getSubscriptionRevenue, getSubscriptionStats, type AdminDashboardStats, type RevenueData, type SubscriptionStatsResponse } from '../../services/adminApi'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { translations } from '../../contexts/translations'
-
-const CHART_DATA = {
-  roomTryOn: [165, 190, 175, 210, 155, 185, 175, 200, 165, 190, 175, 165, 185, 195, 170, 165, 180, 175, 190, 205, 175, 160, 175, 185, 170, 180, 195, 175, 170, 160],
-  roomPlanner: [85, 95, 80, 90, 75, 100, 85, 90, 80, 95, 85, 80, 90, 95, 80, 85, 90, 80, 95, 100, 85, 80, 85, 90, 80, 85, 90, 80, 85, 80],
-}
 
 const RECENT_ORDERS = [
   { id: 'LVX-00291', email: 'nguyen.thu@gmail.com', plan: 'premium', planLabel: '89k', amount: '89.000đ', date: '11/03/2026', status: 'Completed' },
@@ -71,6 +66,7 @@ export default function AdminDashboard() {
 
   const [stats, setStats] = useState<AdminDashboardStats | null>(null)
   const [revenueData, setRevenueData] = useState<RevenueData | null>(null)
+  const [subStats, setSubStats] = useState<SubscriptionStatsResponse | null>(null)
   const [revenueLoading, setRevenueLoading] = useState(true)
   const [showRoomTryOn, setShowRoomTryOn] = useState(true)
   const [showRoomPlanner, setShowRoomPlanner] = useState(true)
@@ -115,13 +111,20 @@ export default function AdminDashboard() {
     pending: 'Pending',
   }
 
-  const chartLabels = language === 'vi' 
-    ? ['10 thg 2', '15 thg 2', '20 thg 2', '25 thg 2', '2 thg 3', '7 thg 3']
-    : ['Feb 10', 'Feb 15', 'Feb 20', 'Feb 25', 'Mar 2', 'Mar 7']
+  const allLabels = stats?.chartData?.labels || Array(30).fill('')
+  const displayIndices = [0, 5, 11, 17, 23, 29]
+  const chartLabels = displayIndices.map(i => allLabels[i] || '')
+  
+  const roomTryOnData = stats?.chartData?.roomTryOn || Array(30).fill(0)
+  const roomPlannerData = stats?.chartData?.roomPlanner || Array(30).fill(0)
 
   useEffect(() => {
     getAdminDashboardStats()
       .then(setStats)
+      .catch(() => null)
+
+    getSubscriptionStats()
+      .then(setSubStats)
       .catch(() => null)
 
     // Lấy doanh thu thực từ SePay
@@ -145,6 +148,17 @@ export default function AdminDashboard() {
   const revenueSub = revenueData?.monthLabel ?? (language === 'vi' ? 'Đang tải...' : 'Loading...')
   const revenueTrend = revenueData?.trendPercent ?? (revenueLoading ? '...' : (language === 'vi' ? 'Chưa có dữ liệu' : 'No data'))
   const revenueTrendUp = revenueData ? (revenueData.trendPercent ?? '').startsWith('+') : true
+
+  // Popular Plan Logic
+  const popularPlan = subStats?.plans.reduce((prev, current) => 
+    (prev.userCount > current.userCount) ? prev : current
+  )
+  
+  const popularPlanName = popularPlan ? popularPlan.plan.charAt(0).toUpperCase() + popularPlan.plan.slice(1) : 'Standard'
+  const popularPlanUsers = popularPlan ? popularPlan.userCount : 150
+  const popularPlanPercent = subStats && subStats.totalUsers > 0 && popularPlan 
+    ? Math.round((popularPlan.userCount / subStats.totalUsers) * 100) 
+    : 45
 
   const statCards = [
     {
@@ -180,15 +194,15 @@ export default function AdminDashboard() {
       emoji: true,
     },
     {
-      label: adminTrans.stats.currentApiCost,
-      value: '$312.40',
-      sub: language === 'vi' ? 'Gemini API – tháng 3' : 'Gemini API – March',
-      trend: language === 'vi' ? '-8.1% vs tháng trước' : '-8.1% vs last month',
-      up: false,
-      icon: '📊',
+      label: language === 'vi' ? 'Gói phổ biến nhất' : 'Most Popular Plan',
+      value: popularPlanName,
+      sub: language === 'vi' ? `${popularPlanUsers} người dùng` : `${popularPlanUsers} users`,
+      trend: language === 'vi' ? `Chiếm ${popularPlanPercent}% tổng số` : `${popularPlanPercent}% of total`,
+      up: true,
+      icon: <Crown size={20} strokeWidth={2} />,
       iconBg: '#fef2f2',
       iconColor: '#dc2626',
-      emoji: true,
+      emoji: false,
     },
   ]
 
@@ -275,26 +289,26 @@ export default function AdminDashboard() {
 
             {/* X-axis labels */}
             {chartLabels.map((label, i) => {
-              const x = PAD_L + (i / (chartLabels.length - 1)) * (CHART_W - PAD_L - PAD_R)
+              const x = PAD_L + (i / (Math.max(1, chartLabels.length - 1))) * (CHART_W - PAD_L - PAD_R)
               return (
-                <text key={label} x={x} y={CHART_H - 4} fontSize="9" fill="#bbb" textAnchor="middle">{label}</text>
+                <text key={`${label}-${i}`} x={x} y={CHART_H - 4} fontSize="9" fill="#bbb" textAnchor="middle">{label}</text>
               )
             })}
 
             {/* Area fills */}
             {showRoomTryOn && (
-              <path d={buildPath(CHART_DATA.roomTryOn, true)} fill="url(#gradTryOn)" />
+              <path d={buildPath(roomTryOnData, true)} fill="url(#gradTryOn)" />
             )}
             {showRoomPlanner && (
-              <path d={buildPath(CHART_DATA.roomPlanner, true)} fill="url(#gradPlanner)" />
+              <path d={buildPath(roomPlannerData, true)} fill="url(#gradPlanner)" />
             )}
 
             {/* Lines */}
             {showRoomPlanner && (
-              <path d={buildPath(CHART_DATA.roomPlanner)} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
+              <path d={buildPath(roomPlannerData)} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
             )}
             {showRoomTryOn && (
-              <path d={buildPath(CHART_DATA.roomTryOn)} fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
+              <path d={buildPath(roomTryOnData)} fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" />
             )}
           </svg>
         </div>

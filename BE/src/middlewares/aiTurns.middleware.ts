@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import User from '../models/user.model';
+import AiDailyUsage from '../models/aiDailyUsage.model';
 import { AppError } from '../utils/appError';
 
 /** Number of free AI turns granted to users per day */
@@ -78,7 +79,7 @@ export const checkAiTurns = async (
  * Helper called by the controller AFTER a successful generate to increment the counter.
  * Uses daily free turns first, then decrements purchased balance.
  */
-export async function incrementAiTurnsUsed(userId: string): Promise<void> {
+export async function incrementAiTurnsUsed(userId: string, feature: 'roomTryOn' | 'roomPlanner' = 'roomPlanner'): Promise<void> {
   const user = await User.findById(userId);
   if (!user) return;
 
@@ -88,4 +89,12 @@ export async function incrementAiTurnsUsed(userId: string): Promise<void> {
     user.aiTurns = Math.max(0, (user.aiTurns ?? 0) - 1);
   }
   await user.save();
+
+  // Log to AiDailyUsage
+  const dateStr = new Date().toISOString().split('T')[0];
+  await AiDailyUsage.findOneAndUpdate(
+    { date: dateStr },
+    { $inc: { [feature]: 1 } },
+    { upsert: true, new: true }
+  );
 }

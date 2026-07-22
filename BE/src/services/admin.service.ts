@@ -1,6 +1,7 @@
 import User from '../models/user.model';
 import Product from '../models/product.model';
 import Feedback from '../models/feedback.model';
+import AiDailyUsage from '../models/aiDailyUsage.model';
 
 export type AdminUserItem = {
   id: string;
@@ -24,6 +25,11 @@ export type AdminDashboardStats = {
   totalActiveUsers: number;
   aiTurnsConsumed: number;
   newUsersThisWeek: number;
+  chartData: {
+    roomTryOn: number[];
+    roomPlanner: number[];
+    labels: string[];
+  };
 };
 
 export type AdminProductItem = {
@@ -92,16 +98,50 @@ export const getAdminDashboardStats = async (): Promise<AdminDashboardStats> => 
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - 7);
 
-  const [totalActiveUsers, aiTurnsResult, newUsersThisWeek] = await Promise.all([
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 29);
+  const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+  const [totalActiveUsers, aiTurnsResult, newUsersThisWeek, dailyUsage] = await Promise.all([
     User.countDocuments({ isActive: true, role: { $ne: 'admin' } }),
     User.aggregate([{ $group: { _id: null, total: { $sum: '$aiTurnsUsed' } } }]),
     User.countDocuments({ createdAt: { $gte: startOfWeek }, role: { $ne: 'admin' } }),
+    AiDailyUsage.find({ date: { $gte: startDateStr } }).sort({ date: 1 }).lean(),
   ]);
+
+  const chartData = {
+    roomTryOn: [] as number[],
+    roomPlanner: [] as number[],
+    labels: [] as string[],
+  };
+
+  // Map to a dictionary for quick lookup
+  const usageMap = new Map<string, any>();
+  for (const item of dailyUsage) {
+    usageMap.set(item.date, item);
+  }
+
+  // Ensure exactly 30 days are returned in order
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (29 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    
+    // Format label (e.g., '12 thg 7')
+    const day = d.getDate();
+    const month = d.getMonth() + 1;
+    chartData.labels.push(`${day} thg ${month}`);
+
+    const record = usageMap.get(dateStr);
+    chartData.roomTryOn.push(record?.roomTryOn ?? 0);
+    chartData.roomPlanner.push(record?.roomPlanner ?? 0);
+  }
 
   return {
     totalActiveUsers,
     aiTurnsConsumed: aiTurnsResult[0]?.total ?? 0,
     newUsersThisWeek,
+    chartData,
   };
 };
 

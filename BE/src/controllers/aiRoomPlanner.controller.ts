@@ -62,7 +62,7 @@ export const generateController = asyncHandler(async (req: Request, res: Respons
   let turnsInfo: Record<string, unknown> = { unlimited: false, turnsRemaining: 0, dailyLimit: FREE_DAILY_TURNS };
 
   if (req.user?.id) {
-    await incrementAiTurnsUsed(req.user.id);
+    await incrementAiTurnsUsed(req.user.id, 'roomPlanner');
 
     // Re-read the updated turn info for the response
     const user = await User.findById(req.user.id);
