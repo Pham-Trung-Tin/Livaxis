@@ -3,6 +3,8 @@ import { env } from '../config/env';
 import User from '../models/user.model';
 import SubscriptionPlan from '../models/subscriptionPlan.model';
 
+import Order from '../models/order.model';
+
 // ---------------------------------------------------------------------------
 // In-memory stores..ß
 // ---------------------------------------------------------------------------
@@ -48,6 +50,22 @@ export async function registerOrder(req: Request, res: Response): Promise<void> 
   if (!orderId.startsWith('SUB')) {
     res.status(400).json({ success: false, message: 'Chỉ chấp nhận các đơn hàng SUB' });
     return;
+  }
+
+  let planId: 'starter' | 'standard' | 'premium' | null = null;
+  if (turnsToAdd === 10) planId = 'starter';
+  else if (turnsToAdd === 40) planId = 'standard';
+  else if (turnsToAdd === 70) planId = 'premium';
+
+  // Persist order in DB
+  try {
+    await Order.findOneAndUpdate(
+      { orderId: orderId.toUpperCase() },
+      { userId, planId, turnsToAdd, status: 'pending' },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    console.error(`[Payment] Failed to save order ${orderId} to DB:`, err);
   }
 
   orderRegistrations.set(orderId.toUpperCase(), { userId, turnsToAdd });
@@ -120,43 +138,53 @@ export async function sePayWebhook(req: Request, res: Response): Promise<void> {
   console.log(`[SePay] Subscription order ${orderId} marked as PAID – amount: ${payload.transferAmount ?? 0}`);
 
   // 6. handleSubscriptionPayment – look up user and increment aiTurns
-  const registration = orderRegistrations.get(orderId);
-
-  if (registration) {
-    try {
-      let planId: 'starter' | 'standard' | 'premium' | null = null;
-      if (registration.turnsToAdd === 10) planId = 'starter';
-      else if (registration.turnsToAdd === 40) planId = 'standard';
-      else if (registration.turnsToAdd === 70) planId = 'premium';
+  try {
+    const orderDoc = await Order.findOne({ orderId });
+    if (orderDoc && orderDoc.status !== 'paid') {
+      orderDoc.status = 'paid';
+      orderDoc.sePayId = String(payload.id || '');
+      orderDoc.amount = payload.transferAmount ?? 0;
+      orderDoc.paidAt = new Date(payload.transactionDate ?? new Date().toISOString());
+      await orderDoc.save();
 
       const updatedUser = await User.findByIdAndUpdate(
-        registration.userId,
+        orderDoc.userId,
         { 
-          $inc: { aiTurns: registration.turnsToAdd },
-          subscriptionPlan: planId,
+          $inc: { aiTurns: orderDoc.turnsToAdd || 0 },
+          subscriptionPlan: orderDoc.planId || null,
         },
         { new: true },
       );
 
       if (updatedUser) {
-        console.log(
-          `[SePay] +${registration.turnsToAdd} aiTurns granted to user ${registration.userId}. ` +
-          `New balance: ${updatedUser.aiTurns}`,
-        );
-      } else {
-        console.warn(`[SePay] User ${registration.userId} not found – turns not credited.`);
+        console.log(`[SePay] +${orderDoc.turnsToAdd} aiTurns granted to user ${orderDoc.userId}. New balance: ${updatedUser.aiTurns}`);
       }
+    } else if (!orderDoc) {
+      console.warn(`[SePay] Order ${orderId} not found in DB. Falling back to in-memory registration.`);
+      const registration = orderRegistrations.get(orderId);
+      if (registration) {
+        let planId: 'starter' | 'standard' | 'premium' | null = null;
+        if (registration.turnsToAdd === 10) planId = 'starter';
+        else if (registration.turnsToAdd === 40) planId = 'standard';
+        else if (registration.turnsToAdd === 70) planId = 'premium';
 
-      // Clean up the registration after processing
-      orderRegistrations.delete(orderId);
-    } catch (err) {
-      console.error(`[SePay] Failed to update aiTurns for user ${registration.userId}:`, err);
-      // Do NOT return an error to SePay – we already marked as paid.
-      // A retry mechanism or admin intervention would be needed for production.
+        const updatedUser = await User.findByIdAndUpdate(
+          registration.userId,
+          { 
+            $inc: { aiTurns: registration.turnsToAdd },
+            subscriptionPlan: planId,
+          },
+          { new: true },
+        );
+        if (updatedUser) console.log(`[SePay] +${registration.turnsToAdd} aiTurns granted to user ${registration.userId}.`);
+      }
     }
-  } else {
-    console.warn(`[SePay] No registration found for order ${orderId}. aiTurns not credited.`);
+  } catch (err) {
+    console.error(`[SePay] Failed to update order/user for order ${orderId}:`, err);
   }
+
+  // Clean up the in-memory registration after processing
+  orderRegistrations.delete(orderId);
 
   res.status(200).json({ success: true });
 }
@@ -300,7 +328,7 @@ export async function getSubscriptionRevenue(_req: Request, res: Response): Prom
     }
 
     // Lấy 20 giao dịch subscription gần nhất cho bảng Recent Orders
-    const recentOrders = subscriptionTxs.slice(0, 20).map((tx) => {
+    const recentOrdersRaw = subscriptionTxs.slice(0, 20).map((tx) => {
       const match = (tx.transaction_content ?? '').match(/SUB\d+/i);
       const orderId = match ? match[0].toUpperCase() : tx.id;
       return {
@@ -310,6 +338,23 @@ export async function getSubscriptionRevenue(_req: Request, res: Response): Prom
         date: tx.transaction_date,
         content: tx.transaction_content,
         status: 'Completed',
+      };
+    });
+
+    // Enrich with user information from Order collection
+    const orderIds = recentOrdersRaw.map(o => o.id);
+    const ordersInDb = await Order.find({ orderId: { $in: orderIds } }).populate('userId', 'name email');
+    const orderMap = new Map();
+    for (const order of ordersInDb) {
+      orderMap.set(order.orderId, order.userId);
+    }
+
+    const recentOrders = recentOrdersRaw.map(order => {
+      const user = orderMap.get(order.id) as any;
+      return {
+        ...order,
+        userName: user?.name || 'Unknown',
+        userEmail: user?.email || '',
       };
     });
 

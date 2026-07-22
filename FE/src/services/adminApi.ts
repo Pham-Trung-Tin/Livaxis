@@ -119,6 +119,8 @@ export type RevenueRecentOrder = {
   date: string
   content: string
   status: string
+  userName?: string
+  userEmail?: string
 }
 
 export type RevenueData = {

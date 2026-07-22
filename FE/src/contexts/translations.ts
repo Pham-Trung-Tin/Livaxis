@@ -38,6 +38,7 @@ export const translations = {
       continueWithGoogle: 'Tiếp tục với Google',
       dontHaveAccount: 'Chưa có tài khoản?',
       createOne: 'Tạo tài khoản',
+      createAccount: 'Tạo tài khoản',
       signUpTitle: 'Bắt đầu hành trình thiết kế',
       signUpSub: 'Tham gia Livaxis để trải nghiệm công nghệ AI cá nhân hóa.',
       username: 'Tên đăng nhập',
@@ -638,6 +639,7 @@ export const translations = {
       },
       tableHeaders: {
         orderId: 'MÃ ĐƠN HÀNG',
+        accountName: 'NGƯỜI MUA',
         content: 'NỘI DUNG CHUYỂN KHOẢN',
         amount: 'SỐ TIỀN',
         date: 'NGÀY MUA',
@@ -702,6 +704,7 @@ export const translations = {
       continueWithGoogle: 'Continue with Google',
       dontHaveAccount: "Don't have an account?",
       createOne: 'Create one',
+      createAccount: 'Create Account',
       signUpTitle: 'Start Your Design Journey',
       signUpSub: 'Join Livaxis for a personalised AI experience.',
       username: 'Username',
@@ -1302,6 +1305,7 @@ export const translations = {
       },
       tableHeaders: {
         orderId: 'ORDER ID',
+        accountName: 'ACCOUNT NAME',
         content: 'TRANSACTION CONTENT',
         amount: 'AMOUNT',
         date: 'DATE',

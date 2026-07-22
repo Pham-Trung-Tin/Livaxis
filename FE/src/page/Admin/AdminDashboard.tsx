@@ -80,7 +80,9 @@ export default function AdminDashboard() {
 
   const filteredRevenueOrders = revenueData?.recentOrders.filter(o => 
     o.id.toLowerCase().includes(searchOrder.toLowerCase()) || 
-    o.content.toLowerCase().includes(searchOrder.toLowerCase())
+    o.content.toLowerCase().includes(searchOrder.toLowerCase()) ||
+    o.userName?.toLowerCase().includes(searchOrder.toLowerCase()) ||
+    o.userEmail?.toLowerCase().includes(searchOrder.toLowerCase())
   ) || []
   
   const filteredMockOrders = RECENT_ORDERS.filter(o => 
@@ -327,6 +329,7 @@ export default function AdminDashboard() {
           <thead>
             <tr>
               <th>{adminTrans.tableHeaders.orderId}</th>
+              <th>{adminTrans.tableHeaders.accountName}</th>
               <th>{adminTrans.tableHeaders.content}</th>
               <th>{adminTrans.tableHeaders.amount}</th>
               <th>{adminTrans.tableHeaders.date}</th>
@@ -335,7 +338,7 @@ export default function AdminDashboard() {
           </thead>
           <tbody>
             {revenueLoading ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: '#aaa', padding: '24px' }}>
                 {language === 'vi' ? 'Đang tải dữ liệu từ SePay...' : 'Loading data from SePay...'}
               </td></tr>
             ) : isUsingRealData ? (
@@ -354,6 +357,12 @@ export default function AdminDashboard() {
                 return (
                   <tr key={order.sePayId}>
                     <td className="adm-td-mono">{order.id}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontWeight: 500 }}>{order.userName}</span>
+                        <span style={{ fontSize: 11, color: '#888' }}>{order.userEmail}</span>
+                      </div>
+                    </td>
                     <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: '#888' }}>{order.content}</td>
                     <td className="adm-td-bold">{amountFormatted}</td>
                     <td className="adm-td-dim">{dateFormatted}</td>
@@ -372,8 +381,11 @@ export default function AdminDashboard() {
                   <tr key={order.id}>
                     <td className="adm-td-mono">{order.id}</td>
                     <td>
+                      <span style={{ fontWeight: 500 }}>Mock User</span>
+                      <div style={{ fontSize: 11, color: '#888' }}>{order.email}</div>
+                    </td>
+                    <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{order.email}</span>
                         <span
                           className="adm-plan-badge"
                           style={{ background: planColors[order.plan] + '18', color: planColors[order.plan] }}
