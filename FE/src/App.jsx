@@ -19,6 +19,7 @@ const ProductDetailPage = lazy(() => import('./page/ProductDetail'))
 const AIRoomPlannerPage = lazy(() => import('./page/AIRoomPlanner'))
 const SharedDesignPage = lazy(() => import('./page/SharedDesign'))
 const PrivacyPage = lazy(() => import('./page/Privacy'))
+const TermsPage = lazy(() => import('./page/Terms'))
 
 // Admin pages
 const AdminLayout = lazy(() => import('./page/Admin/AdminLayout'))
@@ -54,6 +55,7 @@ function AppContent() {
             <Route path="/profile" element={<UserProfilePage />} />
             <Route path="/share/:id" element={<SharedDesignPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/collections" element={<CollectionsPage />} />
