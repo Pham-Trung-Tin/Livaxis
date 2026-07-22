@@ -1,7 +1,8 @@
 import { motion } from 'motion/react'
 import { Header } from '../components/Header'
-import { Footer } from './Hompage'
 import { useLanguage } from '../contexts/LanguageContext'
+import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 
 export default function PrivacyPage() {
   const { language } = useLanguage()
@@ -16,6 +17,15 @@ export default function PrivacyPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          <Link 
+            to="/" 
+            className="mb-8 inline-flex items-center gap-2 text-[13px] font-medium text-neutral-400 transition-colors hover:text-black"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
+            <ArrowLeft size={16} />
+            {language === 'vi' ? 'Quay lại' : 'Back'}
+          </Link>
+
           <h1 
             className="mb-8 text-4xl text-black md:text-5xl"
             style={{ fontFamily: 'Playfair Display, serif', fontWeight: 500 }}
@@ -90,8 +100,6 @@ export default function PrivacyPage() {
           </div>
         </motion.div>
       </main>
-
-      <Footer />
     </div>
   )
 }
