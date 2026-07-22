@@ -20,7 +20,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/auth-context'
 import { useLanguage } from '../contexts/LanguageContext'
 import { getAiTurns, type TurnsInfo } from '../services/aiRoomPlannerApi'
@@ -102,15 +102,15 @@ export function Footer() {
             {t('homepage.rightsReserved')}
           </span>
           <div className="flex gap-6">
-            {[{ label: t('homepage.privacy'), key: 'Privacy' }, { label: t('homepage.terms'), key: 'Terms' }, { label: t('homepage.cookies'), key: 'Cookies' }].map((item) => (
-              <a
+            {[{ label: t('homepage.privacy'), key: 'Privacy', path: '/privacy' }, { label: t('homepage.terms'), key: 'Terms', path: '/terms' }, { label: t('homepage.cookies'), key: 'Cookies', path: '/cookies' }].map((item) => (
+              <Link
                 key={item.key}
-                href="#"
+                to={item.path}
                 className="text-[12px] text-neutral-300 transition-colors duration-300 hover:text-neutral-500"
                 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -1617,8 +1617,8 @@ function Hompage() {
                   { label: language === 'vi' ? 'Khám phá' : 'Discovery', href: '/discovery' },
                   { label: language === 'vi' ? 'Bộ sưu tập' : 'Collections', href: '/collections' },
                   { label: language === 'vi' ? 'Gói đăng ký' : 'Subscription', href: '/subscription' },
-                  { label: t('homepage.privacy'), href: '#' },
-                  { label: t('homepage.terms'), href: '#' },
+                  { label: t('homepage.privacy'), href: '/privacy' },
+                  { label: t('homepage.terms'), href: '/terms' },
                 ].map((link) => (
                   <a
                     key={link.label}
