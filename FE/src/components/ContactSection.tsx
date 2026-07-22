@@ -225,7 +225,7 @@ export function ContactSection({ activeSection }: { activeSection: string }) {
                     onChange={handleChange}
                     className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-[14px] text-white outline-none transition-all focus:border-[#c8b898]/50 focus:bg-white/10"
                   >
-                    <option value="" disabled selected hidden className="bg-[#1a1714] text-white/30">
+                    <option value="" disabled hidden className="bg-[#1a1714] text-white/30">
                       {language === 'vi' ? 'Chọn dịch vụ góp ý' : 'Select feedback service'}
                     </option>
                     <option value="response_speed" className="bg-[#1a1714]">{language === 'vi' ? 'Tốc độ phản hồi' : 'Response speed'}</option>
